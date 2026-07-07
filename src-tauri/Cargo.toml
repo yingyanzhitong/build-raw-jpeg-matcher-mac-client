@@ -1,0 +1,29 @@
+[package]
+name = "raw-jpeg-matcher"
+version = "0.1.1"
+description = "A macOS utility for matching selected JPEG files to RAW originals."
+authors = ["bigo"]
+edition = "2021"
+
+[lib]
+name = "raw_jpeg_matcher_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[[bin]]
+name = "raw-jpeg-matcher"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+base64 = "0.22"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-opener = "2"
+walkdir = "2"
+
+[dev-dependencies]
+tempfile = "3"
