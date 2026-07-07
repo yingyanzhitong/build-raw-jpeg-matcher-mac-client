@@ -1,0 +1,24 @@
+package-lock.json
+  s_9fe14d6a1b9c29::t_a4e34fbea2ddfa 3,9
+package.json
+  s_9fe14d6a1b9c29::t_dba478e113468e 3,9-10
+scripts/finalize-macos-dmg.sh
+  s_9fe14d6a1b9c29::t_2286b8a5713ffd 1-79
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "365d80d35dd13eaab38ab115f43bf98f2ebc2629",
+  "prompts": {},
+  "logical_commit_id": "365d80d35dd13eaab38ab115f43bf98f2ebc2629",
+  "sessions": {
+    "s_9fe14d6a1b9c29": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f3c89-c299-7ee2-a5bc-1e5fe462611c",
+        "model": "gpt-5.5"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
