@@ -1,9 +1,12 @@
-use base64::{engine::general_purpose, Engine as _};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
+    env,
     fs,
+    hash::{Hash, Hasher},
+    io::{BufReader, Read},
     path::{Path, PathBuf},
+    process::{Command, Stdio},
     time::UNIX_EPOCH,
 };
 use walkdir::WalkDir;
@@ -12,6 +15,9 @@ const JPEG_EXTENSIONS: &[&str] = &["jpg", "jpeg"];
 const RAW_EXTENSIONS: &[&str] = &[
     "cr2", "cr3", "nef", "arw", "raf", "orf", "rw2", "dng", "rwl", "pef", "3fr", "iiq",
 ];
+const MIN_RAW_FILE_SIZE_BYTES: u64 = 1024 * 1024;
+const FILE_COMPARE_BUFFER_SIZE: usize = 64 * 1024;
+const RAW_THUMBNAIL_SIZE: &str = "96";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -30,6 +36,8 @@ pub struct JpegInput {
     pub base_name: String,
     pub size: u64,
     pub modified_time: Option<u64>,
+    #[serde(default)]
+    pub manual: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -106,10 +114,17 @@ fn match_raw_files(
     inputs: Vec<String>,
     raw_root: String,
     raw_extensions: Option<Vec<String>>,
+    manual_refs: Option<Vec<String>>,
 ) -> Result<MatchResponse, String> {
     let allowed_extensions =
         normalize_raw_extensions(raw_extensions).map_err(|error| error.to_string())?;
-    match_files(&inputs, &raw_root, &allowed_extensions).map_err(|error| error.to_string())
+    match_files(
+        &inputs,
+        &raw_root,
+        &allowed_extensions,
+        &manual_refs.unwrap_or_default(),
+    )
+    .map_err(|error| error.to_string())
 }
 
 #[tauri::command]
@@ -121,15 +136,28 @@ fn export_raw_files(
 }
 
 #[tauri::command]
-fn read_jpeg_data_url(path: String) -> Result<String, String> {
+fn open_file_path(path: String) -> Result<(), String> {
     let file_path = PathBuf::from(path);
-    if !is_jpeg_path(&file_path) {
-        return Err("只能预览 JPEG 文件".to_string());
+    if !file_path.exists() {
+        return Err(format!("路径不存在: {}", file_path.display()));
     }
 
-    let bytes = fs::read(&file_path).map_err(|error| format!("读取 JPEG 失败: {error}"))?;
-    let encoded = general_purpose::STANDARD.encode(bytes);
-    Ok(format!("data:image/jpeg;base64,{encoded}"))
+    Command::new("open")
+        .arg(&file_path)
+        .status()
+        .map_err(|error| format!("启动系统打开命令失败: {error}"))
+        .and_then(|status| {
+            if status.success() {
+                Ok(())
+            } else {
+                Err(format!("系统打开命令失败，退出码: {status}"))
+            }
+        })
+}
+
+#[tauri::command]
+fn raw_thumbnail_path(path: String) -> Result<String, String> {
+    generate_raw_thumbnail(Path::new(&path)).map_err(|error| error.to_string())
 }
 
 fn collect_jpegs(inputs: &[String]) -> Result<InputCollection, Box<dyn std::error::Error>> {
@@ -204,10 +232,16 @@ fn match_files(
     inputs: &[String],
     raw_root: &str,
     allowed_raw_extensions: &HashSet<String>,
+    manual_refs: &[String],
 ) -> Result<MatchResponse, Box<dyn std::error::Error>> {
     let mut logs = Vec::new();
-    let input_collection = collect_jpegs(inputs)?;
+    let mut input_collection = collect_jpegs(inputs)?;
     logs.extend(input_collection.logs.clone());
+    let manual_inputs = manual_inputs_from_refs(manual_refs, &mut logs);
+    if !manual_inputs.is_empty() {
+        logs.push(format!("文本清单准备完成: {} 条", manual_inputs.len()));
+        input_collection.files.extend(manual_inputs);
+    }
 
     let raw_root_path = PathBuf::from(raw_root);
     if !raw_root_path.is_dir() {
@@ -240,10 +274,7 @@ fn match_files(
     let mut results = Vec::with_capacity(input_collection.files.len());
 
     for jpeg in &input_collection.files {
-        let candidates = raw_by_base
-            .get(&jpeg.base_name)
-            .cloned()
-            .unwrap_or_else(Vec::new);
+        let candidates = find_candidates_for_input(jpeg, &raw_by_base);
 
         let (status, selected_raw) = match candidates.len() {
             0 => {
@@ -323,6 +354,14 @@ fn export_files(
                 let source = PathBuf::from(&raw.path);
                 let destination = export_path.join(&raw.file_name);
                 if destination.exists() {
+                    if files_have_same_contents(&source, &destination)? {
+                        summary.copied_count += 1;
+                        logs.push(format!(
+                            "已存在相同 RAW，计入成功: {}",
+                            destination.display()
+                        ));
+                        continue;
+                    }
                     summary.collision_count += 1;
                     logs.push(format!("跳过文件名冲突: {}", destination.display()));
                     continue;
@@ -346,10 +385,81 @@ fn export_files(
     Ok(ExportResponse { logs, summary })
 }
 
+fn files_have_same_contents(
+    left: &Path,
+    right: &Path,
+) -> Result<bool, Box<dyn std::error::Error>> {
+    let left_metadata = fs::metadata(left)?;
+    let right_metadata = fs::metadata(right)?;
+    if left_metadata.len() != right_metadata.len() {
+        return Ok(false);
+    }
+
+    let mut left_reader = BufReader::new(fs::File::open(left)?);
+    let mut right_reader = BufReader::new(fs::File::open(right)?);
+    let mut left_buffer = vec![0; FILE_COMPARE_BUFFER_SIZE];
+    let mut right_buffer = vec![0; FILE_COMPARE_BUFFER_SIZE];
+
+    loop {
+        let left_read = left_reader.read(&mut left_buffer)?;
+        let right_read = right_reader.read(&mut right_buffer)?;
+        if left_read != right_read {
+            return Ok(false);
+        }
+        if left_read == 0 {
+            return Ok(true);
+        }
+        if left_buffer[..left_read] != right_buffer[..right_read] {
+            return Ok(false);
+        }
+    }
+}
+
+fn generate_raw_thumbnail(path: &Path) -> Result<String, Box<dyn std::error::Error>> {
+    if !path.is_file() {
+        return Err(format!("RAW 文件不存在: {}", path.display()).into());
+    }
+
+    let cache_dir = raw_thumbnail_cache_dir(path);
+    fs::create_dir_all(&cache_dir)?;
+    let thumbnail_path = cache_dir.join(format!("{}.png", file_name(path)?));
+    if thumbnail_path.is_file() {
+        return Ok(thumbnail_path.to_string_lossy().to_string());
+    }
+
+    let status = Command::new("qlmanage")
+        .arg("-t")
+        .arg("-s")
+        .arg(RAW_THUMBNAIL_SIZE)
+        .arg("-o")
+        .arg(&cache_dir)
+        .arg(path)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()?;
+    if !status.success() {
+        return Err(format!("生成 RAW 缩略图失败: {}", path.display()).into());
+    }
+    if !thumbnail_path.is_file() {
+        return Err(format!("未找到 RAW 缩略图输出: {}", thumbnail_path.display()).into());
+    }
+
+    Ok(thumbnail_path.to_string_lossy().to_string())
+}
+
+fn raw_thumbnail_cache_dir(path: &Path) -> PathBuf {
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    canonical_path_string(path).hash(&mut hasher);
+    env::temp_dir()
+        .join("raw-jpeg-matcher-thumbnails")
+        .join(format!("{:016x}", hasher.finish()))
+}
+
 #[derive(Debug, Default)]
 struct RawScan {
     files: Vec<RawCandidate>,
     logs: Vec<String>,
+    small_file_count: usize,
 }
 
 fn collect_raws(raw_root: &Path, allowed_raw_extensions: &HashSet<String>) -> RawScan {
@@ -369,7 +479,13 @@ fn collect_raws(raw_root: &Path, allowed_raw_extensions: &HashSet<String>) -> Ra
 
         if entry.file_type().is_file() && is_raw_path(entry.path(), allowed_raw_extensions) {
             match raw_candidate_from_path(entry.path()) {
-                Ok(candidate) => scan.files.push(candidate),
+                Ok(candidate) => {
+                    if candidate.size < MIN_RAW_FILE_SIZE_BYTES {
+                        scan.small_file_count += 1;
+                        continue;
+                    }
+                    scan.files.push(candidate);
+                }
                 Err(error) => scan.logs.push(format!(
                     "跳过无法读取的 RAW 文件 {}: {error}",
                     entry.path().display()
@@ -379,6 +495,12 @@ fn collect_raws(raw_root: &Path, allowed_raw_extensions: &HashSet<String>) -> Ra
     }
 
     scan.files.sort_by(|left, right| left.path.cmp(&right.path));
+    if scan.small_file_count > 0 {
+        scan.logs.push(format!(
+            "跳过 {} 个小于 1 MB 的 RAW 文件",
+            scan.small_file_count
+        ));
+    }
     scan
 }
 
@@ -449,7 +571,82 @@ fn jpeg_input_from_path(path: &Path) -> Result<JpegInput, Box<dyn std::error::Er
         base_name: base_name(path)?,
         size: metadata.len(),
         modified_time: modified_seconds(&metadata),
+        manual: false,
     })
+}
+
+fn manual_inputs_from_refs(refs: &[String], logs: &mut Vec<String>) -> Vec<JpegInput> {
+    let mut inputs = Vec::new();
+    let mut seen = HashSet::new();
+
+    for raw_ref in refs {
+        let Some((file_name, base_name)) = normalize_manual_ref(raw_ref) else {
+            continue;
+        };
+        let key = base_name.to_ascii_lowercase();
+        if !seen.insert(key) {
+            logs.push(format!("跳过重复文本清单项: {file_name}"));
+            continue;
+        }
+
+        inputs.push(JpegInput {
+            path: format!("manual://{file_name}"),
+            file_name,
+            base_name,
+            size: 0,
+            modified_time: None,
+            manual: true,
+        });
+    }
+
+    inputs
+}
+
+fn normalize_manual_ref(raw_ref: &str) -> Option<(String, String)> {
+    let cleaned = raw_ref
+        .trim()
+        .trim_matches(|character| matches!(character, '"' | '\'' | '`' | ',' | ';'));
+    if cleaned.is_empty() {
+        return None;
+    }
+
+    let file_name = Path::new(cleaned)
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or(cleaned)
+        .to_string();
+    let base_name = Path::new(&file_name)
+        .file_stem()
+        .and_then(|name| name.to_str())
+        .unwrap_or(&file_name)
+        .to_string();
+
+    Some((file_name, base_name))
+}
+
+fn find_candidates_for_input(
+    jpeg: &JpegInput,
+    raw_by_base: &HashMap<String, Vec<RawCandidate>>,
+) -> Vec<RawCandidate> {
+    if !jpeg.manual {
+        return raw_by_base
+            .get(&jpeg.base_name)
+            .cloned()
+            .unwrap_or_else(Vec::new);
+    }
+
+    if let Some(exact_candidates) = raw_by_base.get(&jpeg.base_name) {
+        return exact_candidates.clone();
+    }
+
+    let suffix = jpeg.base_name.to_ascii_lowercase();
+    let mut candidates = raw_by_base
+        .iter()
+        .filter(|(base_name, _)| base_name.to_ascii_lowercase().ends_with(&suffix))
+        .flat_map(|(_, candidates)| candidates.clone())
+        .collect::<Vec<_>>();
+    candidates.sort_by(|left, right| left.path.cmp(&right.path));
+    candidates
 }
 
 fn raw_candidate_from_path(path: &Path) -> Result<RawCandidate, Box<dyn std::error::Error>> {
@@ -529,7 +726,8 @@ pub fn run() {
             collect_jpeg_inputs,
             match_raw_files,
             export_raw_files,
-            read_jpeg_data_url
+            open_file_path,
+            raw_thumbnail_path
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -579,12 +777,13 @@ mod tests {
         fs::create_dir_all(&jpg_dir).unwrap();
         fs::create_dir_all(&raw_dir).unwrap();
         write_file(&jpg_dir.join("IMG_1234.JPG"), b"jpg");
-        write_file(&raw_dir.join("IMG_1234.CR3"), b"raw");
+        write_raw_file(&raw_dir.join("IMG_1234.CR3"));
 
         let response = match_files(
             &[jpg_dir.join("IMG_1234.JPG").to_string_lossy().to_string()],
             &temp.path().join("raws").to_string_lossy(),
             &default_raw_extension_set(),
+            &[],
         )
         .unwrap();
 
@@ -604,13 +803,29 @@ mod tests {
         let event = raw_root.join("event");
         fs::create_dir_all(&spotlight).unwrap();
         fs::create_dir_all(&event).unwrap();
-        write_file(&spotlight.join("IMG_0001.CR3"), b"system");
-        write_file(&event.join("IMG_0002.CR3"), b"raw");
+        write_raw_file(&spotlight.join("IMG_0001.CR3"));
+        write_raw_file(&event.join("IMG_0002.CR3"));
 
         let scan = collect_raws(&raw_root, &default_raw_extension_set());
 
         assert_eq!(scan.files.len(), 1);
         assert_eq!(scan.files[0].file_name, "IMG_0002.CR3");
+    }
+
+    #[test]
+    fn raw_scan_filters_files_smaller_than_1_mb() {
+        let temp = tempdir().unwrap();
+        let raw_root = temp.path().join("raws");
+        fs::create_dir_all(&raw_root).unwrap();
+        write_sized_file(&raw_root.join("IMG_0001.CR3"), 4 * 1024);
+        write_sized_file(&raw_root.join("IMG_0002.CR3"), MIN_RAW_FILE_SIZE_BYTES);
+
+        let scan = collect_raws(&raw_root, &default_raw_extension_set());
+
+        assert_eq!(scan.files.len(), 1);
+        assert_eq!(scan.files[0].file_name, "IMG_0002.CR3");
+        assert_eq!(scan.small_file_count, 1);
+        assert!(scan.logs.iter().any(|log| log.contains("小于 1 MB")));
     }
 
     #[test]
@@ -621,12 +836,13 @@ mod tests {
         fs::create_dir_all(&jpg_dir).unwrap();
         fs::create_dir_all(&raw_dir).unwrap();
         write_file(&jpg_dir.join("IMG_1234-Edit.JPG"), b"jpg");
-        write_file(&raw_dir.join("IMG_1234.CR3"), b"raw");
+        write_raw_file(&raw_dir.join("IMG_1234.CR3"));
 
         let response = match_files(
             &[jpg_dir.join("IMG_1234-Edit.JPG").to_string_lossy().to_string()],
             &raw_dir.to_string_lossy(),
             &default_raw_extension_set(),
+            &[],
         )
         .unwrap();
 
@@ -644,13 +860,14 @@ mod tests {
         fs::create_dir_all(&raw_a).unwrap();
         fs::create_dir_all(&raw_b).unwrap();
         write_file(&jpg_dir.join("IMG_7777.JPG"), b"jpg");
-        write_file(&raw_a.join("IMG_7777.CR3"), b"raw-a");
-        write_file(&raw_b.join("IMG_7777.NEF"), b"raw-b");
+        write_raw_file(&raw_a.join("IMG_7777.CR3"));
+        write_raw_file(&raw_b.join("IMG_7777.NEF"));
 
         let response = match_files(
             &[jpg_dir.join("IMG_7777.JPG").to_string_lossy().to_string()],
             &temp.path().join("raws").to_string_lossy(),
             &default_raw_extension_set(),
+            &[],
         )
         .unwrap();
 
@@ -670,14 +887,15 @@ mod tests {
         fs::create_dir_all(&raw_a).unwrap();
         fs::create_dir_all(&raw_b).unwrap();
         write_file(&jpg_dir.join("IMG_8888.JPG"), b"jpg");
-        write_file(&raw_a.join("IMG_8888.CR3"), b"raw-a");
-        write_file(&raw_b.join("IMG_8888.NEF"), b"raw-b");
+        write_raw_file(&raw_a.join("IMG_8888.CR3"));
+        write_raw_file(&raw_b.join("IMG_8888.NEF"));
 
         let allowed_extensions = normalize_raw_extensions(Some(vec!["CR3".to_string()])).unwrap();
         let response = match_files(
             &[jpg_dir.join("IMG_8888.JPG").to_string_lossy().to_string()],
             &temp.path().join("raws").to_string_lossy(),
             &allowed_extensions,
+            &[],
         )
         .unwrap();
 
@@ -691,12 +909,36 @@ mod tests {
     }
 
     #[test]
+    fn manual_suffix_refs_match_raw_base_names() {
+        let temp = tempdir().unwrap();
+        let raw_dir = temp.path().join("raws");
+        fs::create_dir_all(&raw_dir).unwrap();
+        write_raw_file(&raw_dir.join("5N6A5022.CR3"));
+
+        let response = match_files(
+            &[],
+            &raw_dir.to_string_lossy(),
+            &default_raw_extension_set(),
+            &["5022".to_string()],
+        )
+        .unwrap();
+
+        assert_eq!(response.summary.input_count, 1);
+        assert_eq!(response.summary.matched_count, 1);
+        assert!(response.results[0].jpeg.manual);
+        assert_eq!(
+            response.results[0].selected_raw.as_ref().unwrap().file_name,
+            "5N6A5022.CR3"
+        );
+    }
+
+    #[test]
     fn export_skips_missing_conflicts_and_collisions() {
         let temp = tempdir().unwrap();
         let export_dir = temp.path().join("export");
         fs::create_dir_all(&export_dir).unwrap();
         let raw_source = temp.path().join("IMG_0001.CR3");
-        write_file(&raw_source, b"raw");
+        write_raw_file(&raw_source);
         write_file(&export_dir.join("IMG_0001.CR3"), b"existing");
 
         let jpeg = JpegInput {
@@ -705,6 +947,7 @@ mod tests {
             base_name: "IMG_0001".to_string(),
             size: 1,
             modified_time: None,
+            manual: false,
         };
         let raw = RawCandidate {
             path: raw_source.to_string_lossy().to_string(),
@@ -742,8 +985,56 @@ mod tests {
         assert_eq!(response.summary.skipped_conflict_count, 1);
     }
 
+    #[test]
+    fn export_counts_existing_identical_file_as_copied() {
+        let temp = tempdir().unwrap();
+        let export_dir = temp.path().join("export");
+        fs::create_dir_all(&export_dir).unwrap();
+        let raw_source = temp.path().join("IMG_0002.CR3");
+        write_raw_file(&raw_source);
+        fs::copy(&raw_source, export_dir.join("IMG_0002.CR3")).unwrap();
+
+        let jpeg = JpegInput {
+            path: temp.path().join("IMG_0002.JPG").to_string_lossy().to_string(),
+            file_name: "IMG_0002.JPG".to_string(),
+            base_name: "IMG_0002".to_string(),
+            size: 1,
+            modified_time: None,
+            manual: false,
+        };
+        let raw = RawCandidate {
+            path: raw_source.to_string_lossy().to_string(),
+            file_name: "IMG_0002.CR3".to_string(),
+            base_name: "IMG_0002".to_string(),
+            extension: "cr3".to_string(),
+            size: MIN_RAW_FILE_SIZE_BYTES + 1,
+            modified_time: None,
+        };
+        let results = vec![MatchResult {
+            jpeg,
+            status: MatchStatus::Matched,
+            candidates: vec![raw.clone()],
+            selected_raw: Some(raw),
+        }];
+
+        let response = export_files(&results, &export_dir.to_string_lossy()).unwrap();
+
+        assert_eq!(response.summary.copied_count, 1);
+        assert_eq!(response.summary.collision_count, 0);
+        assert!(response.logs.iter().any(|log| log.contains("已存在相同 RAW")));
+    }
+
     fn write_file(path: &Path, bytes: &[u8]) {
         let mut file = fs::File::create(path).unwrap();
         file.write_all(bytes).unwrap();
+    }
+
+    fn write_raw_file(path: &Path) {
+        write_sized_file(path, MIN_RAW_FILE_SIZE_BYTES + 1);
+    }
+
+    fn write_sized_file(path: &Path, size: u64) {
+        let file = fs::File::create(path).unwrap();
+        file.set_len(size).unwrap();
     }
 }

@@ -6,6 +6,7 @@ export interface JpegInput {
   baseName: string;
   size: number;
   modifiedTime: number | null;
+  manual?: boolean;
 }
 
 export interface RawCandidate {
