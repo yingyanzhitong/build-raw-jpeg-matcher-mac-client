@@ -1,0 +1,36 @@
+.github/workflows/build-installers.yml
+  s_13b7d46f4e9b3b::t_3fa558fb6a8b28 1-67
+package-lock.json
+  s_73abee4b7536f5::t_43d0cd5eb89e5d 3,9
+package.json
+  s_73abee4b7536f5::t_e58ea91ababbb2 3
+src-tauri/Cargo.lock
+  s_73abee4b7536f5::t_7e77a6f4fe593a 1475-1480,2606,3322
+src/App.tsx
+  s_13b7d46f4e9b3b::t_60bf7644a4af12 1,6,8,15,20,44,54-64,80-86,89,92-94,99-101,119,151-156,166-170,174,178,222-223,231,239-248,256,259,261,269,271,294,299-341,364,381,385,400,436-440,443-462,479-492,538,542,551,555,590,611-620,623,645-652,731,737,782,785-818,820-853,858-922,930,977,989-1010,1030,1063,1066,1080-1081,1083,1087-1091,1093,1121,1123-1125,1127,1130-1132,1134,1136-1147,1149-1158,1160-1174,1176-1186,1189,1192-1193,1195-1197,1203,1206-1247,1249,1295-1296,1298-1299,1302-1306,1308,1311-1314,1392-1427
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "d214519e1855c42c74ce3329b94898cf50b6f1d0",
+  "prompts": {},
+  "logical_commit_id": "d214519e1855c42c74ce3329b94898cf50b6f1d0",
+  "sessions": {
+    "s_13b7d46f4e9b3b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f0a3e-8146-73d0-a44e-6d93b0aa1252",
+        "model": "gpt-5.5"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    },
+    "s_73abee4b7536f5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f3b80-8630-7783-a188-2e374b9b209e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
