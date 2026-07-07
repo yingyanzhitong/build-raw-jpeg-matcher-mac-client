@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.7 - 2026-07-07
+
+- Added automatic GitHub Release publishing for successful macOS and Windows installer builds.
+
 ## 0.1.6 - 2026-07-07
 
 - Added root-level npm lock entries for `@emnapi/core` and `@emnapi/runtime` so both npm 10 and npm 11 can run `npm ci` in GitHub Actions.
