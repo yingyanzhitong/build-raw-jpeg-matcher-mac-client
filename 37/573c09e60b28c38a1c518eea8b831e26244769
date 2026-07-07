@@ -1,0 +1,22 @@
+package-lock.json
+  s_73abee4b7536f5::t_10bcd784cb6eef 3,9
+package.json
+  s_73abee4b7536f5::t_8177ba13e5669f 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "37573c09e60b28c38a1c518eea8b831e26244769",
+  "prompts": {},
+  "logical_commit_id": "37573c09e60b28c38a1c518eea8b831e26244769",
+  "sessions": {
+    "s_73abee4b7536f5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f3b80-8630-7783-a188-2e374b9b209e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
