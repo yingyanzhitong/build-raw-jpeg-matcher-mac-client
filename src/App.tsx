@@ -482,7 +482,7 @@ function AppHeader({
         </span>
         <div className="min-w-0">
           <div className="flex min-w-0 items-center gap-2">
-            <h1 className="truncate text-[18px] font-semibold leading-none">RAW/JPEG Matcher</h1>
+            <h1 className="truncate text-[18px] font-semibold leading-none">照片配对助手</h1>
             <Badge variant="accent" className="shrink-0">
               Mac Desk
             </Badge>

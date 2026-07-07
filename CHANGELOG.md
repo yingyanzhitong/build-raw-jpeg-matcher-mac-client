@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.8 - 2026-07-07
+
+- Renamed the app, window, and interface header to the Chinese name "照片配对助手".
+
 ## 0.1.7 - 2026-07-07
 
 - Added automatic GitHub Release publishing for successful macOS and Windows installer builds.
