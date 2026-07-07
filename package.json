@@ -1,11 +1,13 @@
 {
   "name": "build-raw-jpeg-matcher-mac-client",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:mac": "npm run tauri -- build && ./scripts/finalize-macos-dmg.sh",
+    "finalize:dmg": "./scripts/finalize-macos-dmg.sh",
     "preview": "vite preview",
     "tauri": "tauri"
   },

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.12 - 2026-07-07
+
+- Added a repeatable macOS packaging command that leaves only the final DMG in the bundle output directory.
+- Applied the app icon to the generated DMG file so Finder displays the installer with the product icon.
+
 ## 0.1.11 - 2026-07-07
 
 - Switched GitHub Release installer asset names to an ASCII app prefix so GitHub keeps a readable latest installer name.
