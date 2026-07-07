@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.11 - 2026-07-07
+
+- Switched GitHub Release installer asset names to an ASCII app prefix so GitHub keeps a readable latest installer name.
+
 ## 0.1.10 - 2026-07-07
 
 - Renamed GitHub Release installer assets before upload so the latest macOS and Windows installers display with the app name and platform.
