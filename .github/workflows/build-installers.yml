@@ -102,12 +102,35 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.version.outputs.tag }}
         run: |
+          VERSION="${TAG#v}"
+          APP_NAME="照片配对助手"
+
           if ! gh release view "$TAG" >/dev/null 2>&1; then
             gh release create "$TAG" \
               --target "$GITHUB_SHA" \
               --title "$TAG" \
-              --notes "Automated installer build for RAW JPEG Matcher."
+              --notes "Automated installer build for 照片配对助手."
           fi
 
-          mapfile -d '' files < <(find release-assets -type f -print0)
-          gh release upload "$TAG" "${files[@]}" --clobber
+          rm -rf normalized-release-assets
+          mkdir -p normalized-release-assets
+
+          mapfile -d '' files < <(find release-assets -type f \( -name '*.dmg' -o -name '*.exe' \) -print0)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No installer files found under release-assets" >&2
+            exit 1
+          fi
+
+          for file in "${files[@]}"; do
+            case "$file" in
+              *.dmg)
+                cp "$file" "normalized-release-assets/${APP_NAME}_${VERSION}_macOS_aarch64.dmg"
+                ;;
+              *.exe)
+                cp "$file" "normalized-release-assets/${APP_NAME}_${VERSION}_Windows_x64-setup.exe"
+                ;;
+            esac
+          done
+
+          mapfile -d '' upload_files < <(find normalized-release-assets -type f -print0)
+          gh release upload "$TAG" "${upload_files[@]}" --clobber

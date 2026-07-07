@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.10 - 2026-07-07
+
+- Renamed GitHub Release installer assets before upload so the latest macOS and Windows installers display with the app name and platform.
+
 ## 0.1.9 - 2026-07-07
 
 - Cleaned cached bundle output before CI packaging so GitHub Releases only include installers for the current version.
