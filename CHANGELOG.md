@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.6 - 2026-07-07
+
+- Added root-level npm lock entries for `@emnapi/core` and `@emnapi/runtime` so both npm 10 and npm 11 can run `npm ci` in GitHub Actions.
+
 ## 0.1.5 - 2026-07-07
 
 - Updated GitHub Actions to build with Node.js 24 and npm 11 to avoid npm 10 bundled optional dependency lockfile validation failures.

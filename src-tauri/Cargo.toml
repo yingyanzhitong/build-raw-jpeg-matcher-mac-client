@@ -1,6 +1,6 @@
 [package]
 name = "raw-jpeg-matcher"
-version = "0.1.5"
+version = "0.1.6"
 description = "A macOS utility for matching selected JPEG files to RAW originals."
 authors = ["bigo"]
 edition = "2021"
