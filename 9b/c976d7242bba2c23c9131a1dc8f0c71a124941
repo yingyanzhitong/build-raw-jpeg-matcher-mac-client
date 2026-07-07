@@ -1,0 +1,24 @@
+package-lock.json
+  s_73abee4b7536f5::t_6f16b2801e76e6 3,9
+package.json
+  s_73abee4b7536f5::t_53cbe5297304e6 3
+src-tauri/Cargo.lock
+  s_73abee4b7536f5::t_7a4f054dc7095a 2606
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "9bc976d7242bba2c23c9131a1dc8f0c71a124941",
+  "prompts": {},
+  "logical_commit_id": "9bc976d7242bba2c23c9131a1dc8f0c71a124941",
+  "sessions": {
+    "s_73abee4b7536f5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f3b80-8630-7783-a188-2e374b9b209e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
