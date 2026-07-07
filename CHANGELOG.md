@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.4 - 2026-07-07
+
+- Added missing bundled dependency lock entries required by GitHub Actions `npm ci`.
+
 ## 0.1.3 - 2026-07-07
 
 - Synchronized `package-lock.json` so GitHub Actions can install dependencies with `npm ci`.
