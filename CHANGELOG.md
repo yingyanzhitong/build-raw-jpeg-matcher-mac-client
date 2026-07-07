@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.3 - 2026-07-07
+
+- Synchronized `package-lock.json` so GitHub Actions can install dependencies with `npm ci`.
+
 ## 0.1.2 - 2026-07-07
 
 - Reworked the RAW/JPEG matcher interface with shadcn/ui, Radix UI, Tailwind CSS, and lucide icons.
