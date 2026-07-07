@@ -57,6 +57,10 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Clean previous bundles
+        shell: bash
+        run: rm -rf src-tauri/target/release/bundle
+
       - name: Build Tauri bundle
         run: npm run tauri -- build --bundles ${{ matrix.bundles }}
 

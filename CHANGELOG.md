@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.9 - 2026-07-07
+
+- Cleaned cached bundle output before CI packaging so GitHub Releases only include installers for the current version.
+
 ## 0.1.8 - 2026-07-07
 
 - Renamed the app, window, and interface header to the Chinese name "照片配对助手".
