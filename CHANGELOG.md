@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.5 - 2026-07-07
+
+- Updated GitHub Actions to build with Node.js 24 and npm 11 to avoid npm 10 bundled optional dependency lockfile validation failures.
+
 ## 0.1.4 - 2026-07-07
 
 - Added missing bundled dependency lock entries required by GitHub Actions `npm ci`.
