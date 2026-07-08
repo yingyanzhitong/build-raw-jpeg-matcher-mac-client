@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.20 - 2026-07-08
+
+- Added retry handling for transient Gitee API connection timeouts during release synchronization.
+
 ## 0.1.19 - 2026-07-08
 
 - Replaced Gitee latest-manifest writes with git pushes and switched release asset uploads to timed curl multipart uploads.

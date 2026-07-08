@@ -45,7 +45,7 @@ async function ensureRepositoryReady() {
 }
 
 async function branchExists() {
-  const response = await fetch(
+  const response = await giteeFetch(
     `${apiBase}/repos/${config.owner}/${config.repo}/branches/${encodeURIComponent(
       config.branch,
     )}?access_token=${encodeURIComponent(config.token)}`,
@@ -209,7 +209,7 @@ async function ensureRelease() {
 }
 
 async function getReleaseByTag() {
-  const response = await fetch(
+  const response = await giteeFetch(
     `${apiBase}/repos/${config.owner}/${config.repo}/releases/tags/${encodeURIComponent(
       config.tag,
     )}?access_token=${encodeURIComponent(config.token)}`,
@@ -249,7 +249,7 @@ async function listAssets(releaseId) {
 }
 
 async function deleteAsset(releaseId, assetId) {
-  const response = await fetch(
+  const response = await giteeFetch(
     `${apiBase}/repos/${config.owner}/${config.repo}/releases/${releaseId}/attach_files/${assetId}?access_token=${encodeURIComponent(
       config.token,
     )}`,
@@ -304,7 +304,7 @@ async function runCurl(args) {
 }
 
 async function giteeJson(pathname, init = {}) {
-  const response = await fetch(`${apiBase}${pathname}`, init);
+  const response = await giteeFetch(`${apiBase}${pathname}`, init);
   if (!response.ok) {
     throw new Error(`Gitee API request failed: ${await safeText(response)}`);
   }
@@ -312,6 +312,34 @@ async function giteeJson(pathname, init = {}) {
     return null;
   }
   return response.json();
+}
+
+async function giteeFetch(url, init = {}) {
+  const maxAttempts = 4;
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await fetch(url, init);
+    } catch (error) {
+      lastError = sanitizeError(error);
+      if (attempt === maxAttempts) {
+        break;
+      }
+      console.log(
+        `Gitee request failed (${attempt}/${maxAttempts}), retrying: ${lastError.message}`,
+      );
+      await sleep(attempt * 3000);
+    }
+  }
+
+  throw lastError;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 async function safeText(response) {
