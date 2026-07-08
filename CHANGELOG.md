@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.17 - 2026-07-08
+
+- Made Gitee release synchronization best-effort so GitHub installer publishing is not blocked when the mirror repository is unavailable.
+
 ## 0.1.16 - 2026-07-08
 
 - Fixed release publishing by building the macOS app updater bundle together with the DMG artifact.

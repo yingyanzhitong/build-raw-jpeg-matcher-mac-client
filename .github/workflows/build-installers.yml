@@ -131,6 +131,7 @@ jobs:
           gh release upload "$TAG" "${upload_files[@]}" --clobber
 
       - name: Sync release assets to Gitee
+        continue-on-error: true
         env:
           GITEE_ACCESS_TOKEN: ${{ secrets.GITEE_ACCESS_TOKEN }}
           GITEE_OWNER: masongzhi1
