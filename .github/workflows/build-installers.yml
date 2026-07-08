@@ -21,7 +21,7 @@ jobs:
         include:
           - name: macOS
             os: macos-latest
-            bundles: dmg
+            bundles: app,dmg
             artifact: macos-installer
             artifact_path: |
               src-tauri/target/release/bundle/dmg/*.dmg

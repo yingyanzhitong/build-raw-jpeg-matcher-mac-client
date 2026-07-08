@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.16 - 2026-07-08
+
+- Fixed release publishing by building the macOS app updater bundle together with the DMG artifact.
+
 ## 0.1.15 - 2026-07-08
 
 - Fixed GitHub Actions `npm ci` failures by restoring lockfile entries for npm 11 optional `@emnapi` dependencies.
