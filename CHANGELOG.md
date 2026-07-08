@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.14 - 2026-07-08
+
+- Split the RAW/JPEG matcher and watermark workspaces into separate frontend and Tauri backend modules.
+- Hid the incomplete watermark tab from the main navigation while keeping the module code isolated for later completion.
+- Added release asset preparation and Gitee synchronization steps for automated installer publishing.
+
 ## 0.1.13 - 2026-07-08
 
 - Refined the desktop UI with a more native macOS visual system, updated reports, and improved watermark workspace controls.
