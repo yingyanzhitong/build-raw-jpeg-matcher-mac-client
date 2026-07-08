@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "照片配对助手",
-  "version": "0.1.20",
+  "version": "0.1.21",
   "identifier": "com.masongzhi.rawjpegmatcher",
   "build": {
     "beforeDevCommand": "npm run dev",

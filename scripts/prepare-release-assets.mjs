@@ -139,7 +139,7 @@ async function readChangelogNotes(targetVersion) {
 }
 
 function releaseUrl(owner, repo, releaseTag, fileName) {
-  return `https://gitee.com/${owner}/${repo}/releases/download/${releaseTag}/${encodeURIComponent(fileName)}`;
+  return `https://github.com/${owner}/${repo}/releases/download/${releaseTag}/${encodeURIComponent(fileName)}`;
 }
 
 function parseArgs(args) {
@@ -147,7 +147,7 @@ function parseArgs(args) {
     input: "release-assets",
     output: "normalized-release-assets",
     owner: "masongzhi1",
-    repo: "raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client",
+    repo: "build-raw-jpeg-matcher-mac-client",
     appName: "photo-pairing-assistant",
   };
 

@@ -1,19 +1,19 @@
 {
-  "version": "0.1.20",
+  "version": "0.1.21",
   "notes": "示例：优化更新按钮与自动更新流程。",
   "pub_date": "2026-07-08T00:00:00Z",
   "platforms": {
     "darwin-aarch64": {
       "signature": "PASTE_CONTENTS_OF_DARWIN_AARCH64_SIG_HERE",
-      "url": "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/releases/download/v0.1.20/photo-pairing-assistant_0.1.20_macOS_aarch64.app.tar.gz"
+      "url": "https://github.com/masongzhi1/build-raw-jpeg-matcher-mac-client/releases/download/v0.1.21/photo-pairing-assistant_0.1.21_macOS_aarch64.app.tar.gz"
     },
     "darwin-x86_64": {
       "signature": "PASTE_CONTENTS_OF_DARWIN_X86_64_SIG_HERE",
-      "url": "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/releases/download/v0.1.20/photo-pairing-assistant_0.1.20_macOS_x64.app.tar.gz"
+      "url": "https://github.com/masongzhi1/build-raw-jpeg-matcher-mac-client/releases/download/v0.1.21/photo-pairing-assistant_0.1.21_macOS_x64.app.tar.gz"
     },
     "windows-x86_64": {
       "signature": "PASTE_CONTENTS_OF_WINDOWS_X86_64_SIG_HERE",
-      "url": "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/releases/download/v0.1.20/photo-pairing-assistant_0.1.20_Windows_x64-setup.exe"
+      "url": "https://github.com/masongzhi1/build-raw-jpeg-matcher-mac-client/releases/download/v0.1.21/photo-pairing-assistant_0.1.21_Windows_x64-setup.exe"
     }
   }
 }

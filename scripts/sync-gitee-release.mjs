@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -15,18 +15,13 @@ const config = {
   branch: process.env.GITEE_BRANCH || "main",
   gitUsername: process.env.GITEE_GIT_USERNAME || process.env.GITEE_OWNER || "masongzhi1",
   tag: requiredEnv("RELEASE_TAG"),
-  releaseName: process.env.RELEASE_NAME || requiredEnv("RELEASE_TAG"),
-  releaseBody: process.env.RELEASE_BODY || "Automated installer build for 照片配对助手.",
-  assetDir: process.env.RELEASE_ASSET_DIR || "normalized-release-assets",
   latestJsonPath: process.env.LATEST_JSON_PATH || "normalized-release-assets/latest.json",
 };
 
 const apiBase = "https://gitee.com/api/v5";
 await ensureRepositoryReady();
-const releaseId = await ensureRelease();
-await uploadReleaseAssets(releaseId);
 await upsertLatestJson();
-console.log(`Synced ${config.tag} to Gitee ${config.owner}/${config.repo}`);
+console.log(`Synced updater manifest for ${config.tag} to Gitee ${config.owner}/${config.repo}`);
 
 async function ensureRepositoryReady() {
   await giteeJson(
@@ -185,122 +180,8 @@ function authenticatedRemoteUrl(username) {
   }/${config.repo}.git`;
 }
 
-async function ensureRelease() {
-  const existing = await getReleaseByTag();
-  if (existing) {
-    return existing.id;
-  }
-
-  const body = new URLSearchParams({
-    access_token: config.token,
-    tag_name: config.tag,
-    name: config.releaseName,
-    body: config.releaseBody,
-    target_commitish: config.branch,
-  });
-  const created = await giteeJson(`/repos/${config.owner}/${config.repo}/releases`, {
-    method: "POST",
-    body,
-  });
-  if (!created.id) {
-    throw new Error("Gitee release response did not include id");
-  }
-  return created.id;
-}
-
-async function getReleaseByTag() {
-  const response = await giteeFetch(
-    `${apiBase}/repos/${config.owner}/${config.repo}/releases/tags/${encodeURIComponent(
-      config.tag,
-    )}?access_token=${encodeURIComponent(config.token)}`,
-  );
-  if (response.status === 404) {
-    return null;
-  }
-  if (!response.ok) {
-    throw new Error(`Failed to query Gitee release ${config.tag}: ${await safeText(response)}`);
-  }
-  return response.json();
-}
-
-async function uploadReleaseAssets(releaseId) {
-  const files = (await readdir(config.assetDir))
-    .map((fileName) => path.join(config.assetDir, fileName))
-    .sort();
-  const existingAssets = await listAssets(releaseId);
-
-  for (const file of files) {
-    const fileName = path.basename(file);
-    const existing = existingAssets.find((asset) => asset.name === fileName);
-    if (existing) {
-      await deleteAsset(releaseId, existing.id);
-    }
-    await uploadAsset(releaseId, file);
-  }
-}
-
-async function listAssets(releaseId) {
-  const assets = await giteeJson(
-    `/repos/${config.owner}/${config.repo}/releases/${releaseId}/attach_files?access_token=${encodeURIComponent(
-      config.token,
-    )}&per_page=100`,
-  );
-  return Array.isArray(assets) ? assets : [];
-}
-
-async function deleteAsset(releaseId, assetId) {
-  const response = await giteeFetch(
-    `${apiBase}/repos/${config.owner}/${config.repo}/releases/${releaseId}/attach_files/${assetId}?access_token=${encodeURIComponent(
-      config.token,
-    )}`,
-    { method: "DELETE" },
-  );
-  if (response.status !== 204) {
-    throw new Error(`Failed to delete Gitee release asset ${assetId}: ${await safeText(response)}`);
-  }
-}
-
-async function uploadAsset(releaseId, filePath) {
-  const fileName = path.basename(filePath);
-  const url = `${apiBase}/repos/${config.owner}/${config.repo}/releases/${releaseId}/attach_files?access_token=${encodeURIComponent(
-    config.token,
-  )}`;
-  console.log(`Uploading ${fileName} to Gitee release ${config.tag}.`);
-  await runCurl([
-    "--fail-with-body",
-    "--silent",
-    "--show-error",
-    "--retry",
-    "2",
-    "--retry-delay",
-    "5",
-    "--connect-timeout",
-    "30",
-    "--max-time",
-    "600",
-    "--request",
-    "POST",
-    "--header",
-    "Expect:",
-    "--form",
-    `file=@${filePath};filename=${fileName};type=application/octet-stream`,
-    url,
-  ]);
-  console.log(`Uploaded ${fileName} to Gitee release ${config.tag}.`);
-}
-
 async function upsertLatestJson() {
   await updateLatestJsonWithGit();
-}
-
-async function runCurl(args) {
-  try {
-    await execFileAsync("curl", args, {
-      maxBuffer: 1024 * 1024 * 10,
-    });
-  } catch (error) {
-    throw sanitizeError(error);
-  }
 }
 
 async function giteeJson(pathname, init = {}) {

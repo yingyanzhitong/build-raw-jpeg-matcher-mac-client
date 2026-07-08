@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.21 - 2026-07-08
+
+- Changed Gitee synchronization to mirror only the updater manifest while serving installer downloads from GitHub Releases.
+
 ## 0.1.20 - 2026-07-08
 
 - Added retry handling for transient Gitee API connection timeouts during release synchronization.
