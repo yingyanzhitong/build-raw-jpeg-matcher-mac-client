@@ -37,12 +37,7 @@ async function ensureRepositoryReady() {
   }
 
   console.log(`Gitee branch ${config.branch} does not exist; initializing repository content.`);
-  try {
-    await createLatestJsonWithApi();
-  } catch (error) {
-    console.log(`Gitee contents API init failed: ${sanitizeError(error).message}`);
-    await initializeRepositoryWithGit();
-  }
+  await initializeRepositoryWithGit();
 
   if (!(await branchExists())) {
     throw new Error(`Gitee branch ${config.branch} still does not exist after initialization`);
@@ -62,22 +57,6 @@ async function branchExists() {
     throw new Error(`Failed to query Gitee branch ${config.branch}: ${await safeText(response)}`);
   }
   return true;
-}
-
-async function createLatestJsonWithApi() {
-  const latestPath = "release/latest.json";
-  const encodedPath = latestPath.split("/").map(encodeURIComponent).join("/");
-  const body = new URLSearchParams({
-    access_token: config.token,
-    branch: config.branch,
-    content: (await readFile(config.latestJsonPath)).toString("base64"),
-    message: `chore: initialize updater manifest for ${config.tag}`,
-  });
-
-  await giteeJson(`/repos/${config.owner}/${config.repo}/contents/${encodedPath}`, {
-    method: "POST",
-    body,
-  });
 }
 
 async function initializeRepositoryWithGit() {
@@ -116,14 +95,82 @@ async function initializeRepositoryWithGit() {
       );
       await runGit(["push", "origin", `HEAD:${config.branch}`], workdir);
     }
+    console.log(`Initialized Gitee branch ${config.branch}.`);
   } finally {
     await rm(workdir, { recursive: true, force: true });
   }
 }
 
-async function runGit(args, cwd) {
+async function updateLatestJsonWithGit() {
+  let workdir = await mkdtemp(path.join(tmpdir(), "gitee-release-"));
   try {
-    await execFileAsync("git", args, {
+    try {
+      await cloneRepository(workdir, config.gitUsername);
+    } catch (error) {
+      await rm(workdir, { recursive: true, force: true });
+      workdir = await mkdtemp(path.join(tmpdir(), "gitee-release-"));
+      await cloneRepository(workdir, "oauth2");
+    }
+
+    await mkdir(path.join(workdir, "release"), { recursive: true });
+    await writeFile(
+      path.join(workdir, "release", "latest.json"),
+      await readFile(config.latestJsonPath, "utf8"),
+    );
+
+    const status = await gitStdout(["status", "--porcelain", "--", "release/latest.json"], workdir);
+    if (!status.trim()) {
+      console.log("Gitee latest.json is already up to date.");
+      return;
+    }
+
+    await runGit(["add", "release/latest.json"], workdir);
+    await runGit(
+      [
+        "-c",
+        "user.name=raw-jpeg-release-bot",
+        "-c",
+        "user.email=actions@github.com",
+        "commit",
+        "-m",
+        `chore: update latest updater manifest for ${config.tag}`,
+      ],
+      workdir,
+    );
+    await runGit(["push", "origin", `HEAD:${config.branch}`], workdir);
+    console.log(`Updated Gitee release/latest.json for ${config.tag}.`);
+  } finally {
+    await rm(workdir, { recursive: true, force: true });
+  }
+}
+
+async function cloneRepository(workdir, username) {
+  await runGit(
+    [
+      "clone",
+      "--depth",
+      "1",
+      "--branch",
+      config.branch,
+      authenticatedRemoteUrl(username),
+      workdir,
+    ],
+    process.cwd(),
+  );
+}
+
+async function runGit(args, cwd) {
+  await gitExec(args, cwd);
+}
+
+async function gitStdout(args, cwd) {
+  const result = await gitExec(args, cwd);
+  return result.stdout || "";
+}
+
+async function gitExec(args, cwd) {
+  try {
+    return await execFileAsync("git", args, {
       cwd,
       maxBuffer: 1024 * 1024 * 10,
     });
@@ -215,61 +262,45 @@ async function deleteAsset(releaseId, assetId) {
 
 async function uploadAsset(releaseId, filePath) {
   const fileName = path.basename(filePath);
-  const form = new FormData();
-  form.append("access_token", config.token);
-  form.append(
-    "file",
-    new Blob([await readFile(filePath)], { type: "application/octet-stream" }),
-    fileName,
-  );
-
-  const response = await fetch(
-    `${apiBase}/repos/${config.owner}/${config.repo}/releases/${releaseId}/attach_files`,
-    {
-      method: "POST",
-      body: form,
-    },
-  );
-  if (!response.ok) {
-    throw new Error(`Failed to upload ${fileName} to Gitee: ${await safeText(response)}`);
-  }
+  const url = `${apiBase}/repos/${config.owner}/${config.repo}/releases/${releaseId}/attach_files?access_token=${encodeURIComponent(
+    config.token,
+  )}`;
+  console.log(`Uploading ${fileName} to Gitee release ${config.tag}.`);
+  await runCurl([
+    "--fail-with-body",
+    "--silent",
+    "--show-error",
+    "--retry",
+    "2",
+    "--retry-delay",
+    "5",
+    "--connect-timeout",
+    "30",
+    "--max-time",
+    "600",
+    "--request",
+    "POST",
+    "--header",
+    "Expect:",
+    "--form",
+    `file=@${filePath};filename=${fileName};type=application/octet-stream`,
+    url,
+  ]);
+  console.log(`Uploaded ${fileName} to Gitee release ${config.tag}.`);
 }
 
 async function upsertLatestJson() {
-  const latestPath = "release/latest.json";
-  const encodedPath = latestPath.split("/").map(encodeURIComponent).join("/");
-  const content = (await readFile(config.latestJsonPath)).toString("base64");
-  const existing = await getFileInfo(encodedPath);
-  const method = existing ? "PUT" : "POST";
-  const body = new URLSearchParams({
-    access_token: config.token,
-    branch: config.branch,
-    content,
-    message: `chore: update latest updater manifest for ${config.tag}`,
-  });
-  if (existing?.sha) {
-    body.set("sha", existing.sha);
-  }
-
-  await giteeJson(`/repos/${config.owner}/${config.repo}/contents/${encodedPath}`, {
-    method,
-    body,
-  });
+  await updateLatestJsonWithGit();
 }
 
-async function getFileInfo(encodedPath) {
-  const response = await fetch(
-    `${apiBase}/repos/${config.owner}/${config.repo}/contents/${encodedPath}?access_token=${encodeURIComponent(
-      config.token,
-    )}&ref=${encodeURIComponent(config.branch)}`,
-  );
-  if (response.status === 404) {
-    return null;
+async function runCurl(args) {
+  try {
+    await execFileAsync("curl", args, {
+      maxBuffer: 1024 * 1024 * 10,
+    });
+  } catch (error) {
+    throw sanitizeError(error);
   }
-  if (!response.ok) {
-    throw new Error(`Failed to read Gitee latest.json metadata: ${await safeText(response)}`);
-  }
-  return response.json();
 }
 
 async function giteeJson(pathname, init = {}) {

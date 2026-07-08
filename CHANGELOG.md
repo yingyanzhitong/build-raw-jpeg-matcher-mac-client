@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.19 - 2026-07-08
+
+- Replaced Gitee latest-manifest writes with git pushes and switched release asset uploads to timed curl multipart uploads.
+
 ## 0.1.18 - 2026-07-08
 
 - Pointed updater publishing to the actual Gitee repository path and restored Gitee sync as a required release step.
