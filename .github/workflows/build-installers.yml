@@ -84,6 +84,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    timeout-minutes: 90
 
     steps:
       - name: Checkout
@@ -112,7 +113,7 @@ jobs:
             --input release-assets \
             --output normalized-release-assets \
             --owner masongzhi1 \
-            --repo build-raw-jpeg-matcher-mac-client \
+            --repo raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client \
             --app-name photo-pairing-assistant
 
       - name: Publish release assets
@@ -130,12 +131,15 @@ jobs:
           mapfile -d '' upload_files < <(find normalized-release-assets -type f -print0)
           gh release upload "$TAG" "${upload_files[@]}" --clobber
 
-      - name: Sync updater manifest to Gitee
+      - name: Sync release assets to Gitee
         env:
           GITEE_ACCESS_TOKEN: ${{ secrets.GITEE_ACCESS_TOKEN }}
           GITEE_OWNER: masongzhi1
           GITEE_REPO: raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client
           GITEE_BRANCH: main
           RELEASE_TAG: ${{ steps.version.outputs.tag }}
+          RELEASE_NAME: ${{ steps.version.outputs.tag }}
+          RELEASE_BODY: Automated installer build for 照片配对助手.
+          RELEASE_ASSET_DIR: normalized-release-assets
           LATEST_JSON_PATH: normalized-release-assets/latest.json
         run: node scripts/sync-gitee-release.mjs

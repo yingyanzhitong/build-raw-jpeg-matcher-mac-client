@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.22 - 2026-07-08
+
+- Restored full Gitee release asset synchronization before publishing the updater manifest.
+
 ## 0.1.21 - 2026-07-08
 
 - Changed Gitee synchronization to mirror only the updater manifest while serving installer downloads from GitHub Releases.
