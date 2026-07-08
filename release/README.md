@@ -66,7 +66,7 @@ GITEE_ACCESS_TOKEN
 
 ## 4. 手动发布到 Gitee
 
-1. 在 Gitee 创建 release，例如 `v0.1.14`。
+1. 在 Gitee 创建 release，例如 `v0.1.15`。
 2. 上传对应平台的 updater artifact 和 `.sig` 文件。
 3. 复制 `release/latest.example.json` 为 `release/latest.json`。
 4. 把 `version`、`pub_date`、`notes`、各平台 `url` 和 `signature` 替换为真实值。

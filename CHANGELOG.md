@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.15 - 2026-07-08
+
+- Fixed GitHub Actions `npm ci` failures by restoring lockfile entries for npm 11 optional `@emnapi` dependencies.
+
 ## 0.1.14 - 2026-07-08
 
 - Split the RAW/JPEG matcher and watermark workspaces into separate frontend and Tauri backend modules.
