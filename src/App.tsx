@@ -56,7 +56,7 @@ const updateCheckTimeoutMs = 30_000;
 const updateCheckIntervalMs = 60 * 60 * 1000;
 const updateSourceLabel = "Gitee Release";
 const updateManifestUrl =
-  "https://gitee.com/masongzhi1/raw-jpeg-matcher-mac-client/raw/main/release/latest.json";
+  "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/raw/main/release/latest.json";
 
 function App() {
   const [activeWorkspace, setActiveWorkspace] = useState<WorkspaceId>("raw-jpeg-matcher");

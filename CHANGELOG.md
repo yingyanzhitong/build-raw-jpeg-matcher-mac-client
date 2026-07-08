@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.18 - 2026-07-08
+
+- Pointed updater publishing to the actual Gitee repository path and restored Gitee sync as a required release step.
+
 ## 0.1.17 - 2026-07-08
 
 - Made Gitee release synchronization best-effort so GitHub installer publishing is not blocked when the mirror repository is unavailable.

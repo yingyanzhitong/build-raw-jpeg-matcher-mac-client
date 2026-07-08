@@ -4,10 +4,10 @@
 `src-tauri/tauri.conf.json`：
 
 ```text
-https://gitee.com/masongzhi1/raw-jpeg-matcher-mac-client/raw/main/release/latest.json
+https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/raw/main/release/latest.json
 ```
 
-如果实际 Gitee 仓库不是 `masongzhi1/raw-jpeg-matcher-mac-client`，发布前请同步修改
+如果实际 Gitee 仓库不是 `masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client`，发布前请同步修改
 `tauri.conf.json` 中的 updater endpoint。
 
 ## 1. 签名 key
@@ -66,7 +66,7 @@ GITEE_ACCESS_TOKEN
 
 ## 4. 手动发布到 Gitee
 
-1. 在 Gitee 创建 release，例如 `v0.1.17`。
+1. 在 Gitee 创建 release，例如 `v0.1.18`。
 2. 上传对应平台的 updater artifact 和 `.sig` 文件。
 3. 复制 `release/latest.example.json` 为 `release/latest.json`。
 4. 把 `version`、`pub_date`、`notes`、各平台 `url` 和 `signature` 替换为真实值。
@@ -77,7 +77,7 @@ GITEE_ACCESS_TOKEN
 ## 5. 验证
 
 ```bash
-curl -I "https://gitee.com/masongzhi1/raw-jpeg-matcher-mac-client/raw/main/release/latest.json"
+curl -I "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/raw/main/release/latest.json"
 ```
 
 安装旧版本客户端后点击顶部“检查更新”，确认能检测、下载、安装并重启到新版本。

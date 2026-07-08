@@ -147,7 +147,7 @@ function parseArgs(args) {
     input: "release-assets",
     output: "normalized-release-assets",
     owner: "masongzhi1",
-    repo: "raw-jpeg-matcher-mac-client",
+    repo: "raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client",
     appName: "photo-pairing-assistant",
   };
 

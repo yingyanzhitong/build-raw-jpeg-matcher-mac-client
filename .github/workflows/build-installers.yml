@@ -112,7 +112,7 @@ jobs:
             --input release-assets \
             --output normalized-release-assets \
             --owner masongzhi1 \
-            --repo raw-jpeg-matcher-mac-client \
+            --repo raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client \
             --app-name photo-pairing-assistant
 
       - name: Publish release assets
@@ -131,11 +131,10 @@ jobs:
           gh release upload "$TAG" "${upload_files[@]}" --clobber
 
       - name: Sync release assets to Gitee
-        continue-on-error: true
         env:
           GITEE_ACCESS_TOKEN: ${{ secrets.GITEE_ACCESS_TOKEN }}
           GITEE_OWNER: masongzhi1
-          GITEE_REPO: raw-jpeg-matcher-mac-client
+          GITEE_REPO: raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client
           GITEE_BRANCH: main
           RELEASE_TAG: ${{ steps.version.outputs.tag }}
           RELEASE_NAME: ${{ steps.version.outputs.tag }}

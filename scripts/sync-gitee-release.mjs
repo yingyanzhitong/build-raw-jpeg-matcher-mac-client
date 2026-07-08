@@ -1,13 +1,19 @@
 #!/usr/bin/env node
 
-import { readFile, readdir } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
 
 const config = {
   token: requiredEnv("GITEE_ACCESS_TOKEN"),
   owner: process.env.GITEE_OWNER || "masongzhi1",
-  repo: process.env.GITEE_REPO || "raw-jpeg-matcher-mac-client",
+  repo: process.env.GITEE_REPO || "raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client",
   branch: process.env.GITEE_BRANCH || "main",
+  gitUsername: process.env.GITEE_GIT_USERNAME || process.env.GITEE_OWNER || "masongzhi1",
   tag: requiredEnv("RELEASE_TAG"),
   releaseName: process.env.RELEASE_NAME || requiredEnv("RELEASE_TAG"),
   releaseBody: process.env.RELEASE_BODY || "Automated installer build for 照片配对助手.",
@@ -16,10 +22,121 @@ const config = {
 };
 
 const apiBase = "https://gitee.com/api/v5";
+await ensureRepositoryReady();
 const releaseId = await ensureRelease();
 await uploadReleaseAssets(releaseId);
 await upsertLatestJson();
 console.log(`Synced ${config.tag} to Gitee ${config.owner}/${config.repo}`);
+
+async function ensureRepositoryReady() {
+  await giteeJson(
+    `/repos/${config.owner}/${config.repo}?access_token=${encodeURIComponent(config.token)}`,
+  );
+  if (await branchExists()) {
+    return;
+  }
+
+  console.log(`Gitee branch ${config.branch} does not exist; initializing repository content.`);
+  try {
+    await createLatestJsonWithApi();
+  } catch (error) {
+    console.log(`Gitee contents API init failed: ${sanitizeError(error).message}`);
+    await initializeRepositoryWithGit();
+  }
+
+  if (!(await branchExists())) {
+    throw new Error(`Gitee branch ${config.branch} still does not exist after initialization`);
+  }
+}
+
+async function branchExists() {
+  const response = await fetch(
+    `${apiBase}/repos/${config.owner}/${config.repo}/branches/${encodeURIComponent(
+      config.branch,
+    )}?access_token=${encodeURIComponent(config.token)}`,
+  );
+  if (response.status === 404) {
+    return false;
+  }
+  if (!response.ok) {
+    throw new Error(`Failed to query Gitee branch ${config.branch}: ${await safeText(response)}`);
+  }
+  return true;
+}
+
+async function createLatestJsonWithApi() {
+  const latestPath = "release/latest.json";
+  const encodedPath = latestPath.split("/").map(encodeURIComponent).join("/");
+  const body = new URLSearchParams({
+    access_token: config.token,
+    branch: config.branch,
+    content: (await readFile(config.latestJsonPath)).toString("base64"),
+    message: `chore: initialize updater manifest for ${config.tag}`,
+  });
+
+  await giteeJson(`/repos/${config.owner}/${config.repo}/contents/${encodedPath}`, {
+    method: "POST",
+    body,
+  });
+}
+
+async function initializeRepositoryWithGit() {
+  const workdir = await mkdtemp(path.join(tmpdir(), "gitee-release-"));
+  try {
+    await runGit(["init", "--initial-branch", config.branch], workdir);
+    await mkdir(path.join(workdir, "release"), { recursive: true });
+    await writeFile(
+      path.join(workdir, "README.md"),
+      "# 照片配对助手发布镜像\n\n此仓库用于托管自动更新清单和安装包 release 资产。\n",
+    );
+    await writeFile(
+      path.join(workdir, "release", "latest.json"),
+      await readFile(config.latestJsonPath, "utf8"),
+    );
+    await runGit(["add", "README.md", "release/latest.json"], workdir);
+    await runGit(
+      [
+        "-c",
+        "user.name=raw-jpeg-release-bot",
+        "-c",
+        "user.email=actions@github.com",
+        "commit",
+        "-m",
+        `chore: initialize release mirror for ${config.tag}`,
+      ],
+      workdir,
+    );
+    await runGit(["remote", "add", "origin", authenticatedRemoteUrl(config.gitUsername)], workdir);
+    try {
+      await runGit(["push", "origin", `HEAD:${config.branch}`], workdir);
+    } catch (error) {
+      await runGit(
+        ["remote", "set-url", "origin", authenticatedRemoteUrl("oauth2")],
+        workdir,
+      );
+      await runGit(["push", "origin", `HEAD:${config.branch}`], workdir);
+    }
+  } finally {
+    await rm(workdir, { recursive: true, force: true });
+  }
+}
+
+async function runGit(args, cwd) {
+  try {
+    await execFileAsync("git", args, {
+      cwd,
+      maxBuffer: 1024 * 1024 * 10,
+    });
+  } catch (error) {
+    throw sanitizeError(error);
+  }
+}
+
+function authenticatedRemoteUrl(username) {
+  return `https://${encodeURIComponent(username)}:${encodeURIComponent(config.token)}@gitee.com/${
+    config.owner
+  }/${config.repo}.git`;
+}
 
 async function ensureRelease() {
   const existing = await getReleaseByTag();
@@ -177,4 +294,18 @@ function requiredEnv(name) {
     throw new Error(`${name} is required`);
   }
   return value;
+}
+
+function sanitizeError(error) {
+  const sanitized = new Error(sanitizeText(error.message || String(error)));
+  sanitized.stack = sanitizeText(error.stack || sanitized.stack || "");
+  sanitized.stdout = sanitizeText(error.stdout || "");
+  sanitized.stderr = sanitizeText(error.stderr || "");
+  return sanitized;
+}
+
+function sanitizeText(value) {
+  return String(value)
+    .replaceAll(config.token, "<redacted>")
+    .replaceAll(encodeURIComponent(config.token), "<redacted>");
 }
