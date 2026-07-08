@@ -10,7 +10,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "border-primary bg-primary text-primary-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.16)] hover:bg-primary/92",
+          "border-accent bg-accent text-accent-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.24),0_1px_2px_rgba(0,0,0,0.08)] hover:bg-accent/92",
         secondary:
           "border-border bg-secondary text-secondary-foreground hover:bg-secondary/80",
         destructive:
@@ -20,9 +20,9 @@ const buttonVariants = cva(
         ghost:
           "border-transparent bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
         accent:
-          "border-accent bg-accent text-accent-foreground hover:bg-accent/90",
+          "border-accent/25 bg-accent/10 text-accent hover:border-accent/45 hover:bg-accent/15",
         utility:
-          "border-border bg-card text-card-foreground shadow-[0_1px_0_rgba(18,24,31,0.05)] hover:border-ring hover:bg-muted",
+          "border-border bg-card/95 text-card-foreground shadow-[0_1px_0_rgba(255,255,255,0.72),0_1px_2px_rgba(0,0,0,0.04)] hover:border-ring/45 hover:bg-muted",
       },
       size: {
         default: "h-9 px-3.5",

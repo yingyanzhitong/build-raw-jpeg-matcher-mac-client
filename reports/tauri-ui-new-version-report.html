@@ -1,0 +1,860 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f4efe7" />
+    <title>照片配对助手 Tauri UI 新版复盘报告</title>
+    <style>
+      :root {
+        --bg: #f4efe7;
+        --panel: rgba(255, 252, 247, 0.94);
+        --panel-strong: #fffaf2;
+        --text: #2d241f;
+        --muted: #7d6e61;
+        --line: rgba(98, 74, 56, 0.14);
+        --accent: #c46a2d;
+        --accent-soft: rgba(196, 106, 45, 0.16);
+        --teal: #2f8f83;
+        --teal-soft: rgba(47, 143, 131, 0.16);
+        --blue: #0a84ff;
+        --blue-soft: rgba(10, 132, 255, 0.14);
+        --red: #b14d3d;
+        --red-soft: rgba(177, 77, 61, 0.14);
+        --purple: #7b3fe4;
+        --purple-soft: rgba(123, 63, 228, 0.12);
+        --shadow: 0 18px 40px rgba(71, 48, 32, 0.12);
+        --radius: 22px;
+        color-scheme: light;
+        font-family: "SF Pro SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        background: var(--bg);
+      }
+
+      body {
+        margin: 0;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 6% 0%, rgba(196, 106, 45, 0.18), transparent 34rem),
+          radial-gradient(circle at 96% 4%, rgba(47, 143, 131, 0.15), transparent 32rem),
+          linear-gradient(180deg, #f8f1e7 0%, #f2eadf 52%, #eee5da 100%);
+        font-size: 15px;
+        line-height: 1.65;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .page {
+        width: min(1400px, calc(100% - 48px));
+        margin: 0 auto;
+        padding: 28px 0 44px;
+      }
+
+      .hero {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        background:
+          radial-gradient(circle at 92% 16%, rgba(47, 143, 131, 0.14), transparent 18rem),
+          linear-gradient(135deg, rgba(255, 252, 247, 0.98), rgba(255, 246, 235, 0.88));
+        box-shadow: var(--shadow);
+        padding: 30px;
+      }
+
+      .hero::after {
+        position: absolute;
+        right: -80px;
+        bottom: -120px;
+        width: 360px;
+        height: 360px;
+        border-radius: 999px;
+        background: radial-gradient(circle, rgba(196, 106, 45, 0.16), transparent 68%);
+        content: "";
+      }
+
+      .hero-top {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 22px;
+      }
+
+      .eyebrow {
+        margin: 0 0 10px;
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin: 0;
+        letter-spacing: 0;
+        text-wrap: balance;
+      }
+
+      h1 {
+        max-width: 780px;
+        font-size: clamp(34px, 5vw, 64px);
+        line-height: 0.98;
+      }
+
+      h2 {
+        font-size: 24px;
+        line-height: 1.18;
+      }
+
+      h3 {
+        font-size: 17px;
+      }
+
+      .summary {
+        position: relative;
+        z-index: 1;
+        max-width: 780px;
+        margin: 18px 0 0;
+        color: var(--muted);
+        font-size: 16px;
+      }
+
+      .chips,
+      .rule-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .chips {
+        justify-content: flex-end;
+      }
+
+      .chip,
+      .rule-chip,
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.58);
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1;
+      }
+
+      .chip {
+        padding: 9px 12px;
+      }
+
+      .rule-chips {
+        position: relative;
+        z-index: 1;
+        margin-top: 22px;
+      }
+
+      .rule-chip {
+        border-style: dashed;
+        padding: 8px 10px;
+        max-width: 100%;
+        white-space: normal;
+        line-height: 1.35;
+      }
+
+      .grid {
+        display: grid;
+        gap: 18px;
+      }
+
+      .kpis {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        margin-top: 18px;
+      }
+
+      .card,
+      .section {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--panel);
+        box-shadow: var(--shadow);
+      }
+
+      .card {
+        position: relative;
+        overflow: hidden;
+        min-height: 148px;
+        padding: 18px;
+      }
+
+      .card::after {
+        position: absolute;
+        top: -44px;
+        right: -40px;
+        width: 130px;
+        height: 130px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        content: "";
+      }
+
+      .card.teal::after {
+        background: var(--teal-soft);
+      }
+
+      .card.blue::after {
+        background: var(--blue-soft);
+      }
+
+      .card.red::after {
+        background: var(--red-soft);
+      }
+
+      .metric-label {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .metric-value {
+        display: block;
+        margin-top: 10px;
+        font-size: 42px;
+        font-weight: 900;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .metric-note {
+        margin: 12px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .section {
+        margin-top: 18px;
+        padding: 22px;
+      }
+
+      .section-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 18px;
+        margin-bottom: 16px;
+      }
+
+      .section-head p {
+        max-width: 720px;
+        margin: 6px 0 0;
+        color: var(--muted);
+      }
+
+      .two-col {
+        grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+      }
+
+      .three-col {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .finding {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.52);
+        padding: 16px;
+      }
+
+      .finding p,
+      .risk p {
+        margin: 8px 0 0;
+        color: var(--muted);
+      }
+
+      .badge {
+        padding: 6px 9px;
+      }
+
+      .badge.good {
+        border-color: rgba(47, 143, 131, 0.22);
+        background: var(--teal-soft);
+        color: #236c64;
+      }
+
+      .badge.watch {
+        border-color: rgba(196, 106, 45, 0.24);
+        background: var(--accent-soft);
+        color: #8f4b20;
+      }
+
+      .badge.risk {
+        border-color: rgba(177, 77, 61, 0.24);
+        background: var(--red-soft);
+        color: #8e3c31;
+      }
+
+      .screenshot-grid {
+        grid-template-columns: 1.1fr 0.9fr;
+      }
+
+      figure {
+        margin: 0;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: #fff;
+      }
+
+      figure img {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+
+      figcaption {
+        border-top: 1px solid var(--line);
+        padding: 10px 12px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .bars {
+        display: grid;
+        gap: 14px;
+      }
+
+      .bar-row {
+        display: grid;
+        grid-template-columns: 150px minmax(0, 1fr) 48px;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .bar-label {
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .bar-track {
+        height: 13px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(98, 74, 56, 0.1);
+      }
+
+      .bar-fill {
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--accent), #9e4f20);
+      }
+
+      .bar-fill.teal {
+        background: linear-gradient(90deg, var(--teal), #1f6f65);
+      }
+
+      .bar-fill.blue {
+        background: linear-gradient(90deg, var(--blue), #0968c8);
+      }
+
+      .bar-fill.red {
+        background: linear-gradient(90deg, var(--red), #8e3c31);
+      }
+
+      .bar-value {
+        font-weight: 900;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .comparison {
+        display: grid;
+        gap: 12px;
+      }
+
+      .compare-row {
+        display: grid;
+        grid-template-columns: 108px 1fr 1fr 70px;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .compare-label,
+      .compare-score {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .compare-score {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .mini-track {
+        height: 10px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(98, 74, 56, 0.1);
+      }
+
+      .mini-fill {
+        height: 100%;
+        border-radius: inherit;
+        background: rgba(125, 110, 97, 0.38);
+      }
+
+      .mini-fill.after {
+        background: linear-gradient(90deg, var(--teal), #226e65);
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.48);
+      }
+
+      table {
+        width: 100%;
+        min-width: 920px;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 12px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: rgba(255, 250, 242, 0.96);
+        color: var(--muted);
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      tr:hover td {
+        background: rgba(196, 106, 45, 0.05);
+      }
+
+      td code,
+      .code {
+        border-radius: 6px;
+        background: rgba(98, 74, 56, 0.08);
+        padding: 2px 5px;
+        font-family: "SF Mono", Menlo, Consolas, monospace;
+        font-size: 12px;
+      }
+
+      .risk-list {
+        display: grid;
+        gap: 12px;
+      }
+
+      .risk {
+        border-left: 4px solid var(--accent);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.5);
+        padding: 14px;
+      }
+
+      .risk.high {
+        border-left-color: var(--red);
+      }
+
+      .risk.good {
+        border-left-color: var(--teal);
+      }
+
+      .note {
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .footer {
+        margin-top: 18px;
+        color: var(--muted);
+        font-size: 12px;
+        text-align: center;
+      }
+
+      @media (max-width: 980px) {
+        .page {
+          width: min(100% - 24px, 760px);
+          padding-top: 14px;
+        }
+
+        .hero,
+        .section {
+          padding: 18px;
+        }
+
+        .hero-top,
+        .section-head {
+          display: block;
+        }
+
+        .chips {
+          justify-content: flex-start;
+          margin-top: 18px;
+        }
+
+        .kpis,
+        .two-col,
+        .three-col,
+        .screenshot-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .bar-row {
+          grid-template-columns: 112px minmax(0, 1fr) 42px;
+        }
+
+        .compare-row {
+          grid-template-columns: 90px 1fr 1fr 54px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <div class="hero-top">
+          <div>
+            <p class="eyebrow">Tauri UI Review · New Version</p>
+            <h1>照片配对助手新版界面复盘报告</h1>
+          </div>
+          <div class="chips" aria-label="报告元信息">
+            <span class="chip">日期 2026-07-08</span>
+            <span class="chip">范围 WebView UI</span>
+            <span class="chip">构建 npm run build 通过</span>
+            <span class="chip">截图 3 个视口</span>
+          </div>
+        </div>
+        <p class="summary">
+          本报告基于新版代码、三张验收截图与 UI 技能规则复盘：新版已经从“网页后台感”转向“macOS 工具型应用”，配色、密度、焦点态与最小窗口布局显著改善；剩余差距主要集中在原生菜单、系统偏好适配、深色/高对比模式和大列表性能。
+        </p>
+        <div class="rule-chips" aria-label="评估依据">
+          <span class="rule-chip">frontend-design：Minimalist / Refined</span>
+          <span class="rule-chip">web-design-guidelines：a11y、focus、forms</span>
+          <span class="rule-chip">ui-ux-pro-max：UX checklist，拒绝 landing/claymorphism</span>
+          <span class="rule-chip">macos-app-design：Utility / Pro tool hybrid</span>
+        </div>
+      </section>
+
+      <section class="grid kpis" aria-label="关键结论">
+        <article class="card teal">
+          <span class="metric-label">总体成熟度</span>
+          <strong class="metric-value">8.1</strong>
+          <p class="metric-note">10 分制专家评分。视觉与布局已达可交付水平，平台融合仍有空间。</p>
+        </article>
+        <article class="card blue">
+          <span class="metric-label">关键阻断</span>
+          <strong class="metric-value">0</strong>
+          <p class="metric-note">原先 980px 附近输入面板高度塌陷的问题已修复，构建通过。</p>
+        </article>
+        <article class="card">
+          <span class="metric-label">主要收益</span>
+          <strong class="metric-value">+4</strong>
+          <p class="metric-note">配色、布局、交互、可访问性四个核心维度都有明确进展。</p>
+        </article>
+        <article class="card red">
+          <span class="metric-label">剩余 P1</span>
+          <strong class="metric-value">4</strong>
+          <p class="metric-note">菜单命令、主题适配、虚拟列表、快捷键可发现性建议进入下一轮。</p>
+        </article>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <div>
+            <h2>新版截图证据</h2>
+            <p>截图来自当前代码的浏览器验收。桌面三栏、水印工作区、Tauri 最小宽度附近单列模式均已重新验证。</p>
+          </div>
+          <span class="badge good">截图通过</span>
+        </div>
+        <div class="grid screenshot-grid">
+          <figure>
+            <img src="assets/optimized-ui-desktop-1180x820.png" alt="新版 RAW 与 JPG 配对工作区 1180x820 截图" width="1180" height="820" />
+            <figcaption>1180x820：三栏稳定，左输入 / 中结果 / 右统计日志的工具型信息架构清晰。</figcaption>
+          </figure>
+          <div class="grid">
+            <figure>
+              <img src="assets/optimized-ui-watermark-1180x820.png" alt="新版水印工作区 1180x820 截图" width="1180" height="820" />
+              <figcaption>水印工作区：配置面板和预览区分层明确，表单控件语义补齐。</figcaption>
+            </figure>
+            <figure>
+              <img src="assets/optimized-ui-minwidth-980x680-viewport.png" alt="新版最小宽度 980x680 截图" width="980" height="680" />
+              <figcaption>980x680：进入单列滚动模式，左侧输入面板不再塌陷。</figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <div>
+            <h2>维度评分</h2>
+            <p>评分是基于截图、源码与设计指南的专家审查，不代表真实用户数据或埋点指标。</p>
+          </div>
+          <span class="badge watch">主观审查分</span>
+        </div>
+        <div class="grid two-col">
+          <div class="bars" aria-label="新版设计评分">
+            <div class="bar-row">
+              <span class="bar-label">配色系统</span>
+              <span class="bar-track"><span class="bar-fill blue" style="width: 86%"></span></span>
+              <span class="bar-value">8.6</span>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label">布局稳定性</span>
+              <span class="bar-track"><span class="bar-fill teal" style="width: 88%"></span></span>
+              <span class="bar-value">8.8</span>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label">macOS 气质</span>
+              <span class="bar-track"><span class="bar-fill" style="width: 78%"></span></span>
+              <span class="bar-value">7.8</span>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label">交互清晰度</span>
+              <span class="bar-track"><span class="bar-fill teal" style="width: 79%"></span></span>
+              <span class="bar-value">7.9</span>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label">可访问性</span>
+              <span class="bar-track"><span class="bar-fill" style="width: 76%"></span></span>
+              <span class="bar-value">7.6</span>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label">性能准备度</span>
+              <span class="bar-track"><span class="bar-fill red" style="width: 68%"></span></span>
+              <span class="bar-value">6.8</span>
+            </div>
+          </div>
+          <div class="comparison" aria-label="前后对比趋势">
+            <div class="compare-row">
+              <span class="compare-label">配色</span>
+              <span class="mini-track"><span class="mini-fill" style="width: 45%"></span></span>
+              <span class="mini-track"><span class="mini-fill after" style="width: 86%"></span></span>
+              <span class="compare-score">4.5 → 8.6</span>
+            </div>
+            <div class="compare-row">
+              <span class="compare-label">布局</span>
+              <span class="mini-track"><span class="mini-fill" style="width: 40%"></span></span>
+              <span class="mini-track"><span class="mini-fill after" style="width: 88%"></span></span>
+              <span class="compare-score">4.0 → 8.8</span>
+            </div>
+            <div class="compare-row">
+              <span class="compare-label">交互</span>
+              <span class="mini-track"><span class="mini-fill" style="width: 54%"></span></span>
+              <span class="mini-track"><span class="mini-fill after" style="width: 79%"></span></span>
+              <span class="compare-score">5.4 → 7.9</span>
+            </div>
+            <div class="compare-row">
+              <span class="compare-label">A11y</span>
+              <span class="mini-track"><span class="mini-fill" style="width: 50%"></span></span>
+              <span class="mini-track"><span class="mini-fill after" style="width: 76%"></span></span>
+              <span class="compare-score">5.0 → 7.6</span>
+            </div>
+            <div class="compare-row">
+              <span class="compare-label">Mac 感</span>
+              <span class="mini-track"><span class="mini-fill" style="width: 42%"></span></span>
+              <span class="mini-track"><span class="mini-fill after" style="width: 78%"></span></span>
+              <span class="compare-score">4.2 → 7.8</span>
+            </div>
+            <p class="note">左侧为上一轮审查的相对弱项基线，右侧为新版审查结果；用于看趋势，不作为可量化业务指标。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <div>
+            <h2>关键发现</h2>
+            <p>新版已经完成第一轮最有效的视觉整理：把显眼但廉价的装饰降噪，换成更接近 macOS 的浅灰层次、蓝色主操作和紧凑工具布局。</p>
+          </div>
+        </div>
+        <div class="grid three-col">
+          <article class="finding">
+            <span class="badge good">已改善</span>
+            <h3>配色从“自定义绿灰”转向系统浅色语义</h3>
+            <p><span class="code">#f5f5f7</span>、<span class="code">#1d1d1f</span>、<span class="code">#0a84ff</span> 的组合更接近 macOS 默认观感，主操作也更明确。</p>
+          </article>
+          <article class="finding">
+            <span class="badge good">已改善</span>
+            <h3>工具型密度变合理</h3>
+            <p>顶部 64px、工作区 40px、底部 28px 的行高让界面从 landing/page 感回到长期操作工具。</p>
+          </article>
+          <article class="finding">
+            <span class="badge good">已改善</span>
+            <h3>最小宽度布局不再断裂</h3>
+            <p>1100px 以下切到单列滚动，980px 截图确认输入区、按钮、底部状态栏均可见。</p>
+          </article>
+          <article class="finding">
+            <span class="badge good">已改善</span>
+            <h3>冲突处理入口更明确</h3>
+            <p>表格增加“操作”列和“复核”按钮，避免整行点击造成的隐藏交互和键盘可达性问题。</p>
+          </article>
+          <article class="finding">
+            <span class="badge watch">待深化</span>
+            <h3>macOS 平台融合仍在 WebView 层</h3>
+            <p>当前更像高质量 Web 工具，下一步要补标准菜单、Settings、Help、命令启停状态与快捷键展示。</p>
+          </article>
+          <article class="finding">
+            <span class="badge watch">待深化</span>
+            <h3>大列表场景还缺性能策略</h3>
+            <p>结果表和图片表仍直接渲染全部数据，超过 50 行后建议虚拟列表或 content-visibility。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <div>
+            <h2>证据表</h2>
+            <p>下表列出本次新版审查的关键实现点、影响和剩余建议。</p>
+          </div>
+          <span class="badge good">可追溯</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>模块</th>
+                <th>新版证据</th>
+                <th>评估</th>
+                <th>后续建议</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>配色与材质</td>
+                <td><code>src/styles.css:40</code> 定义浅色系统 token，主色改为 <code>#0a84ff</code>。</td>
+                <td><span class="badge good">通过</span> 更像 macOS 工具应用，颜色语义清楚。</td>
+                <td>补深色、高对比、减少透明度的 token 分支。</td>
+              </tr>
+              <tr>
+                <td>整体布局</td>
+                <td><code>src/App.tsx:452</code> 使用 <code>64px_40px_minmax(0,1fr)_28px</code>。</td>
+                <td><span class="badge good">通过</span> 信息密度明显提升，顶部不再抢空间。</td>
+                <td>真实 Tauri 窗口中再验证标题栏和 traffic lights 的关系。</td>
+              </tr>
+              <tr>
+                <td>响应式断点</td>
+                <td><code>src/App.tsx:638</code> 在 <code>min-[1100px]</code> 以上三栏，否则单列滚动。</td>
+                <td><span class="badge good">通过</span> 980px 截图确认左侧不再高度为 0。</td>
+                <td>补 768px、1440px 截图基线，形成回归检查。</td>
+              </tr>
+              <tr>
+                <td>工具栏</td>
+                <td><code>src/App.tsx:1632</code> 采用浅色半透明工具栏，主按钮与次级按钮分层。</td>
+                <td><span class="badge good">通过</span> 操作优先级比上一版清楚。</td>
+                <td>按钮 tooltip 内加入 <code>⌘O</code>、<code>⌘R</code>、<code>⌘E</code> 等快捷键。</td>
+              </tr>
+              <tr>
+                <td>结果表</td>
+                <td><code>src/App.tsx:1711</code> 增加“操作”列，冲突项显示“复核”。</td>
+                <td><span class="badge good">通过</span> 隐式整行点击被显式操作替代。</td>
+                <td>候选较多时可在复核按钮旁显示候选质量提示。</td>
+              </tr>
+              <tr>
+                <td>日志与表单语义</td>
+                <td><code>src/App.tsx:1904</code> 日志 <code>aria-live="polite"</code>；范围控件和文本域补 <code>aria-label/name</code>。</td>
+                <td><span class="badge good">通过</span> 符合 Web Guidelines 的核心可访问性要求。</td>
+                <td>占位符按规范改为省略号结尾，例如“输入文字水印…”。</td>
+              </tr>
+              <tr>
+                <td>按钮系统</td>
+                <td><code>src/components/ui/button.tsx:8</code> 使用 <code>focus-visible</code>，默认按钮变为蓝色主操作。</td>
+                <td><span class="badge good">通过</span> 焦点态和 hover 态更稳定。</td>
+                <td>少数自定义控件仍有 <code>outline-none</code>，虽有替代 focus，但建议统一为 focus-visible 写法。</td>
+              </tr>
+              <tr>
+                <td>原生 macOS</td>
+                <td>目前审查范围主要是 WebView UI，未看到标准 App/File/Edit/View/Window/Help 菜单证据。</td>
+                <td><span class="badge watch">待补</span> “像 Mac”与“好看的 WebView”之间的最后差距。</td>
+                <td>在 Tauri 层补菜单、Settings、Help、命令启停状态和系统快捷键。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <div>
+            <h2>风险与下一步</h2>
+            <p>下面是推荐的下一轮优化顺序，按对“高级感”和“Mac 原生感”的影响排序。</p>
+          </div>
+        </div>
+        <div class="risk-list">
+          <article class="risk high">
+            <h3>P1 · 补 Tauri 原生菜单与命令模型</h3>
+            <p>建立 App / File / Edit / View / Window / Help 菜单，把选择 JPG、选择 RAW、执行匹配、导出、清空、Settings、Help 统一映射到同一套 command model。这样快捷键才从“隐藏 JS 监听”变成可发现的 Mac 行为。</p>
+          </article>
+          <article class="risk high">
+            <h3>P1 · 加深色、高对比、减少透明度适配</h3>
+            <p>当前 <code>color-scheme: light</code> 是合理的第一步，但 macOS 用户会期待随系统外观变化。建议先做 token 级 dark mode，再补 <code>prefers-contrast</code> 与 reduced transparency 的视觉降级。</p>
+          </article>
+          <article class="risk">
+            <h3>P1 · 大列表虚拟化或分段渲染</h3>
+            <p>RAW 匹配和水印输入都可能出现数百甚至数千条数据。表格渲染应引入虚拟列表，或者至少对非可视行使用 <code>content-visibility: auto</code>。</p>
+          </article>
+          <article class="risk">
+            <h3>P2 · 统一中文命名与快捷键展示</h3>
+            <p><code>RAW/JPEG matcher</code> 建议改为“RAW/JPG 配对”，并在按钮 tooltip 或菜单中显示 <code>⌘O</code>、<code>⇧⌘O</code>、<code>⌘R</code>、<code>⌘E</code>。</p>
+          </article>
+          <article class="risk good">
+            <h3>P2 · 建立截图回归基线</h3>
+            <p>保留 980x680、1180x820、1440x900 三档截图作为 UI 验收基线，每次调整布局后自动比对关键容器尺寸和空白异常。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <div>
+            <h2>结论</h2>
+            <p>新版已经值得继续打磨，而不是推倒重做。</p>
+          </div>
+          <span class="badge good">建议进入第二轮平台化优化</span>
+        </div>
+        <p>
+          这轮优化把最影响观感的部分处理掉了：配色更克制、布局更稳、按钮层级更清楚、可访问性缺口被补上，尤其是 980px 最小宽度问题已经消失。现在的主要工作不再是“让界面好看一点”，而是把它从一个优秀 WebView 工具推进到更完整的 macOS app：菜单命令、系统外观、快捷键可发现性、帮助与设置、以及大数据量性能。
+        </p>
+        <p class="note">
+          资料来源：本地代码与截图、macos-app-design 本地指南、ui-ux-pro-max 本地规则、frontend-design 本地规则，以及最新 Web Interface Guidelines：<a href="https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md">Vercel Web Interface Guidelines</a>。
+        </p>
+      </section>
+
+      <p class="footer">Generated for build-raw-jpeg-matcher-mac-client · UI review artifact · 2026-07-08</p>
+    </main>
+  </body>
+</html>

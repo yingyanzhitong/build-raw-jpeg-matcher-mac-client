@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.13 - 2026-07-08
+
+- Refined the desktop UI with a more native macOS visual system, updated reports, and improved watermark workspace controls.
+- Added Tauri updater integration with signed updater artifacts, a header update button, progress dialog, and relaunch flow.
+- Documented the Gitee Release update workflow for domestic-network distribution without an ICP domain.
+- Replaced public-facing `bigo` identifiers and update URLs with `masongzhi`.
+
 ## 0.1.12 - 2026-07-07
 
 - Added a repeatable macOS packaging command that leaves only the final DMG in the bundle output directory.

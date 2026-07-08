@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "照片配对助手",
-  "version": "0.1.12",
-  "identifier": "com.bigo.rawjpegmatcher",
+  "version": "0.1.13",
+  "identifier": "com.masongzhi.rawjpegmatcher",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:5173",
@@ -30,6 +30,7 @@
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": "all",
     "icon": [
       "icons/32x32.png",
@@ -42,6 +43,17 @@
       "nsis": {
         "installerIcon": "icons/icon.ico",
         "uninstallerIcon": "icons/icon.ico"
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IERFQTgxOUQyN0YzOUVEMzAKUldRdzdUbC8waG1vM2dzUzNxa0huTG9iUk1YVm9Ra0hqcVplSldlWGRJa0NCMTFoKzk1dWlIOFMK",
+      "endpoints": [
+        "https://gitee.com/masongzhi/raw-jpeg-matcher-mac-client/raw/main/release/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
       }
     }
   }
