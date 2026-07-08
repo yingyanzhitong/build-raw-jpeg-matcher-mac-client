@@ -1,0 +1,70 @@
+CHANGELOG.md
+  s_1cb4bae3f3d0e3::t_7041b3b7684929 3-9
+openspec/changes/add-watermark-tab/.openspec.yaml
+  s_6a3475b7f2fc98::t_14f30cff38d640 1-2
+openspec/changes/add-watermark-tab/proposal.md
+  s_9fe14d6a1b9c29::t_70cd577bfa7b0a 1-35
+package-lock.json
+  s_fbe5af72a4004e::t_ec6c068059804e 3,9,20-21,1514-1531
+package.json
+  s_1cb4bae3f3d0e3::t_2ee6f38407c5c7 3,24-25
+reports/tauri-ui-audit-report.html
+  s_fbe5af72a4004e::t_df344bbfcec291 1-624
+reports/tauri-ui-new-version-report.html
+  s_fbe5af72a4004e::t_a07920d43a5cb9 1-860
+src-tauri/Cargo.lock
+  s_fbe5af72a4004e::t_644a45a6717d4f 5-20,66-83,371-376,496-506,588-596,606-614,742-752,851-859,926-931,1027-1040,1066-1075,1104-1126,1386,1389-1390,1425-1448,1676-1690,1857-1888,1946-1954,2000-2029,2151-2156,2178-2183,2210-2219,2226-2234,2250-2255,2277-2286,2308-2326,2357-2388,2395-2424,2432,2596-2607,2682-2687,2704-2726,2999-3004,3035-3061,3064,3066-3070,3077-3078,3089-3094,3178,3184-3186,3191,3227-3246,3275-3347,3354-3362,3372-3380,3438-3460,3655,3675-3686,3693-3708,3721-3729,3830-3835,3919,3952-3962,3987,4163-4205,4216,4239,4437-4446,4684-4692,4769-4774,5018-5026,5063-5072,5267-5275,5571,5618-5627,5733-5738,5772-5783,5790-5804
+src-tauri/Cargo.toml
+  s_1cb4bae3f3d0e3::t_4a6931e0c8425e 3,5,22-26,31-32
+src-tauri/gen/schemas/acl-manifests.json
+  s_fbe5af72a4004e::t_ece3109494355a 1
+src-tauri/gen/schemas/capabilities.json
+  s_fbe5af72a4004e::t_364da0b051341c 1
+src-tauri/gen/schemas/desktop-schema.json
+  s_fbe5af72a4004e::t_c70f6007f17254 2476-2559
+src-tauri/gen/schemas/macOS-schema.json
+  s_fbe5af72a4004e::t_27dd228d122f97 2476-2559
+src-tauri/tauri.conf.json
+  s_1cb4bae3f3d0e3::t_4f1814f3ff287d 4-5,33,48-58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "fdd2febcadace5585febc636b640c2729503c98e",
+  "prompts": {},
+  "logical_commit_id": "fdd2febcadace5585febc636b640c2729503c98e",
+  "sessions": {
+    "s_1cb4bae3f3d0e3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f40e3-2fbe-7033-83ea-807af18c530a",
+        "model": "gpt-5.5"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    },
+    "s_6a3475b7f2fc98": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f3c71-ed87-7633-9b29-970290f9b481",
+        "model": "gpt-5.5"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    },
+    "s_9fe14d6a1b9c29": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f3c89-c299-7ee2-a5bc-1e5fe462611c",
+        "model": "gpt-5.5"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    },
+    "s_fbe5af72a4004e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f40a8-7aad-7851-8cb9-5d828bd2a737",
+        "model": "gpt-5.5"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
