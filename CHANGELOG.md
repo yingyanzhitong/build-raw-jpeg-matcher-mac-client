@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.24 - 2026-07-09
+
+- Fixed macOS installer app bundle signing so the DMG-installed app includes sealed resources and validates with `codesign`.
+- Kept single-workspace navigation hidden when only the RAW/JPEG pairing workspace is available.
+
 ## 0.1.23 - 2026-07-09
 
 - Hid the workspace tab bar when only one workspace is available.

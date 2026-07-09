@@ -1,39 +1,39 @@
 {
-  "version": "0.1.23",
+  "version": "0.1.24",
   "notes": "示例：优化更新按钮与自动更新流程。",
   "pub_date": "2026-07-09T00:00:00Z",
   "installers": {
     "darwin-aarch64": {
       "kind": "dmg",
-      "url": "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/releases/download/v0.1.23/photo-pairing-assistant_0.1.23_macOS_aarch64.dmg"
+      "url": "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/releases/download/v0.1.24/photo-pairing-assistant_0.1.24_macOS_aarch64.dmg"
     },
     "darwin-x86_64": {
       "kind": "dmg",
-      "url": "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/releases/download/v0.1.23/photo-pairing-assistant_0.1.23_macOS_x64.dmg"
+      "url": "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/releases/download/v0.1.24/photo-pairing-assistant_0.1.24_macOS_x64.dmg"
     },
     "windows-x86_64": {
       "kind": "nsis",
-      "url": "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/releases/download/v0.1.23/photo-pairing-assistant_0.1.23_Windows_x64-setup.exe"
+      "url": "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/releases/download/v0.1.24/photo-pairing-assistant_0.1.24_Windows_x64-setup.exe"
     }
   },
   "platforms": {
     "darwin-aarch64": {
       "installer_kind": "dmg",
-      "installer_url": "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/releases/download/v0.1.23/photo-pairing-assistant_0.1.23_macOS_aarch64.dmg",
+      "installer_url": "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/releases/download/v0.1.24/photo-pairing-assistant_0.1.24_macOS_aarch64.dmg",
       "signature": "PASTE_CONTENTS_OF_DARWIN_AARCH64_SIG_HERE",
-      "url": "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/releases/download/v0.1.23/photo-pairing-assistant_0.1.23_macOS_aarch64-updater.app.tar.gz"
+      "url": "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/releases/download/v0.1.24/photo-pairing-assistant_0.1.24_macOS_aarch64-updater.app.tar.gz"
     },
     "darwin-x86_64": {
       "installer_kind": "dmg",
-      "installer_url": "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/releases/download/v0.1.23/photo-pairing-assistant_0.1.23_macOS_x64.dmg",
+      "installer_url": "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/releases/download/v0.1.24/photo-pairing-assistant_0.1.24_macOS_x64.dmg",
       "signature": "PASTE_CONTENTS_OF_DARWIN_X86_64_SIG_HERE",
-      "url": "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/releases/download/v0.1.23/photo-pairing-assistant_0.1.23_macOS_x64-updater.app.tar.gz"
+      "url": "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/releases/download/v0.1.24/photo-pairing-assistant_0.1.24_macOS_x64-updater.app.tar.gz"
     },
     "windows-x86_64": {
       "installer_kind": "nsis",
-      "installer_url": "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/releases/download/v0.1.23/photo-pairing-assistant_0.1.23_Windows_x64-setup.exe",
+      "installer_url": "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/releases/download/v0.1.24/photo-pairing-assistant_0.1.24_Windows_x64-setup.exe",
       "signature": "PASTE_CONTENTS_OF_WINDOWS_X86_64_SIG_HERE",
-      "url": "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/releases/download/v0.1.23/photo-pairing-assistant_0.1.23_Windows_x64-setup.exe"
+      "url": "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/releases/download/v0.1.24/photo-pairing-assistant_0.1.24_Windows_x64-setup.exe"
     }
   }
 }

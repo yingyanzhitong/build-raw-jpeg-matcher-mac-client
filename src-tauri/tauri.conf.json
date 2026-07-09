@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "照片配对助手",
-  "version": "0.1.23",
+  "version": "0.1.24",
   "identifier": "com.masongzhi.rawjpegmatcher",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -44,6 +44,9 @@
         "installerIcon": "icons/icon.ico",
         "uninstallerIcon": "icons/icon.ico"
       }
+    },
+    "macOS": {
+      "signingIdentity": "-"
     }
   },
   "plugins": {
