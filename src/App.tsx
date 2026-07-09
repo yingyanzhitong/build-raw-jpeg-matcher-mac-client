@@ -37,6 +37,10 @@ import type { MatchStatus } from "@/features/raw-matcher/types";
 import { formatBytes } from "@/features/shared/ui";
 
 type WorkspaceId = "raw-jpeg-matcher";
+const workspaceTabs: Array<{ id: WorkspaceId; label: string; icon: ReactNode }> = [
+  { id: "raw-jpeg-matcher", label: "RAW/JPEG配对", icon: <Search /> },
+];
+
 type UpdateStatus =
   | "idle"
   | "checking"
@@ -61,18 +65,28 @@ const updateManifestUrl =
 function App() {
   const [activeWorkspace, setActiveWorkspace] = useState<WorkspaceId>("raw-jpeg-matcher");
   const [rawStatus, setRawStatus] = useState(defaultRawWorkspaceStatus);
+  const showWorkspaceTabs = workspaceTabs.length > 1;
 
   return (
     <TooltipProvider>
       <main className="desk-grid h-screen overflow-hidden text-foreground">
-        <div className="grid h-full grid-rows-[64px_40px_minmax(0,1fr)_28px]">
+        <div
+          className={cn(
+            "grid h-full",
+            showWorkspaceTabs
+              ? "grid-rows-[64px_40px_minmax(0,1fr)_28px]"
+              : "grid-rows-[64px_minmax(0,1fr)_28px]",
+          )}
+        >
           <AppHeader
             jpegCount={rawStatus.jpegCount}
             counts={rawStatus.counts}
             exportableCount={rawStatus.exportableCount}
           />
 
-          <WorkspaceTabs activeWorkspace={activeWorkspace} onChange={setActiveWorkspace} />
+          {showWorkspaceTabs ? (
+            <WorkspaceTabs activeWorkspace={activeWorkspace} onChange={setActiveWorkspace} />
+          ) : null}
 
           <div className="min-h-0 overflow-hidden">
             <RawMatcherWorkspace
@@ -100,16 +114,12 @@ function WorkspaceTabs({
   activeWorkspace: WorkspaceId;
   onChange: (workspace: WorkspaceId) => void;
 }) {
-  const tabs: Array<{ id: WorkspaceId; label: string; icon: ReactNode }> = [
-    { id: "raw-jpeg-matcher", label: "RAW/JPEG配对", icon: <Search /> },
-  ];
-
   return (
     <nav
       aria-label="工作区"
       className="flex items-center gap-2 border-b border-border bg-background/72 px-3 backdrop-blur-xl"
     >
-      {tabs.map((tab) => (
+      {workspaceTabs.map((tab) => (
         <button
           aria-pressed={activeWorkspace === tab.id}
           className={cn(

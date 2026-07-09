@@ -12,6 +12,7 @@ const outputDir = options.output;
 const allFiles = walk(options.input);
 const normalizedAssets = [];
 const platforms = {};
+const installers = {};
 const notes = await readChangelogNotes(version);
 const pubDate = new Date().toISOString();
 
@@ -31,15 +32,23 @@ const macDmg = findRequired(allFiles, (file) => file.endsWith(".dmg"), "macOS DM
 const macArch = inferMacArch(macDmg);
 const macArchLabel = macArch === "darwin-aarch64" ? "aarch64" : "x64";
 const macDmgName = `${appName}_${version}_macOS_${macArchLabel}.dmg`;
-const macUpdaterName = `${appName}_${version}_macOS_${macArchLabel}.app.tar.gz`;
+const macUpdaterName = `${appName}_${version}_macOS_${macArchLabel}-updater.app.tar.gz`;
 const macUpdaterSigName = `${macUpdaterName}.sig`;
+const macDmgUrl = releaseUrl(options.owner, options.repo, tag, macDmgName);
+const macUpdaterUrl = releaseUrl(options.owner, options.repo, tag, macUpdaterName);
 
 await copyAsset(macDmg, macDmgName);
 await copyAsset(macUpdater, macUpdaterName);
 await copyAsset(macUpdaterSig, macUpdaterSigName);
 platforms[macArch] = {
+  installer_kind: "dmg",
+  installer_url: macDmgUrl,
   signature: (await readFile(macUpdaterSig, "utf8")).trim(),
-  url: releaseUrl(options.owner, options.repo, tag, macUpdaterName),
+  url: macUpdaterUrl,
+};
+installers[macArch] = {
+  kind: "dmg",
+  url: macDmgUrl,
 };
 
 const windowsExe = allFiles.find((file) => file.endsWith(".exe"));
@@ -53,9 +62,16 @@ if (windowsExe) {
   const windowsSigName = `${windowsExeName}.sig`;
   await copyAsset(windowsExe, windowsExeName);
   await copyAsset(windowsSig, windowsSigName);
+  const windowsUrl = releaseUrl(options.owner, options.repo, tag, windowsExeName);
   platforms["windows-x86_64"] = {
+    installer_kind: "nsis",
+    installer_url: windowsUrl,
     signature: (await readFile(windowsSig, "utf8")).trim(),
-    url: releaseUrl(options.owner, options.repo, tag, windowsExeName),
+    url: windowsUrl,
+  };
+  installers["windows-x86_64"] = {
+    kind: "nsis",
+    url: windowsUrl,
   };
 }
 
@@ -63,6 +79,7 @@ const manifest = {
   version,
   notes,
   pub_date: pubDate,
+  installers,
   platforms,
 };
 await writeFile(

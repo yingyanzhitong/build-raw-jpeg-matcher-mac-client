@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.23 - 2026-07-09
+
+- Hid the workspace tab bar when only one workspace is available.
+- Added explicit Gitee DMG installer links to the update manifest while keeping updater artifacts separate.
+
 ## 0.1.22 - 2026-07-08
 
 - Restored full Gitee release asset synchronization before publishing the updater manifest.
