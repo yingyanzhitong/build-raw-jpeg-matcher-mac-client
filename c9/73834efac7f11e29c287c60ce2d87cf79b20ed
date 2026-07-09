@@ -1,0 +1,22 @@
+src/App.tsx
+  s_73abee4b7536f5::t_d6f8093e34634b 8,10,12,31,37,62,66-67,69-71,75,85-90,96-99,101-103,106-148,152-155,157-159,162-176,178-183,185-247,249,396,586
+src/styles.css
+  s_73abee4b7536f5::t_46c29e775f741d 7,38-39,53-54,56,58-59,61-65,67,69-77,121-130,135,140,147-184
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "c973834efac7f11e29c287c60ce2d87cf79b20ed",
+  "prompts": {},
+  "logical_commit_id": "c973834efac7f11e29c287c60ce2d87cf79b20ed",
+  "sessions": {
+    "s_73abee4b7536f5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f3b80-8630-7783-a188-2e374b9b209e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
