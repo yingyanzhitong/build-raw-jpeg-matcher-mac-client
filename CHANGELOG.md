@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.25 - 2026-07-09
+
+- Simplified the Gitee update manifest so manual installer links only live in the top-level `installers` map.
+- Kept Tauri updater platform entries limited to updater `url` and `signature` fields.
+
 ## 0.1.24 - 2026-07-09
 
 - Fixed macOS installer app bundle signing so the DMG-installed app includes sealed resources and validates with `codesign`.

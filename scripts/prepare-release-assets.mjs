@@ -41,8 +41,6 @@ await copyAsset(macDmg, macDmgName);
 await copyAsset(macUpdater, macUpdaterName);
 await copyAsset(macUpdaterSig, macUpdaterSigName);
 platforms[macArch] = {
-  installer_kind: "dmg",
-  installer_url: macDmgUrl,
   signature: (await readFile(macUpdaterSig, "utf8")).trim(),
   url: macUpdaterUrl,
 };
@@ -64,8 +62,6 @@ if (windowsExe) {
   await copyAsset(windowsSig, windowsSigName);
   const windowsUrl = releaseUrl(options.owner, options.repo, tag, windowsExeName);
   platforms["windows-x86_64"] = {
-    installer_kind: "nsis",
-    installer_url: windowsUrl,
     signature: (await readFile(windowsSig, "utf8")).trim(),
     url: windowsUrl,
   };
