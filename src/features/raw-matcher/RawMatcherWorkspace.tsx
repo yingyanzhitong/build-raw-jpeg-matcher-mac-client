@@ -51,7 +51,12 @@ export interface RawWorkspaceStatus {
   rawDirectory: string;
   busy: RawBusy;
   statusText: string;
+  logs: LogEntry[];
 }
+
+const initialRawLogs: LogEntry[] = [
+  { level: "info", message: "等待拖入 JPG 文件、目录或粘贴清单" },
+];
 
 export const defaultRawWorkspaceStatus: RawWorkspaceStatus = {
   jpegCount: 0,
@@ -60,6 +65,7 @@ export const defaultRawWorkspaceStatus: RawWorkspaceStatus = {
   rawDirectory: "",
   busy: null,
   statusText: "READY",
+  logs: initialRawLogs,
 };
 
 export function RawMatcherWorkspace({
@@ -73,9 +79,7 @@ export function RawMatcherWorkspace({
   const [manualText, setManualText] = useState("");
   const [rawSourceDirectory, setRawSourceDirectory] = useState("");
   const [results, setResults] = useState<MatchResult[]>([]);
-  const [logs, setLogs] = useState<LogEntry[]>([
-    { level: "info", message: "等待拖入 JPG 文件、目录或粘贴清单" },
-  ]);
+  const [logs, setLogs] = useState<LogEntry[]>(initialRawLogs);
   const [dragActive, setDragActive] = useState(false);
   const [busy, setBusy] = useState<RawBusy>(null);
   const [activeConflictIndex, setActiveConflictIndex] = useState<number | null>(null);
@@ -112,8 +116,9 @@ export function RawMatcherWorkspace({
       rawDirectory: rawSourceDirectory,
       busy,
       statusText: busy ? busyLabel(busy) : "READY",
+      logs,
     });
-  }, [busy, counts, exportableCount, jpegInputs.length, onStatusChange, rawSourceDirectory]);
+  }, [busy, counts, exportableCount, jpegInputs.length, logs, onStatusChange, rawSourceDirectory]);
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
@@ -407,11 +412,8 @@ export function RawMatcherWorkspace({
         busy={busy}
         canExport={canExport}
         canMatch={canMatch}
-        counts={counts}
         dragActive={dragActive}
-        exportableCount={exportableCount}
         jpegInputs={jpegInputs}
-        logs={logs}
         rawSourceDirectory={rawSourceDirectory}
         results={results}
         selectedRawFormats={selectedRawFormats}

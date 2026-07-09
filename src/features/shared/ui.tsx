@@ -30,9 +30,9 @@ export function Pane({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-lg border border-border bg-card/92 p-3 shadow-[0_1px_0_rgba(255,255,255,0.72),0_1px_2px_rgba(0,0,0,0.04)]">
+    <section className="rounded-[8px] border border-border bg-card p-3 shadow-[0_1px_1px_rgba(0,0,0,0.025)]">
       <div className="mb-3 flex items-center gap-2">
-        <span className="grid size-8 place-items-center rounded-[7px] border border-border bg-muted text-muted-foreground">
+        <span className="grid size-8 place-items-center rounded-[7px] border border-border bg-secondary text-muted-foreground">
           {icon}
         </span>
         <div className="min-w-0">
@@ -55,7 +55,7 @@ export function StatTile({
   tone?: "neutral" | "success" | "danger";
 }) {
   return (
-    <div className="rounded-[7px] border border-border bg-background/80 p-2.5 shadow-[0_1px_0_rgba(255,255,255,0.72)]">
+    <div className="rounded-[7px] border border-border bg-secondary/72 p-2.5">
       <span className="text-[11px] font-medium text-muted-foreground">{label}</span>
       <strong
         className={cn(
@@ -75,16 +75,16 @@ export function LogPanel({ logs }: { logs: LogEntry[] }) {
     <section
       aria-label="运行日志"
       aria-live="polite"
-      className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-panel bg-panel text-panel-foreground"
+      className="flex min-h-[220px] flex-1 flex-col overflow-hidden rounded-[8px] border border-border bg-panel text-panel-foreground"
     >
-      <div className="flex h-11 items-center justify-between border-b border-white/10 px-3">
+      <div className="flex h-10 items-center justify-between border-b border-border px-3">
         <h2 className="text-sm font-semibold">运行日志</h2>
-        <Badge variant="outline" className="border-white/15 bg-white/6 text-panel-foreground">
+        <Badge variant="muted">
           {logs.length}
         </Badge>
       </div>
       <ScrollArea className="log-surface min-h-0 flex-1">
-        <div className="divide-y divide-white/8 py-1 font-mono text-[12px]">
+        <div className="divide-y divide-border py-1 font-mono text-[12px]">
           {logs.map((log, index) => (
             <div
               className="grid grid-cols-[44px_minmax(0,1fr)] gap-2 px-3 py-2"
@@ -94,8 +94,8 @@ export function LogPanel({ logs }: { logs: LogEntry[] }) {
                 <span className="text-accent tabular-nums">{String(index + 1).padStart(3, "0")}</span>
                 <span
                   className={cn(
-                    "h-5 w-10 rounded-[3px] border text-center text-[10px] font-semibold uppercase leading-5",
-                    log.level === "info" && "border-white/15 text-panel-foreground/70",
+                    "h-5 w-10 rounded-[4px] border text-center text-[10px] font-semibold uppercase leading-5",
+                    log.level === "info" && "border-border bg-card text-muted-foreground",
                     log.level === "success" && "border-success/40 bg-success/12 text-success",
                     log.level === "warning" && "border-warning/45 bg-warning/12 text-warning",
                     log.level === "error" && "border-destructive/45 bg-destructive/12 text-destructive",
@@ -105,7 +105,7 @@ export function LogPanel({ logs }: { logs: LogEntry[] }) {
                   {logLevelCode[log.level]}
                 </span>
               </span>
-              <p className="min-w-0 [overflow-wrap:anywhere] text-panel-foreground/88">
+              <p className="min-w-0 [overflow-wrap:anywhere] text-panel-foreground/82">
                 {log.message}
               </p>
             </div>
@@ -130,7 +130,7 @@ export function PathDisplay({
   return (
     <div
       className={cn(
-        "flex min-w-0 items-center overflow-x-auto rounded-[5px] border border-input bg-background px-2.5 font-mono text-xs text-muted-foreground",
+        "codex-scrollbar flex min-w-0 items-center overflow-x-auto rounded-[7px] border border-input bg-secondary/64 px-2.5 font-mono text-xs text-muted-foreground",
         compact ? "h-9" : "min-h-10",
         className,
       )}

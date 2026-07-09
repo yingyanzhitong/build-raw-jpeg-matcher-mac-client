@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.26 - 2026-07-09
+
+- Refined the RAW/JPEG matcher into a Codex-style two-pane layout with header statistics and a bottom log sheet.
+- Added a step-by-step onboarding overlay with animated target transitions for the JPG, RAW directory, matching, and export workflow.
+- Replaced disabled action dead-ends with toast feedback that explains missing JPG input, RAW directory, RAW formats, or exportable matches.
+- Updated the header description, action styling, controls, and empty state for a clearer first-run experience.
+
 ## 0.1.25 - 2026-07-09
 
 - Simplified the Gitee update manifest so manual installer links only live in the top-level `installers` map.

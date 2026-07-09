@@ -4,7 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: "IBM Plex Sans", "Aptos", "Avenir Next", "Helvetica Neue", sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", sans-serif;
   --font-mono: "JetBrains Mono", "SF Mono", "Menlo", "Monaco", monospace;
 
   --radius-sm: calc(var(--radius) - 2px);
@@ -35,6 +35,8 @@
   --color-warning: var(--warning);
   --color-panel: var(--panel);
   --color-panel-foreground: var(--panel-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
 }
 
 :root {
@@ -48,29 +50,31 @@
   -moz-osx-font-smoothing: grayscale;
 
   --radius: 0.5rem;
-  --background: #f5f5f7;
-  --foreground: #1d1d1f;
+  --background: #f4f3f1;
+  --foreground: #202124;
   --card: #ffffff;
-  --card-foreground: #1d1d1f;
+  --card-foreground: #202124;
   --popover: #ffffff;
-  --popover-foreground: #1d1d1f;
-  --primary: #1d1d1f;
+  --popover-foreground: #202124;
+  --primary: #202124;
   --primary-foreground: #ffffff;
-  --secondary: #f2f2f7;
-  --secondary-foreground: #2c2c2e;
-  --muted: #f2f2f7;
-  --muted-foreground: #6e6e73;
-  --accent: #0a84ff;
+  --secondary: #f1f0ee;
+  --secondary-foreground: #323438;
+  --muted: #ecebea;
+  --muted-foreground: #8a8d92;
+  --accent: #3b9bff;
   --accent-foreground: #ffffff;
-  --destructive: #ff3b30;
+  --destructive: #e5484d;
   --destructive-foreground: #ffffff;
-  --success: #34c759;
-  --warning: #ff9f0a;
-  --border: rgba(60, 60, 67, 0.18);
-  --input: rgba(60, 60, 67, 0.24);
-  --ring: #0a84ff;
-  --panel: #20242a;
-  --panel-foreground: #f5f5f7;
+  --success: #2f9e60;
+  --warning: #b7791f;
+  --border: rgba(32, 33, 36, 0.11);
+  --input: rgba(32, 33, 36, 0.16);
+  --ring: #3b9bff;
+  --panel: #f7f7f6;
+  --panel-foreground: #202124;
+  --sidebar: #f0efed;
+  --sidebar-foreground: #303236;
 }
 
 * {
@@ -114,28 +118,68 @@ button:disabled {
 }
 
 .desk-grid {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0) 120px),
-    radial-gradient(circle at 8% -10%, color-mix(in oklch, var(--accent) 12%, transparent), transparent 34%),
-    radial-gradient(circle at 98% 0%, rgba(255, 255, 255, 0.92), transparent 28%),
-    var(--background);
+  background: var(--background);
+}
+
+.codex-main {
+  background: var(--card);
+}
+
+.codex-scrollbar {
+  scrollbar-color: rgba(32, 33, 36, 0.18) transparent;
+  scrollbar-width: thin;
 }
 
 .drop-raster {
   background:
-    linear-gradient(135deg, color-mix(in oklch, var(--accent) 12%, transparent) 0 25%, transparent 25% 50%, color-mix(in oklch, var(--accent) 10%, transparent) 50% 75%, transparent 75%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0)),
     var(--card);
-  background-size: 18px 18px;
 }
 
 .log-surface {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.055), transparent 80px),
-    var(--panel);
+  background: var(--panel);
 }
 
 .table-fade {
   mask-image: linear-gradient(to bottom, transparent, #000 10px, #000 calc(100% - 10px), transparent);
+}
+
+.guide-step-copy {
+  animation-duration: 220ms;
+  animation-fill-mode: both;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.guide-step-copy-next {
+  animation-name: guide-step-copy-next;
+}
+
+.guide-step-copy-back {
+  animation-name: guide-step-copy-back;
+}
+
+@keyframes guide-step-copy-next {
+  from {
+    opacity: 0;
+    transform: translate3d(10px, 0, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes guide-step-copy-back {
+  from {
+    opacity: 0;
+    transform: translate3d(-10px, 0, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
 }
 
 @media (max-width: 1099px) {

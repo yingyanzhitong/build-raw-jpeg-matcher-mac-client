@@ -5,24 +5,24 @@ import type * as React from "react";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-[5px] border text-sm font-semibold leading-none transition-[background,border-color,color,box-shadow,transform] duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-45 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-[7px] border text-sm font-semibold leading-none transition-[background,border-color,color,box-shadow,transform] duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-45 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
         default:
-          "border-accent bg-accent text-accent-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.24),0_1px_2px_rgba(0,0,0,0.08)] hover:bg-accent/92",
+          "border-accent bg-accent text-accent-foreground shadow-[0_1px_2px_rgba(0,0,0,0.08)] hover:bg-accent/90",
         secondary:
-          "border-border bg-secondary text-secondary-foreground hover:bg-secondary/80",
+          "border-border bg-secondary text-secondary-foreground hover:bg-muted",
         destructive:
           "border-destructive bg-destructive text-destructive-foreground hover:bg-destructive/90",
         outline:
-          "border-border bg-background text-foreground hover:border-ring hover:bg-muted",
+          "border-border bg-card text-foreground hover:border-ring/50 hover:bg-muted",
         ghost:
           "border-transparent bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
         accent:
-          "border-accent/25 bg-accent/10 text-accent hover:border-accent/45 hover:bg-accent/15",
+          "border-accent/20 bg-accent/10 text-accent hover:border-accent/45 hover:bg-accent/14",
         utility:
-          "border-border bg-card/95 text-card-foreground shadow-[0_1px_0_rgba(255,255,255,0.72),0_1px_2px_rgba(0,0,0,0.04)] hover:border-ring/45 hover:bg-muted",
+          "border-border bg-card text-card-foreground shadow-[0_1px_1px_rgba(0,0,0,0.03)] hover:border-ring/45 hover:bg-muted",
       },
       size: {
         default: "h-9 px-3.5",
