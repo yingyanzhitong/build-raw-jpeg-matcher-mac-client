@@ -1,0 +1,24 @@
+gitee-pages/index.html
+  s_aa09655d3f1fa6::t_82315e00d46fa8 1-175
+gitee-pages/latest-cache.json
+  s_aa09655d3f1fa6::t_eb41f0f96e4a41 1-29
+gitee-pages/styles.css
+  s_aa09655d3f1fa6::t_d53963832a43c6 1-645
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "b5353ed2cb320ff785b209cbf01c95b0df16bf83",
+  "prompts": {},
+  "logical_commit_id": "b5353ed2cb320ff785b209cbf01c95b0df16bf83",
+  "sessions": {
+    "s_aa09655d3f1fa6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f4686-fac3-7b52-9e17-a9644b0ad550",
+        "model": "gpt-5.5"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
