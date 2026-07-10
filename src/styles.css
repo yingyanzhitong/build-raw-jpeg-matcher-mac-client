@@ -42,7 +42,7 @@
 :root {
   color-scheme: light;
   color: var(--foreground);
-  background: var(--background);
+  background: transparent;
   font-family: var(--font-sans);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -87,6 +87,7 @@ html,
 body,
 #root {
   min-height: 100%;
+  background: transparent;
 }
 
 body {
@@ -118,6 +119,8 @@ button:disabled {
 }
 
 .desk-grid {
+  border-radius: 12px;
+  isolation: isolate;
   background: var(--background);
 }
 
@@ -179,6 +182,87 @@ button:disabled {
   to {
     opacity: 1;
     transform: translate3d(0, 0, 0);
+  }
+}
+
+.matcher-direction-card-leave-down,
+.matcher-direction-card-leave-up,
+.matcher-direction-card-enter-from-bottom,
+.matcher-direction-card-enter-from-top {
+  will-change: opacity, transform;
+}
+
+.matcher-direction-card-leave-down {
+  animation: matcher-direction-card-leave-down 120ms cubic-bezier(0.4, 0, 1, 1) both;
+  pointer-events: none;
+}
+
+.matcher-direction-card-leave-up {
+  animation: matcher-direction-card-leave-up 120ms cubic-bezier(0.4, 0, 1, 1) both;
+  pointer-events: none;
+}
+
+.matcher-direction-card-enter-from-bottom {
+  animation: matcher-direction-card-enter-from-bottom 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.matcher-direction-card-enter-from-top {
+  animation: matcher-direction-card-enter-from-top 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes matcher-direction-card-leave-down {
+  to {
+    opacity: 0;
+    transform: translate3d(0, 28px, 0);
+  }
+}
+
+@keyframes matcher-direction-card-leave-up {
+  to {
+    opacity: 0;
+    transform: translate3d(0, -28px, 0);
+  }
+}
+
+@keyframes matcher-direction-card-enter-from-bottom {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 28px, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes matcher-direction-card-enter-from-top {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -28px, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.matcher-direction-switcher {
+  isolation: isolate;
+}
+
+.matcher-direction-switch-icon {
+  animation: matcher-direction-switch-icon 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes matcher-direction-switch-icon {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(180deg);
   }
 }
 

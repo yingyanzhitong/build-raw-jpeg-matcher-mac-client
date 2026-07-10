@@ -1,6 +1,6 @@
 {
   "name": "build-raw-jpeg-matcher-mac-client",
-  "version": "0.1.27",
+  "version": "0.1.28",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,6 +9,7 @@
     "build:mac": "npm run tauri -- build && ./scripts/finalize-macos-dmg.sh",
     "finalize:dmg": "./scripts/finalize-macos-dmg.sh",
     "preview": "vite preview",
+    "test:state": "node --test src/features/raw-matcher/state.test.mjs",
     "tauri": "tauri"
   },
   "dependencies": {

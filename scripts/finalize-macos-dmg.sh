@@ -17,7 +17,7 @@ fi
 
 VERSION="$(
   cd "$ROOT_DIR"
-  node --input-type=module -e 'import fs from "node:fs"; const config = JSON.parse(fs.readFileSync("src-tauri/tauri.conf.json", "utf8")); process.stdout.write(config.version);'
+  node --input-type=module -e 'import fs from "node:fs"; const pkg = JSON.parse(fs.readFileSync("package.json", "utf8")); process.stdout.write(pkg.version);'
 )"
 
 PRODUCT_NAME="$(

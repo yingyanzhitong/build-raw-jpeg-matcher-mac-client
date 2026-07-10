@@ -1,6 +1,6 @@
 [package]
 name = "raw-jpeg-matcher"
-version = "0.1.26"
+version = "0.1.28"
 description = "A macOS utility for matching selected JPEG files to RAW originals."
 authors = ["masongzhi"]
 edition = "2021"
@@ -24,7 +24,7 @@ fast_image_resize = { version = "6", features = ["image"] }
 fontdb = "0.23"
 image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
 imageproc = { version = "0.27", default-features = false, features = ["text"] }
-tauri = { version = "2", features = ["protocol-asset"] }
+tauri = { version = "2", features = ["macos-private-api", "protocol-asset"] }
 tauri-plugin-dialog = "2"
 tauri-plugin-opener = "2"
 walkdir = "2"

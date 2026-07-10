@@ -4,7 +4,10 @@ mod watermark;
 
 use std::{path::PathBuf, process::Command};
 
-use raw_matcher::{collect_jpeg_inputs, export_raw_files, match_raw_files, raw_thumbnail_path};
+use raw_matcher::{
+    collect_match_inputs, export_matched_files, file_thumbnail_path, match_counterpart_files,
+    matcher_capabilities,
+};
 use watermark::{export_watermarked_images, scan_watermark_images};
 
 #[tauri::command]
@@ -41,13 +44,14 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            collect_jpeg_inputs,
-            match_raw_files,
-            export_raw_files,
+            matcher_capabilities,
+            collect_match_inputs,
+            match_counterpart_files,
+            export_matched_files,
             scan_watermark_images,
             export_watermarked_images,
             open_file_path,
-            raw_thumbnail_path
+            file_thumbnail_path
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

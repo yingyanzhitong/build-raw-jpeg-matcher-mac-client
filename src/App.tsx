@@ -1,15 +1,18 @@
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check, type DownloadEvent, type Update } from "@tauri-apps/plugin-updater";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   AlertTriangle,
   CheckCircle2,
   Download,
   Loader2,
+  Maximize2,
+  Minus,
   PanelBottom,
   RotateCcw,
   X,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,6 +37,7 @@ import {
   defaultRawWorkspaceStatus,
   RawMatcherWorkspace,
 } from "@/features/raw-matcher/RawMatcherWorkspace";
+import { getDirectionConfig } from "@/features/raw-matcher/RawJpegMatcherView";
 import { formatBytes, type LogEntry, type LogLevel } from "@/features/shared/ui";
 
 type UpdateStatus =
@@ -63,26 +67,17 @@ function App() {
 
   return (
     <TooltipProvider>
-      <main className="desk-grid relative h-screen overflow-hidden text-foreground">
-        <section className="codex-main grid h-full min-h-0 grid-rows-[64px_minmax(0,1fr)_28px] overflow-hidden">
-          <AppHeader
-            status={rawStatus}
+      <main className="desk-grid relative grid h-screen grid-rows-[40px_minmax(0,1fr)] overflow-hidden text-foreground">
+        <WindowTitlebar />
+        <section className="codex-main min-h-0 overflow-hidden">
+          <RawMatcherWorkspace
+            active
+            onStatusChange={setRawStatus}
             logPanelOpen={logPanelOpen}
             onToggleLogPanel={() => setLogPanelOpen((open) => !open)}
           />
-          <div className="min-h-0 overflow-hidden">
-            <RawMatcherWorkspace
-              active
-              onStatusChange={setRawStatus}
-            />
-          </div>
-
-          <FooterStatus
-            jpegCount={rawStatus.jpegCount}
-            rawDirectory={rawStatus.rawDirectory}
-            rawStatusText={rawStatus.statusText}
-          />
         </section>
+        <MatcherStatusOverlay status={rawStatus} />
         <LogBottomSheet
           open={logPanelOpen}
           logs={rawStatus.logs}
@@ -93,59 +88,96 @@ function App() {
   );
 }
 
-function AppHeader({
-  status,
-  logPanelOpen,
-  onToggleLogPanel,
-}: {
-  status: typeof defaultRawWorkspaceStatus;
-  logPanelOpen: boolean;
-  onToggleLogPanel: () => void;
-}) {
+function WindowTitlebar() {
   return (
-    <header className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border bg-card px-6">
-      <div className="min-w-0">
-        <div className="flex min-w-0 items-center">
-          <h2 className="truncate text-[15px] font-semibold leading-none">RAW/JPEG 配对</h2>
-        </div>
-        <p className="mt-1 truncate text-xs text-muted-foreground">
-          按 JPG 文件名查找并导出对应 RAW 原片
-        </p>
+    <header className="relative h-10 border-b border-border/80 bg-card/95">
+      <div className="absolute inset-0" data-tauri-drag-region />
+      <div className="absolute left-4 top-[14px] z-10 flex items-center gap-2">
+        <WindowControl
+          ariaLabel="关闭窗口"
+          className="bg-[#ff5f57]"
+          icon={<X />}
+          onClick={() => getCurrentWindow().close()}
+        />
+        <WindowControl
+          ariaLabel="最小化窗口"
+          className="bg-[#ffbd2e]"
+          icon={<Minus />}
+          onClick={() => getCurrentWindow().minimize()}
+        />
+        <WindowControl
+          ariaLabel="缩放窗口"
+          className="bg-[#28c840]"
+          icon={<Maximize2 />}
+          onClick={() => getCurrentWindow().toggleMaximize()}
+        />
       </div>
-
-      <div className="flex min-w-0 items-center gap-2 justify-self-end">
-        <div className="hidden items-center gap-1.5 rounded-[8px] border border-border bg-secondary/62 p-1 lg:flex">
-          <HeaderMetric label="JPG" value={status.jpegCount} />
-          <HeaderMetric
-            label="匹配"
-            value={status.counts.matched + status.counts.confirmed}
-            tone="success"
-          />
-          <HeaderMetric label="冲突" value={status.counts.conflict} tone="danger" />
-          <HeaderMetric label="可导出" value={status.exportableCount} tone="accent" />
-        </div>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              aria-label={logPanelOpen ? "隐藏日志" : "显示日志"}
-              aria-pressed={logPanelOpen}
-              className={cn(
-                "size-8 rounded-[8px]",
-                logPanelOpen && "border-accent/30 bg-accent/10 text-accent hover:bg-accent/14",
-              )}
-              variant="utility"
-              size="icon-sm"
-              onClick={onToggleLogPanel}
-              type="button"
-            >
-              <PanelBottom />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{logPanelOpen ? "隐藏日志" : "显示日志"}</TooltipContent>
-        </Tooltip>
+      <h1 className="pointer-events-none absolute inset-0 z-10 grid place-items-center text-[13px] font-semibold text-foreground/90">
+        照片配对助手
+      </h1>
+      <div className="absolute inset-y-0 left-[5.25rem] z-10 flex items-center">
         <UpdateButton />
       </div>
     </header>
+  );
+}
+
+function WindowControl({
+  ariaLabel,
+  className,
+  icon,
+  onClick,
+}: {
+  ariaLabel: string;
+  className: string;
+  icon: ReactNode;
+  onClick: () => Promise<void>;
+}) {
+  return (
+    <button
+      aria-label={ariaLabel}
+      className={cn(
+        "group grid size-3 place-items-center rounded-full text-black/60 transition-transform hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        className,
+      )}
+      onClick={() => {
+        if (isTauriRuntime()) {
+          void onClick();
+        }
+      }}
+      type="button"
+    >
+      <span className="sr-only">{ariaLabel}</span>
+      <span className="opacity-0 transition-opacity group-hover:opacity-100 [&_svg]:size-2 [&_svg]:stroke-[2.5]">
+        {icon}
+      </span>
+    </button>
+  );
+}
+
+function MatcherStatusOverlay({
+  status,
+}: {
+  status: typeof defaultRawWorkspaceStatus;
+}) {
+  const config = getDirectionConfig(status.direction);
+
+  return (
+    <aside
+      aria-label="当前配对统计"
+      className="absolute bottom-5 right-5 z-20 flex items-center gap-3 text-xs"
+    >
+      <div className="flex items-center gap-4">
+        <HeaderMetric label={config.inputNoun} value={status.inputCount} />
+        <HeaderMetric
+          label="匹配"
+          value={status.counts.matched + status.counts.confirmed}
+          tone="success"
+        />
+        <HeaderMetric label="冲突" value={status.counts.conflict} tone="danger" />
+        <HeaderMetric label="可导出" value={status.exportableCount} tone="accent" />
+      </div>
+    </aside>
   );
 }
 
@@ -159,7 +191,7 @@ function HeaderMetric({
   tone?: "neutral" | "success" | "danger" | "accent";
 }) {
   return (
-    <div className="grid h-7 min-w-[4.25rem] grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5 rounded-[6px] px-2 text-[11px]">
+    <div className="flex min-w-0 items-center gap-2 text-[11px]">
       <span className="truncate text-muted-foreground">{label}</span>
       <strong
         className={cn(
@@ -199,7 +231,7 @@ function LogBottomSheet({
     <section
       aria-label="运行日志"
       aria-live="polite"
-      className="absolute bottom-9 left-4 right-4 z-30 h-[260px] max-h-[42vh] animate-in fade-in slide-in-from-bottom-3 duration-150 min-[960px]:left-[312px]"
+      className="absolute bottom-9 left-4 right-4 z-30 h-[260px] max-h-[42vh] animate-in fade-in slide-in-from-bottom-3 duration-150 min-[960px]:left-[328px]"
     >
       <div className="grid h-full grid-rows-[44px_minmax(0,1fr)] overflow-hidden rounded-[8px] border border-border bg-card shadow-[0_-12px_40px_rgba(0,0,0,0.12)]">
         <header className="flex items-center justify-between gap-3 border-b border-border px-4">
@@ -314,7 +346,7 @@ function UpdateButton() {
         return;
       }
 
-      setStatus("idle");
+      setStatus("notAvailable");
       setMessage("");
     } catch {
       setPendingUpdate(null);
@@ -376,6 +408,7 @@ function UpdateButton() {
   }
 
   const label = getUpdateButtonLabel(status, pendingUpdate, progress);
+  const visibleLabel = status === "available" ? "更新" : label;
 
   if (
     !pendingUpdate &&
@@ -393,17 +426,17 @@ function UpdateButton() {
         <Button
           aria-label={label}
           className={cn(
-            "h-8 max-w-[11.5rem] overflow-hidden border-accent/24 bg-accent/10 px-2.5 text-xs text-accent shadow-none hover:bg-accent/14 disabled:opacity-100",
+      "h-5 max-w-[4rem] overflow-hidden rounded-[5px] border-accent bg-accent px-2.5 text-[8px] font-semibold leading-none tracking-[0.01em] text-accent-foreground shadow-none hover:bg-accent/90 disabled:opacity-100",
             status === "error" &&
-              "border-destructive/35 bg-destructive/10 text-destructive hover:bg-destructive/14",
+              "border-destructive bg-destructive text-destructive-foreground hover:bg-destructive/90",
           )}
           disabled={status === "downloading" || status === "installing" || status === "installed"}
           onClick={handleButtonClick}
           type="button"
           variant="utility"
         >
-          <UpdateButtonIcon status={status} />
-          <span className="min-w-0 truncate">{label}</span>
+          {status === "available" ? null : <UpdateButtonIcon status={status} />}
+          <span className="min-w-0 truncate">{visibleLabel}</span>
         </Button>
       </TooltipTrigger>
       <TooltipContent>
@@ -570,25 +603,6 @@ function UpdateDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function FooterStatus({
-  jpegCount,
-  rawDirectory,
-  rawStatusText,
-}: {
-  jpegCount: number;
-  rawDirectory: string;
-  rawStatusText: string;
-}) {
-  return (
-    <footer className="flex min-w-0 items-center justify-between gap-3 border-t border-border bg-card px-6 text-[11px] text-muted-foreground">
-      <span className="truncate">
-        JPG {jpegCount} · RAW {rawDirectory ? "已选择" : "未选择"}
-      </span>
-      <span className="font-mono tabular-nums">{rawStatusText}</span>
-    </footer>
   );
 }
 

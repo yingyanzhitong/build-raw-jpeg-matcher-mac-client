@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.28 - 2026-07-10
+
+- Added bidirectional RAW/image matching, including JPG, JPEG, PNG, and text-list input support in both directions.
+- Improved the desktop pairing workspace with automatic matching, direction-switch animation, a custom macOS title bar, and a compact update action that appears only when a new version is available.
+- Added true rounded window corners for the borderless macOS window.
+
 ## 0.1.27 - 2026-07-10
 
 - Added a GitHub Pages deployment workflow for the public RAW/JPEG Matcher download site.

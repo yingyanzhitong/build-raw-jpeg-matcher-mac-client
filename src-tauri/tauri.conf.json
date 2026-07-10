@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "照片配对助手",
-  "version": "0.1.26",
+  "version": "../package.json",
   "identifier": "com.masongzhi.rawjpegmatcher",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -10,6 +10,7 @@
     "frontendDist": "../dist"
   },
   "app": {
+    "macOSPrivateApi": true,
     "windows": [
       {
         "title": "照片配对助手",
@@ -17,6 +18,8 @@
         "height": 820,
         "minWidth": 980,
         "minHeight": 680,
+        "decorations": false,
+        "transparent": true,
         "dragDropEnabled": true
       }
     ],

@@ -1,32 +1,42 @@
-export type MatchStatus = "matched" | "missing" | "conflict" | "confirmed";
+export type MatchDirection = "imageToRaw" | "rawToImage";
 
-export interface JpegInput {
-  path: string;
-  fileName: string;
-  baseName: string;
-  size: number;
-  modifiedTime: number | null;
-  manual?: boolean;
+export type DirectionTransitionPhase = "exiting" | "entering";
+
+export interface DirectionTransition {
+  from: MatchDirection;
+  to: MatchDirection;
+  phase: DirectionTransitionPhase;
+  sequence: number;
 }
 
-export interface RawCandidate {
+export type MatchStatus = "matched" | "missing" | "conflict" | "confirmed";
+
+export type MatcherBusy = "collect" | "match" | "export" | null;
+
+export interface MatcherCapabilities {
+  imageExtensions: string[];
+  rawExtensions: string[];
+}
+
+export interface MatchFile {
   path: string;
   fileName: string;
   baseName: string;
   extension: string;
   size: number;
   modifiedTime: number | null;
+  manual: boolean;
 }
 
 export interface MatchResult {
-  jpeg: JpegInput;
+  input: MatchFile;
   status: MatchStatus;
-  candidates: RawCandidate[];
-  selectedRaw: RawCandidate | null;
+  candidates: MatchFile[];
+  selectedCandidate: MatchFile | null;
 }
 
 export interface InputCollection {
-  files: JpegInput[];
+  files: MatchFile[];
   logs: string[];
   skippedCount: number;
   duplicateCount: number;
@@ -41,7 +51,7 @@ export interface MatchSummary {
 }
 
 export interface MatchResponse {
-  jpegInputs: JpegInput[];
+  inputs: MatchFile[];
   results: MatchResult[];
   logs: string[];
   summary: MatchSummary;
@@ -49,9 +59,11 @@ export interface MatchResponse {
 
 export interface ExportSummary {
   copiedCount: number;
+  alreadyPresentCount: number;
   skippedMissingCount: number;
   skippedConflictCount: number;
   collisionCount: number;
+  sourceErrorCount: number;
 }
 
 export interface ExportResponse {

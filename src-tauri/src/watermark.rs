@@ -359,7 +359,7 @@ fn load_watermark_font(text: &str) -> Result<FontArc, Box<dyn std::error::Error>
     database.load_system_fonts();
 
     for family in WATERMARK_TEXT_FONT_FAMILIES {
-        let families = [Family::Name(*family)];
+        let families = [Family::Name(family)];
         for weight in [Weight::BOLD, Weight::SEMIBOLD, Weight::NORMAL] {
             if let Some(font) = font_from_query(&database, &families, weight) {
                 if font_supports_text(&font, text) {
