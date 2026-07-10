@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.27 - 2026-07-10
+
+- Added a GitHub Pages deployment workflow for the public RAW/JPEG Matcher download site.
+- Published the static download page with current application imagery and macOS/Windows installer links from the release manifest.
+
 ## 0.1.26 - 2026-07-09
 
 - Refined the RAW/JPEG matcher into a Codex-style two-pane layout with header statistics and a bottom log sheet.

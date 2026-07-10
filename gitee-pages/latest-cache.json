@@ -1,0 +1,29 @@
+{
+  "version": "0.1.24",
+  "notes": "- Fixed macOS installer app bundle signing so the DMG-installed app includes sealed resources and validates with `codesign`.\n- Kept single-workspace navigation hidden when only the RAW/JPEG pairing workspace is available.",
+  "pub_date": "2026-07-09T09:24:34.500Z",
+  "installers": {
+    "darwin-aarch64": {
+      "kind": "dmg",
+      "url": "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/releases/download/v0.1.24/photo-pairing-assistant_0.1.24_macOS_aarch64.dmg"
+    },
+    "windows-x86_64": {
+      "kind": "nsis",
+      "url": "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/releases/download/v0.1.24/photo-pairing-assistant_0.1.24_Windows_x64-setup.exe"
+    }
+  },
+  "platforms": {
+    "darwin-aarch64": {
+      "installer_kind": "dmg",
+      "installer_url": "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/releases/download/v0.1.24/photo-pairing-assistant_0.1.24_macOS_aarch64.dmg",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdzdUbC8waG1vM3VmU1hhOFdLSnN2cStpN1JlOS9QVU9SQXltODBGeWd2UUZOa2NSMFJuajdBeUd0RzZ4VVltSmlITG1veEp1enQ0ZWJhR0RnK2RrUVZic3BhdHYxZWcwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgzNTg4NTQyCWZpbGU654Wn54mH6YWN5a+55Yqp5omLLmFwcC50YXIuZ3oKeTVWbm0xUktTVU44V0VhcDc2Y2pBSmhHazJQT3BkQndaTWJ4TWFIV0piTUJuaGtNOVowQktUV2dicm9pSHY2ZjR6M1FJOVpCd0xwREtsdExBK3JwRGc9PQo=",
+      "url": "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/releases/download/v0.1.24/photo-pairing-assistant_0.1.24_macOS_aarch64-updater.app.tar.gz"
+    },
+    "windows-x86_64": {
+      "installer_kind": "nsis",
+      "installer_url": "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/releases/download/v0.1.24/photo-pairing-assistant_0.1.24_Windows_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdzdUbC8waG1vM2hQVkVqam1Hc1FSYnlRWHhmTngzT1p4bWxvM1N3QzE3MWVpaGhON2tHL0FPR2xFYmtyNjJXTVk3QTc1MFVWd1lHSU5tU2hmaTlwTjN1QWdCdXY5VkFZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgzNTg4NzMwCWZpbGU654Wn54mH6YWN5a+55Yqp5omLXzAuMS4yNF94NjQtc2V0dXAuZXhlCjZCRnBleWNDRFdBRWVQSzNLUDEyWHZ0aDJsMnUzU0RzSk9ZYXUzWE42d0V3a3F1djlHMnNQREttUkh2SkpEa3RoQVVwbzFhUi93MnVOQlpYanRsRERBPT0K",
+      "url": "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/releases/download/v0.1.24/photo-pairing-assistant_0.1.24_Windows_x64-setup.exe"
+    }
+  }
+}

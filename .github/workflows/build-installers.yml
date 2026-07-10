@@ -143,3 +143,13 @@ jobs:
           RELEASE_ASSET_DIR: normalized-release-assets
           LATEST_JSON_PATH: normalized-release-assets/latest.json
         run: node scripts/sync-gitee-release.mjs
+
+      - name: Sync Gitee Pages
+        env:
+          GITEE_ACCESS_TOKEN: ${{ secrets.GITEE_ACCESS_TOKEN }}
+          GITEE_OWNER: masongzhi1
+          GITEE_REPO: raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client
+          GITEE_PAGES_BRANCH: pages
+          GITEE_PAGES_SOURCE_DIR: gitee-pages
+          LATEST_JSON_PATH: normalized-release-assets/latest.json
+        run: node scripts/sync-gitee-pages.mjs

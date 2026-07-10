@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="RAW/JPEG Matcher 是面向摄影整理流程的桌面工具，可按 JPEG 文件名匹配 RAW 原片并批量导出。"
+    />
+    <meta name="theme-color" content="#eef4f7" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#10181d" media="(prefers-color-scheme: dark)" />
+    <meta property="og:title" content="RAW/JPEG Matcher - 照片配对助手" />
+    <meta
+      property="og:description"
+      content="按 JPEG 文件名查找 RAW 原片，处理冲突，批量导出。"
+    />
+    <meta property="og:image" content="./assets/app-preview.png" />
+    <title>RAW/JPEG Matcher - 照片配对助手</title>
+    <link rel="icon" href="./assets/app-icon.png" />
+    <link rel="preload" href="./assets/app-preview.png" as="image" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#download-panel">跳到下载</a>
+
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="RAW/JPEG Matcher 首页">
+        <img src="./assets/app-icon.png" alt="" width="34" height="34" />
+        <span translate="no">RAW/JPEG Matcher</span>
+      </a>
+      <nav class="site-nav" aria-label="页面导航">
+        <a href="#workflow">流程</a>
+        <a href="#details">能力</a>
+        <a href="#download-panel">下载</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero section-shell" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="section-kicker">照片配对助手</p>
+          <h1 id="hero-title">
+            <span>RAW 和 JPEG</span>
+            <span>一次配齐</span>
+          </h1>
+          <p class="hero-lead">
+            选择 JPEG 清单和 RAW 文件夹，快速找出原片，确认冲突后批量导出。
+          </p>
+          <div class="hero-actions" aria-label="主要操作">
+            <a class="button button-primary" href="#download-panel">下载客户端</a>
+            <a class="button button-secondary" href="#workflow">查看流程</a>
+          </div>
+        </div>
+
+        <figure class="hero-visual">
+          <img
+            src="./assets/app-preview.png"
+            alt="RAW/JPEG Matcher 桌面客户端界面截图"
+            width="1180"
+            height="820"
+            fetchpriority="high"
+          />
+        </figure>
+      </section>
+
+      <section id="workflow" class="workflow section-shell" aria-labelledby="workflow-title">
+        <div class="section-heading">
+          <h2 id="workflow-title">把整理动作压到三步</h2>
+          <p>
+            适合拍摄后只交付 JPEG，但仍要归档、二修或交片 RAW 原片的场景。
+          </p>
+        </div>
+
+        <div class="workflow-grid" aria-label="工作流程">
+          <article class="workflow-item workflow-item-large">
+            <span class="workflow-label">选择</span>
+            <h3>导入 JPEG 清单</h3>
+            <p>从选片结果出发，不再手动翻 RAW 文件夹。</p>
+          </article>
+          <article class="workflow-item">
+            <span class="workflow-label">匹配</span>
+            <h3>按文件名定位 RAW</h3>
+            <p>自动统计已匹配、冲突、缺失和可导出数量。</p>
+          </article>
+          <article class="workflow-item">
+            <span class="workflow-label">确认</span>
+            <h3>处理同名冲突</h3>
+            <p>遇到多张候选原片时，先确认再导出。</p>
+          </article>
+          <article class="workflow-item workflow-item-tall">
+            <span class="workflow-label">导出</span>
+            <h3>复制到目标目录</h3>
+            <p>按结果批量导出 RAW，日志保留每次处理记录。</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="details" class="details section-shell" aria-labelledby="details-title">
+        <div class="details-panel">
+          <div>
+            <h2 id="details-title">为桌面整理而做</h2>
+            <p>
+              客户端使用 Tauri 构建，下载体积轻，运行在本机文件系统上。它只做一件事：让照片原片配对更快、更稳。
+            </p>
+          </div>
+          <dl class="detail-list">
+            <div>
+              <dt>本机处理</dt>
+              <dd>文件扫描、匹配和导出都在本地完成。</dd>
+            </div>
+            <div>
+              <dt>清晰状态</dt>
+              <dd>匹配、冲突、缺失、可导出数量一眼可见。</dd>
+            </div>
+            <div>
+              <dt>可更新</dt>
+              <dd>客户端通过 Gitee Release 清单检查新版本。</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+
+      <section id="download-panel" class="download section-shell" aria-labelledby="download-title">
+        <div class="download-copy">
+          <h2 id="download-title">下载最新版</h2>
+          <p>
+            下载地址来自 Gitee 仓库的 <code>release/latest.json</code>，页面会优先使用其中的 <code>installer_url</code>。
+          </p>
+          <p class="manifest-state" id="manifest-state" aria-live="polite">
+            正在读取版本清单…
+          </p>
+        </div>
+
+        <div class="download-grid">
+          <article class="download-card" data-platform-card="mac">
+            <div>
+              <p class="download-platform">macOS</p>
+              <h3>Mac 版安装包</h3>
+              <p class="download-meta" data-platform-meta="mac">正在准备下载链接</p>
+            </div>
+            <a class="button button-primary is-disabled" data-platform-link="mac" aria-disabled="true">
+              下载 Mac 版
+            </a>
+            <div class="variant-list" data-platform-variants="mac" aria-label="macOS 版本"></div>
+          </article>
+
+          <article class="download-card" data-platform-card="windows">
+            <div>
+              <p class="download-platform">Windows</p>
+              <h3>Windows 版安装包</h3>
+              <p class="download-meta" data-platform-meta="windows">正在准备下载链接</p>
+            </div>
+            <a
+              class="button button-primary is-disabled"
+              data-platform-link="windows"
+              aria-disabled="true"
+            >
+              下载 Windows 版
+            </a>
+            <div class="variant-list" data-platform-variants="windows" aria-label="Windows 版本"></div>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>RAW/JPEG Matcher</p>
+      <a href="https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client">
+        查看 Gitee 仓库
+      </a>
+    </footer>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>
