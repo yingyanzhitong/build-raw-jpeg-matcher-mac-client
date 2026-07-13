@@ -1,0 +1,54 @@
+CHANGELOG.md
+  s_99e671d78654a7::t_be324dfddc7b87 3-8
+package-lock.json
+  s_99e671d78654a7::t_ace7b249939323 3,9
+package.json
+  s_99e671d78654a7::t_794a1f0e7d48ce 3
+src-tauri/Cargo.lock
+  s_99e671d78654a7::t_e52729f57fe015 3064
+src-tauri/Cargo.toml
+  s_99e671d78654a7::t_c493f898678d58 3
+src/App.tsx
+  s_016fa4053668b5::t_6881cf3054396f 105,169-170,175,187,194,206,216,218,238,291,357,359
+src/features/file-separator/FileSeparatorWorkspace.tsx
+  s_016fa4053668b5::t_97f1a940745813 185,189,191,231,233-234,242-243,281-283,287-288,309,317,324
+src/components/ui/button.tsx
+  s_4b842b1fbac602::t_4b411a2f0092e9 8,13,25
+src/features/shared/ui.tsx
+  s_4b842b1fbac602::t_a724c5ffba77c9 33-35,39,58,78,133
+src/styles.css
+  s_4b842b1fbac602::t_b71c5ff97e03ee 53,61-64,71-72,74,76-77,124,128,138-139,148-158
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "7449292d4cfa9a000258abb0aa8dcb51fb610c65",
+  "prompts": {},
+  "logical_commit_id": "7449292d4cfa9a000258abb0aa8dcb51fb610c65",
+  "sessions": {
+    "s_016fa4053668b5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f4cce-0e1e-7a00-b270-cd79fbd1f593",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    },
+    "s_4b842b1fbac602": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f4b95-bf33-7300-9b99-90bd70532a43",
+        "model": "unknown"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    },
+    "s_99e671d78654a7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f5a3b-0398-7fe0-b196-0c011ca70ed8",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
