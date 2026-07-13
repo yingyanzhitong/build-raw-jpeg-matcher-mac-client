@@ -148,7 +148,7 @@ export function inferLogLevel(message: string): LogLevel {
   if (/跳过|冲突|未找到|缺少|重复/.test(message)) {
     return "warning";
   }
-  if (/完成|已匹配|已导出|已确认|已加入|已复制|准备完成|扫描完成/.test(message)) {
+  if (/完成|已匹配|已导出|已确认|已加入|已复制|已移动|准备完成|扫描完成/.test(message)) {
     return "success";
   }
   return "info";

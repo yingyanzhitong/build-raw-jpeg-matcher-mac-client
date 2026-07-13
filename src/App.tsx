@@ -3,10 +3,8 @@ import { check, type DownloadEvent, type Update } from "@tauri-apps/plugin-updat
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   AlertTriangle,
-  ArrowLeftRight,
   CheckCircle2,
   Download,
-  FolderTree,
   Loader2,
   Maximize2,
   Minus,
@@ -46,7 +44,11 @@ import {
   RawMatcherWorkspace,
 } from "@/features/raw-matcher/RawMatcherWorkspace";
 import { getDirectionConfig } from "@/features/raw-matcher/RawJpegMatcherView";
-import { FileSeparatorWorkspace } from "@/features/file-separator/FileSeparatorWorkspace";
+import {
+  defaultSeparatorWorkspaceStatus,
+  FileSeparatorWorkspace,
+  type SeparatorWorkspaceStatus,
+} from "@/features/file-separator/FileSeparatorWorkspace";
 import { formatBytes, type LogEntry, type LogLevel } from "@/features/shared/ui";
 
 type Workspace = "matcher" | "separator";
@@ -74,8 +76,16 @@ const updateManifestUrl =
 
 function App() {
   const [rawStatus, setRawStatus] = useState(defaultRawWorkspaceStatus);
+  const [separatorStatus, setSeparatorStatus] = useState<SeparatorWorkspaceStatus>(
+    defaultSeparatorWorkspaceStatus,
+  );
   const [logPanelOpen, setLogPanelOpen] = useState(false);
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace>("matcher");
+
+  function activateWorkspace(workspace: Workspace) {
+    setActiveWorkspace(workspace);
+    setLogPanelOpen(false);
+  }
 
   useEffect(() => {
     function handleWorkspaceShortcut(event: KeyboardEvent) {
@@ -89,10 +99,10 @@ function App() {
       }
       if (event.key === "1") {
         event.preventDefault();
-        setActiveWorkspace("matcher");
+        activateWorkspace("matcher");
       } else if (event.key === "2") {
         event.preventDefault();
-        setActiveWorkspace("separator");
+        activateWorkspace("separator");
       }
     }
 
@@ -104,7 +114,7 @@ function App() {
     <TooltipProvider>
       <main className="desk-grid relative grid h-screen grid-rows-[42px_44px_minmax(0,1fr)] overflow-hidden text-foreground">
         <WindowTitlebar />
-        <WorkspaceTabBar activeWorkspace={activeWorkspace} onChange={setActiveWorkspace} />
+        <WorkspaceTabBar activeWorkspace={activeWorkspace} onChange={activateWorkspace} />
         <section className="codex-main min-h-0 overflow-hidden">
           <div
             aria-labelledby="workspace-tab-matcher"
@@ -125,19 +135,20 @@ function App() {
             id="workspace-panel-separator"
             role="tabpanel"
           >
-            <FileSeparatorWorkspace active={activeWorkspace === "separator"} />
+            <FileSeparatorWorkspace
+              active={activeWorkspace === "separator"}
+              logPanelOpen={logPanelOpen}
+              onStatusChange={setSeparatorStatus}
+              onToggleLogPanel={() => setLogPanelOpen((open) => !open)}
+            />
           </div>
         </section>
-        {activeWorkspace === "matcher" ? (
-          <>
-            <MatcherStatusOverlay status={rawStatus} />
-            <LogBottomSheet
-              open={logPanelOpen}
-              logs={rawStatus.logs}
-              onClose={() => setLogPanelOpen(false)}
-            />
-          </>
-        ) : null}
+        {activeWorkspace === "matcher" ? <MatcherStatusOverlay status={rawStatus} /> : null}
+        <LogBottomSheet
+          open={logPanelOpen}
+          logs={activeWorkspace === "matcher" ? rawStatus.logs : separatorStatus.logs}
+          onClose={() => setLogPanelOpen(false)}
+        />
       </main>
     </TooltipProvider>
   );
@@ -172,7 +183,7 @@ function WorkspaceTabBar({
           aria-controls="workspace-panel-matcher"
           aria-selected={activeWorkspace === "matcher"}
           className={cn(
-            "relative inline-flex h-full items-center gap-1.5 rounded-[5px] px-3.5 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card after:absolute after:bottom-0 after:left-3.5 after:right-3.5 after:h-0.5 after:rounded-full",
+            "relative inline-flex h-full items-center rounded-[5px] px-3.5 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card after:absolute after:bottom-0 after:left-3.5 after:right-3.5 after:h-0.5 after:rounded-full",
             activeWorkspace === "matcher"
               ? "text-foreground after:bg-accent"
               : "text-secondary-foreground/75 hover:bg-secondary/72 hover:text-foreground",
@@ -184,14 +195,13 @@ function WorkspaceTabBar({
           role="tab"
           type="button"
         >
-          <ArrowLeftRight className="size-3.5 stroke-[1.8]" />
           图片 / RAW 匹配
         </button>
         <button
           aria-controls="workspace-panel-separator"
           aria-selected={activeWorkspace === "separator"}
           className={cn(
-            "relative inline-flex h-full items-center gap-1.5 rounded-[5px] px-3.5 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card after:absolute after:bottom-0 after:left-3.5 after:right-3.5 after:h-0.5 after:rounded-full",
+            "relative inline-flex h-full items-center rounded-[5px] px-3.5 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card after:absolute after:bottom-0 after:left-3.5 after:right-3.5 after:h-0.5 after:rounded-full",
             activeWorkspace === "separator"
               ? "text-foreground after:bg-accent"
               : "text-secondary-foreground/75 hover:bg-secondary/72 hover:text-foreground",
@@ -203,7 +213,6 @@ function WorkspaceTabBar({
           role="tab"
           type="button"
         >
-          <FolderTree className="size-3.5 stroke-[1.8]" />
           一键分离
         </button>
       </div>

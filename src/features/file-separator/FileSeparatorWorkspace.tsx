@@ -1,22 +1,33 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import {
+  AlertTriangle,
   Files,
   FileImage,
   FolderInput,
   FolderOutput,
   Loader2,
+  PanelBottom,
   Split,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import {
   formatBytes,
   inferLogLevel,
-  LogPanel,
   Pane,
   PathDisplay,
   StatTile,
@@ -25,6 +36,7 @@ import {
 } from "@/features/shared/ui";
 import type {
   SeparatedFile,
+  SeparatorExportMode,
   SeparatorExportResponse,
   SeparatorExportSummary,
   SeparatorScanResponse,
@@ -34,26 +46,49 @@ type SeparatorBusy = "scan" | "export" | null;
 
 interface ExportReport {
   directory: string;
+  mode: SeparatorExportMode;
   summary: SeparatorExportSummary;
 }
 
 const previewLimit = 160;
+const initialSeparatorLogs: LogEntry[] = [
+  { level: "info", message: "等待选择包含图片与 RAW 的混合文件夹" },
+];
 
-export function FileSeparatorWorkspace({ active }: { active: boolean }) {
+export interface SeparatorWorkspaceStatus {
+  logs: LogEntry[];
+}
+
+export const defaultSeparatorWorkspaceStatus: SeparatorWorkspaceStatus = {
+  logs: initialSeparatorLogs,
+};
+
+export function FileSeparatorWorkspace({
+  active,
+  logPanelOpen,
+  onStatusChange,
+  onToggleLogPanel,
+}: {
+  active: boolean;
+  logPanelOpen: boolean;
+  onStatusChange: (status: SeparatorWorkspaceStatus) => void;
+  onToggleLogPanel: () => void;
+}) {
   const [inputRoot, setInputRoot] = useState("");
   const [outputRoot, setOutputRoot] = useState("");
+  const [exportMode, setExportMode] = useState<SeparatorExportMode>("copy");
   const [images, setImages] = useState<SeparatedFile[]>([]);
   const [raws, setRaws] = useState<SeparatedFile[]>([]);
   const [skippedCount, setSkippedCount] = useState(0);
   const [busy, setBusy] = useState<SeparatorBusy>(null);
-  const [logs, setLogs] = useState<LogEntry[]>([
-    { level: "info", message: "等待选择包含图片与 RAW 的混合文件夹" },
-  ]);
+  const [logs, setLogs] = useState<LogEntry[]>(initialSeparatorLogs);
   const [exportReport, setExportReport] = useState<ExportReport | null>(null);
+  const [moveConfirmOpen, setMoveConfirmOpen] = useState(false);
 
   const fileCount = images.length + raws.length;
-  const canExport = inputRoot.length > 0 && outputRoot.length > 0 && fileCount > 0 && busy === null;
-  const actionHint = getExportHint({ inputRoot, outputRoot, fileCount, busy });
+  const exportDirectory = exportMode === "moveInPlace" ? inputRoot : outputRoot;
+  const canExport = inputRoot.length > 0 && exportDirectory.length > 0 && fileCount > 0 && busy === null;
+  const actionHint = getExportHint({ inputRoot, outputRoot, exportMode, fileCount, busy });
 
   useEffect(() => {
     if (!active) {
@@ -83,6 +118,10 @@ export function FileSeparatorWorkspace({ active }: { active: boolean }) {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [active, busy, inputRoot]);
+
+  useEffect(() => {
+    onStatusChange({ logs });
+  }, [logs, onStatusChange]);
 
   function appendLogs(messages: string[], level?: LogLevel) {
     const entries = messages.map((message) => ({
@@ -144,8 +183,31 @@ export function FileSeparatorWorkspace({ active }: { active: boolean }) {
     }
 
     setOutputRoot(selected);
+    setExportMode("copy");
     setExportReport(null);
     appendLogs([`已选择分离输出目录: ${selected}`], "success");
+  }
+
+  function selectMoveInPlace() {
+    if (busy !== null || inputRoot.length === 0) {
+      return;
+    }
+    setExportMode("moveInPlace");
+    setExportReport(null);
+  }
+
+  function startExport() {
+    if (!canExport) {
+      appendLogs([actionHint], "warning");
+      return;
+    }
+
+    if (exportMode === "moveInPlace") {
+      setMoveConfirmOpen(true);
+      return;
+    }
+
+    void exportFiles();
   }
 
   async function exportFiles() {
@@ -154,15 +216,22 @@ export function FileSeparatorWorkspace({ active }: { active: boolean }) {
       return;
     }
 
+    setMoveConfirmOpen(false);
     setBusy("export");
     try {
       const response = await invoke<SeparatorExportResponse>("export_separated_files", {
         inputRoot,
         files: [...images, ...raws],
-        exportDir: outputRoot,
+        exportDir: exportDirectory,
+        mode: exportMode,
       });
       appendLogs(response.logs);
-      setExportReport({ directory: outputRoot, summary: response.summary });
+      setExportReport({ directory: exportDirectory, mode: exportMode, summary: response.summary });
+      if (exportMode === "moveInPlace") {
+        setImages([]);
+        setRaws([]);
+        setSkippedCount(0);
+      }
     } catch (error) {
       appendLogs([`分离文件失败: ${String(error)}`], "error");
     } finally {
@@ -170,9 +239,9 @@ export function FileSeparatorWorkspace({ active }: { active: boolean }) {
     }
   }
 
-  async function openOutputDirectory() {
+  async function openOutputDirectory(path: string) {
     try {
-      await invoke("open_file_path", { path: outputRoot });
+      await invoke("open_file_path", { path });
     } catch (error) {
       appendLogs([`打开输出目录失败: ${String(error)}`], "error");
     }
@@ -206,22 +275,60 @@ export function FileSeparatorWorkspace({ active }: { active: boolean }) {
 
             <Pane
               icon={<FolderOutput className="size-4" />}
-              title="分离输出"
-              subtitle="将创建“图片”与“RAW”目录"
+              title="处理方式"
+              subtitle={exportMode === "copy" ? "复制到新文件夹" : "当前文件夹内移动"}
             >
-              <PathDisplay path={outputRoot} fallback="尚未选择输出目录" />
-              <Button
-                disabled={busy !== null || inputRoot.length === 0}
-                onClick={chooseOutputDirectory}
-                variant="utility"
-                type="button"
-              >
-                <FolderOutput />
-                选择输出目录
-              </Button>
-              <p className="text-xs leading-5 text-muted-foreground">
-                保留源目录结构并复制文件；原始文件不会移动或改写。
-              </p>
+              <div aria-label="分离处理方式" className="grid grid-cols-2 gap-2" role="group">
+                <Button
+                  aria-pressed={exportMode === "copy"}
+                  disabled={busy !== null || inputRoot.length === 0}
+                  onClick={() => {
+                    setExportMode("copy");
+                    setExportReport(null);
+                  }}
+                  size="sm"
+                  type="button"
+                  variant={exportMode === "copy" ? "accent" : "utility"}
+                >
+                  新目录复制
+                </Button>
+                <Button
+                  aria-pressed={exportMode === "moveInPlace"}
+                  disabled={busy !== null || inputRoot.length === 0}
+                  onClick={selectMoveInPlace}
+                  size="sm"
+                  type="button"
+                  variant={exportMode === "moveInPlace" ? "accent" : "utility"}
+                >
+                  当前目录移动
+                </Button>
+              </div>
+
+              {exportMode === "copy" ? (
+                <>
+                  <PathDisplay path={outputRoot} fallback="尚未选择输出目录" />
+                  <Button
+                    disabled={busy !== null || inputRoot.length === 0}
+                    onClick={chooseOutputDirectory}
+                    variant="utility"
+                    type="button"
+                  >
+                    <FolderOutput />
+                    选择输出目录
+                  </Button>
+                  <p className="text-xs leading-5 text-muted-foreground">
+                    保留源目录结构并复制文件；原始文件不会移动或改写。
+                  </p>
+                </>
+              ) : (
+                <>
+                  <PathDisplay path={inputRoot} fallback="请先选择混合文件夹" />
+                  <p className="flex gap-2 text-xs leading-5 text-warning">
+                    <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+                    将在当前文件夹创建“图片”和“RAW”目录，并移动已识别文件；源文件不会保留。
+                  </p>
+                </>
+              )}
             </Pane>
           </div>
         </ScrollArea>
@@ -233,14 +340,36 @@ export function FileSeparatorWorkspace({ active }: { active: boolean }) {
             <h2 className="truncate text-[15px] font-semibold tracking-[-0.01em]">一键分离</h2>
             <p className="mt-1 truncate text-xs text-muted-foreground">{actionHint}</p>
           </div>
-          <Button disabled={!canExport} onClick={exportFiles} type="button">
-            {busy === "export" ? <Loader2 className="animate-spin" /> : <Split />}
-            开始分离
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button disabled={!canExport} onClick={startExport} type="button">
+              {busy === "export" ? <Loader2 className="animate-spin" /> : <Split />}
+              {exportMode === "moveInPlace" ? "开始移动" : "开始复制"}
+            </Button>
+            <Separator orientation="vertical" className="h-8" />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  aria-label={logPanelOpen ? "隐藏日志" : "显示日志"}
+                  aria-pressed={logPanelOpen}
+                  className={cn(
+                    "size-9",
+                    logPanelOpen && "border-accent/30 bg-accent/10 text-accent hover:bg-accent/14",
+                  )}
+                  variant="ghost"
+                  size="icon"
+                  onClick={onToggleLogPanel}
+                  type="button"
+                >
+                  <PanelBottom />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{logPanelOpen ? "隐藏日志" : "显示日志"}</TooltipContent>
+            </Tooltip>
+          </div>
         </header>
 
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-5 overflow-auto p-6 min-[1180px]:grid-cols-[minmax(0,1fr)_320px] min-[1180px]:overflow-hidden">
-          <section className="flex min-h-[360px] min-w-0 flex-col overflow-hidden rounded-[10px] border border-border bg-card min-[1180px]:min-h-0">
+        <div className="flex min-h-0 flex-1 overflow-auto p-6">
+          <section className="flex min-h-[420px] min-w-0 flex-1 flex-col overflow-hidden rounded-[10px] border border-border bg-card">
             {inputRoot.length === 0 ? (
               <SeparatorEmptyState />
             ) : (
@@ -254,24 +383,36 @@ export function FileSeparatorWorkspace({ active }: { active: boolean }) {
               </>
             )}
           </section>
-
-          <div className="min-h-[240px] min-[1180px]:min-h-0">
-            <LogPanel logs={logs} />
-          </div>
         </div>
 
         {exportReport ? (
           <footer className="flex shrink-0 items-center justify-between gap-4 border-t border-border bg-success/8 px-4 py-3 text-sm">
             <p className="min-w-0 truncate text-success">
-              已完成分离：复制 {exportReport.summary.copiedCount} 个文件到“图片”和“RAW”目录。
+              已完成分离：{exportReport.mode === "moveInPlace" ? "移动" : "复制"}{" "}
+              {exportReport.mode === "moveInPlace"
+                ? exportReport.summary.movedCount
+                : exportReport.summary.copiedCount}
+              个文件到“图片”和“RAW”目录。
             </p>
-            <Button onClick={openOutputDirectory} size="sm" type="button" variant="utility">
+            <Button
+              onClick={() => openOutputDirectory(exportReport.directory)}
+              size="sm"
+              type="button"
+              variant="utility"
+            >
               <FolderOutput />
               打开输出目录
             </Button>
           </footer>
         ) : null}
       </section>
+      <MoveConfirmDialog
+        fileCount={fileCount}
+        inputRoot={inputRoot}
+        onConfirm={() => void exportFiles()}
+        onOpenChange={setMoveConfirmOpen}
+        open={moveConfirmOpen}
+      />
     </section>
   );
 }
@@ -286,11 +427,57 @@ function SeparatorEmptyState() {
         <div>
           <h3 className="text-lg font-semibold tracking-[-0.015em]">等待扫描混合文件夹</h3>
           <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
-            选择目录后会预览可分离的图片和 RAW；确认输出位置后即可复制整理。
+            选择目录后会预览可分离的图片和 RAW；可复制到新目录，或在当前目录内移动整理。
           </p>
         </div>
       </div>
     </div>
+  );
+}
+
+function MoveConfirmDialog({
+  fileCount,
+  inputRoot,
+  onConfirm,
+  onOpenChange,
+  open,
+}: {
+  fileCount: number;
+  inputRoot: string;
+  onConfirm: () => void;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <div className="flex items-center gap-2 pr-8">
+            <AlertTriangle className="size-5 text-warning" />
+            <DialogTitle>确认在当前目录移动文件</DialogTitle>
+          </div>
+          <DialogDescription>
+            将在混合文件夹内创建“图片”和“RAW”目录，并移动 {fileCount} 个已识别文件。
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3 p-5">
+          <PathDisplay fallback="当前混合文件夹" path={inputRoot} />
+          <p className="text-sm leading-6 text-muted-foreground">
+            移动完成后，原路径中的文件不再保留。遇到同名但内容不同的目标文件时会跳过，不会覆盖。
+          </p>
+        </div>
+
+        <DialogFooter>
+          <Button onClick={() => onOpenChange(false)} type="button" variant="outline">
+            取消
+          </Button>
+          <Button onClick={onConfirm} type="button">
+            确认移动
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -352,11 +539,13 @@ function SeparatorFileTable({
 function getExportHint({
   inputRoot,
   outputRoot,
+  exportMode,
   fileCount,
   busy,
 }: {
   inputRoot: string;
   outputRoot: string;
+  exportMode: SeparatorExportMode;
   fileCount: number;
   busy: SeparatorBusy;
 }) {
@@ -364,7 +553,7 @@ function getExportHint({
     return "正在扫描混合文件夹…";
   }
   if (busy === "export") {
-    return "正在复制分离文件…";
+    return exportMode === "moveInPlace" ? "正在移动分离文件…" : "正在复制分离文件…";
   }
   if (inputRoot.length === 0) {
     return "先选择包含图片与 RAW 的混合文件夹";
@@ -372,8 +561,10 @@ function getExportHint({
   if (fileCount === 0) {
     return "未发现可分离的图片或 RAW 文件";
   }
-  if (outputRoot.length === 0) {
-    return "选择输出目录后即可开始分离";
+  if (exportMode === "copy" && outputRoot.length === 0) {
+    return "选择新输出目录后即可开始复制";
   }
-  return `将复制 ${fileCount} 个文件，原始文件保持不变`;
+  return exportMode === "moveInPlace"
+    ? `将移动 ${fileCount} 个文件到当前目录的“图片”和“RAW”目录`
+    : `将复制 ${fileCount} 个文件，原始文件保持不变`;
 }

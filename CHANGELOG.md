@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.31 - 2026-07-13
+
+- Unified the separation workspace runtime log with the matching workspace: it now opens on demand as the shared bottom log sheet, and top-level workspace tabs use text only.
+- Added two separation modes: copy recognized files into a chosen new directory, or create `图片` and `RAW` directories inside the current mixed folder and move files while preserving their relative paths.
+- Added a move confirmation dialog, conflict-safe no-overwrite behavior, and scan exclusion for the generated category directories to prevent repeated processing.
+
 ## 0.1.30 - 2026-07-13
 
 - Rebuilt the desktop visual system around a calmer macOS-style workbench with cool neutral surfaces, refined typography, and consistent control feedback.

@@ -1,4 +1,5 @@
 export type SeparatedFileKind = "image" | "raw";
+export type SeparatorExportMode = "copy" | "moveInPlace";
 
 export interface SeparatedFile {
   path: string;
@@ -22,6 +23,9 @@ export interface SeparatorExportSummary {
   copiedCount: number;
   copiedImageCount: number;
   copiedRawCount: number;
+  movedCount: number;
+  movedImageCount: number;
+  movedRawCount: number;
   alreadyPresentCount: number;
   collisionCount: number;
   failedCount: number;
