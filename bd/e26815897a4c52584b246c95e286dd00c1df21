@@ -1,0 +1,44 @@
+src-tauri/src/file_separator.rs
+  s_4b842b1fbac602::t_df2b990dadf4e5 27-42,87-89,112,114-119,133-136,214-235,238-256,260,268,279,283-294,308-311,313-314,316,320-341,346-349,354,365-366,368-372,381-421,431-438,508-509,511-521,524,536,544-584,586,669-728
+src/App.tsx
+  s_5f5841f18f5bde::t_362e9091a94fef 47-51,79-81,84-88,102,105,117,138-143,146-151,186,204
+src/features/file-separator/types.ts
+  s_016fa4053668b5::t_4c662d8dbaea5f 2,26-28
+src/features/shared/ui.tsx
+  s_016fa4053668b5::t_73d2af2cf87215 151
+src/features/file-separator/FileSeparatorWorkspace.tsx
+  s_4b842b1fbac602::t_2fc6132da0817f 4,10,16-23,25-26,39,49,54-60,62-76,79,84,86,89-91,122-125,186,189-196,199-212,219,225-226,229-234,242,244,278-279,281-331,343-368,371-372,391-395,397-402,409-415,430,435-480,542,548,556,564-565,567-569
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "bde26815897a4c52584b246c95e286dd00c1df21",
+  "prompts": {},
+  "logical_commit_id": "bde26815897a4c52584b246c95e286dd00c1df21",
+  "sessions": {
+    "s_016fa4053668b5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f4cce-0e1e-7a00-b270-cd79fbd1f593",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    },
+    "s_4b842b1fbac602": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f4b95-bf33-7300-9b99-90bd70532a43",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    },
+    "s_5f5841f18f5bde": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f5a71-61ad-7790-a2b9-69f9f31876a2",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
