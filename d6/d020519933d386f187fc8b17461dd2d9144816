@@ -1,0 +1,60 @@
+CHANGELOG.md
+  s_99e671d78654a7::t_a1a6d299cfa158 3-8
+docs/DESIGN.md
+  s_016fa4053668b5::t_bb88040cac1f78 1-153
+package-lock.json
+  s_99e671d78654a7::t_a0ae756bc560f0 3,9
+package.json
+  s_99e671d78654a7::t_f5e0436def8892 3
+src-tauri/Cargo.lock
+  s_99e671d78654a7::t_cbbe24789f18e5 3064
+src-tauri/Cargo.toml
+  s_99e671d78654a7::t_70654df3b319f7 3
+src-tauri/src/file_separator.rs
+  s_4b842b1fbac602::t_3475b1bd229429 1-488
+src-tauri/src/lib.rs
+  s_4b842b1fbac602::t_9061c8404f1ecc 1,6,53-54
+src/App.tsx
+  s_4b842b1fbac602::t_43298f6928bbb6 6,9,17-23,49,51-52,78,80-102,105,107,109-129,131-140,143-210,216
+src/features/file-separator/FileSeparatorWorkspace.tsx
+  s_4b842b1fbac602::t_2659ef15279d6b 1-379
+src/features/file-separator/types.ts
+  s_4b842b1fbac602::t_205f151e53a3b6 1-33
+src/features/raw-matcher/RawJpegMatcherView.tsx
+  s_4b842b1fbac602::t_2aa277fd3112f0 305
+src/styles.css
+  s_4b842b1fbac602::t_4f8bac58500a72 65,73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "d6d020519933d386f187fc8b17461dd2d9144816",
+  "prompts": {},
+  "logical_commit_id": "d6d020519933d386f187fc8b17461dd2d9144816",
+  "sessions": {
+    "s_016fa4053668b5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f4cce-0e1e-7a00-b270-cd79fbd1f593",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    },
+    "s_4b842b1fbac602": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f4b95-bf33-7300-9b99-90bd70532a43",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    },
+    "s_99e671d78654a7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f5a3b-0398-7fe0-b196-0c011ca70ed8",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
