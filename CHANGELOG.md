@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.29 - 2026-07-13
+
+- Added a dedicated file-separation workspace that scans mixed folders and safely copies recognized images and RAW files into separate output directories while preserving the source hierarchy.
+- Added keyboard-accessible workspace switching and refreshed the top-level navigation as a compact macOS-style tab bar.
+- Documented the product visual system, including navigation, spacing, color, typography, and state rules.
+
 ## 0.1.28 - 2026-07-10
 
 - Added bidirectional RAW/image matching, including JPG, JPEG, PNG, and text-list input support in both directions.

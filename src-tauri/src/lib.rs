@@ -1,7 +1,9 @@
+mod file_separator;
 mod raw_matcher;
 mod shared;
 mod watermark;
 
+use file_separator::{export_separated_files, scan_separator_source};
 use std::{path::PathBuf, process::Command};
 
 use raw_matcher::{
@@ -48,6 +50,8 @@ pub fn run() {
             collect_match_inputs,
             match_counterpart_files,
             export_matched_files,
+            scan_separator_source,
+            export_separated_files,
             scan_watermark_images,
             export_watermarked_images,
             open_file_path,

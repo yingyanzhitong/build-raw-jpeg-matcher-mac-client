@@ -62,7 +62,7 @@
   --secondary-foreground: #323438;
   --muted: #ecebea;
   --muted-foreground: #8a8d92;
-  --accent: #3b9bff;
+  --accent: #1a73e8;
   --accent-foreground: #ffffff;
   --destructive: #e5484d;
   --destructive-foreground: #ffffff;
@@ -70,7 +70,7 @@
   --warning: #b7791f;
   --border: rgba(32, 33, 36, 0.11);
   --input: rgba(32, 33, 36, 0.16);
-  --ring: #3b9bff;
+  --ring: #1a73e8;
   --panel: #f7f7f6;
   --panel-foreground: #202124;
   --sidebar: #f0efed;

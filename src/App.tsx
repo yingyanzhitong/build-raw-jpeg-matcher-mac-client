@@ -3,8 +3,10 @@ import { check, type DownloadEvent, type Update } from "@tauri-apps/plugin-updat
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   AlertTriangle,
+  ArrowLeftRight,
   CheckCircle2,
   Download,
+  FolderTree,
   Loader2,
   Maximize2,
   Minus,
@@ -12,7 +14,13 @@ import {
   RotateCcw,
   X,
 } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
+} from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,7 +46,10 @@ import {
   RawMatcherWorkspace,
 } from "@/features/raw-matcher/RawMatcherWorkspace";
 import { getDirectionConfig } from "@/features/raw-matcher/RawJpegMatcherView";
+import { FileSeparatorWorkspace } from "@/features/file-separator/FileSeparatorWorkspace";
 import { formatBytes, type LogEntry, type LogLevel } from "@/features/shared/ui";
+
+type Workspace = "matcher" | "separator";
 
 type UpdateStatus =
   | "idle"
@@ -64,33 +75,145 @@ const updateManifestUrl =
 function App() {
   const [rawStatus, setRawStatus] = useState(defaultRawWorkspaceStatus);
   const [logPanelOpen, setLogPanelOpen] = useState(false);
+  const [activeWorkspace, setActiveWorkspace] = useState<Workspace>("matcher");
+
+  useEffect(() => {
+    function handleWorkspaceShortcut(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      const isTextEditing =
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.isContentEditable;
+      if (isTextEditing || event.defaultPrevented || (!event.metaKey && !event.ctrlKey)) {
+        return;
+      }
+      if (event.key === "1") {
+        event.preventDefault();
+        setActiveWorkspace("matcher");
+      } else if (event.key === "2") {
+        event.preventDefault();
+        setActiveWorkspace("separator");
+      }
+    }
+
+    window.addEventListener("keydown", handleWorkspaceShortcut);
+    return () => window.removeEventListener("keydown", handleWorkspaceShortcut);
+  }, []);
 
   return (
     <TooltipProvider>
-      <main className="desk-grid relative grid h-screen grid-rows-[40px_minmax(0,1fr)] overflow-hidden text-foreground">
+      <main className="desk-grid relative grid h-screen grid-rows-[40px_40px_minmax(0,1fr)] overflow-hidden text-foreground">
         <WindowTitlebar />
+        <WorkspaceTabBar activeWorkspace={activeWorkspace} onChange={setActiveWorkspace} />
         <section className="codex-main min-h-0 overflow-hidden">
-          <RawMatcherWorkspace
-            active
-            onStatusChange={setRawStatus}
-            logPanelOpen={logPanelOpen}
-            onToggleLogPanel={() => setLogPanelOpen((open) => !open)}
-          />
+          <div
+            aria-labelledby="workspace-tab-matcher"
+            className={cn("h-full", activeWorkspace !== "matcher" && "hidden")}
+            id="workspace-panel-matcher"
+            role="tabpanel"
+          >
+            <RawMatcherWorkspace
+              active={activeWorkspace === "matcher"}
+              onStatusChange={setRawStatus}
+              logPanelOpen={logPanelOpen}
+              onToggleLogPanel={() => setLogPanelOpen((open) => !open)}
+            />
+          </div>
+          <div
+            aria-labelledby="workspace-tab-separator"
+            className={cn("h-full", activeWorkspace !== "separator" && "hidden")}
+            id="workspace-panel-separator"
+            role="tabpanel"
+          >
+            <FileSeparatorWorkspace active={activeWorkspace === "separator"} />
+          </div>
         </section>
-        <MatcherStatusOverlay status={rawStatus} />
-        <LogBottomSheet
-          open={logPanelOpen}
-          logs={rawStatus.logs}
-          onClose={() => setLogPanelOpen(false)}
-        />
+        {activeWorkspace === "matcher" ? (
+          <>
+            <MatcherStatusOverlay status={rawStatus} />
+            <LogBottomSheet
+              open={logPanelOpen}
+              logs={rawStatus.logs}
+              onClose={() => setLogPanelOpen(false)}
+            />
+          </>
+        ) : null}
       </main>
     </TooltipProvider>
   );
 }
 
+function WorkspaceTabBar({
+  activeWorkspace,
+  onChange,
+}: {
+  activeWorkspace: Workspace;
+  onChange: (workspace: Workspace) => void;
+}) {
+  function activateWithFocus(workspace: Workspace) {
+    onChange(workspace);
+    window.requestAnimationFrame(() => {
+      document.querySelector<HTMLButtonElement>(`[data-workspace-tab="${workspace}"]`)?.focus();
+    });
+  }
+
+  function handleKeyDown(event: ReactKeyboardEvent<HTMLButtonElement>) {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
+      return;
+    }
+    event.preventDefault();
+    activateWithFocus(activeWorkspace === "matcher" ? "separator" : "matcher");
+  }
+
+  return (
+    <nav aria-label="功能工作区" className="flex h-10 items-stretch border-b border-border bg-card px-4">
+      <div className="flex h-full items-stretch gap-1" role="tablist">
+        <button
+          aria-controls="workspace-panel-matcher"
+          aria-selected={activeWorkspace === "matcher"}
+          className={cn(
+            "relative inline-flex h-full items-center gap-1.5 rounded-[5px] px-3 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card after:absolute after:bottom-0 after:left-3 after:right-3 after:h-0.5 after:rounded-full",
+            activeWorkspace === "matcher"
+              ? "text-foreground after:bg-accent"
+              : "text-secondary-foreground/75 hover:bg-secondary/72 hover:text-foreground",
+          )}
+          data-workspace-tab="matcher"
+          id="workspace-tab-matcher"
+          onClick={() => onChange("matcher")}
+          onKeyDown={handleKeyDown}
+          role="tab"
+          type="button"
+        >
+          <ArrowLeftRight className="size-3.5" />
+          图片 / RAW 匹配
+        </button>
+        <button
+          aria-controls="workspace-panel-separator"
+          aria-selected={activeWorkspace === "separator"}
+          className={cn(
+            "relative inline-flex h-full items-center gap-1.5 rounded-[5px] px-3 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card after:absolute after:bottom-0 after:left-3 after:right-3 after:h-0.5 after:rounded-full",
+            activeWorkspace === "separator"
+              ? "text-foreground after:bg-accent"
+              : "text-secondary-foreground/75 hover:bg-secondary/72 hover:text-foreground",
+          )}
+          data-workspace-tab="separator"
+          id="workspace-tab-separator"
+          onClick={() => onChange("separator")}
+          onKeyDown={handleKeyDown}
+          role="tab"
+          type="button"
+        >
+          <FolderTree className="size-3.5" />
+          一键分离
+        </button>
+      </div>
+    </nav>
+  );
+}
+
 function WindowTitlebar() {
   return (
-    <header className="relative h-10 border-b border-border/80 bg-card/95">
+    <header className="relative h-10 bg-card">
       <div className="absolute inset-0" data-tauri-drag-region />
       <div className="absolute left-4 top-[14px] z-10 flex items-center gap-2">
         <WindowControl

@@ -302,7 +302,7 @@ export function RawJpegMatcherView({
     <>
       <section
         className={cn(
-          "grid h-full min-h-0 grid-cols-1 overflow-auto border-t border-border bg-card min-[960px]:grid-cols-[312px_minmax(0,1fr)] min-[960px]:overflow-hidden",
+          "grid h-full min-h-0 grid-cols-1 overflow-auto bg-card min-[960px]:grid-cols-[312px_minmax(0,1fr)] min-[960px]:overflow-hidden",
           !active && "hidden",
         )}
       >
