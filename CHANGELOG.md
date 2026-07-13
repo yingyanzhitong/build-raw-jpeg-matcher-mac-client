@@ -1,153 +1,157 @@
-# Changelog
+# 变更日志
+
+## 0.1.32 - 2026-07-13
+
+- 将全部历史变更条目统一翻译为简体中文，保留版本号、日期、命令、文件名和技术术语。
 
 ## 0.1.31 - 2026-07-13
 
-- Unified the separation workspace runtime log with the matching workspace: it now opens on demand as the shared bottom log sheet, and top-level workspace tabs use text only.
-- Added two separation modes: copy recognized files into a chosen new directory, or create `图片` and `RAW` directories inside the current mixed folder and move files while preserving their relative paths.
-- Added a move confirmation dialog, conflict-safe no-overwrite behavior, and scan exclusion for the generated category directories to prevent repeated processing.
+- 统一分离工作区与匹配工作区的运行日志：日志改为按需打开的共享底部抽屉，顶级工作区 Tab 仅保留文字。
+- 新增两种分离模式：将已识别文件复制到指定新目录，或在当前混合文件夹中创建 `图片` 和 `RAW` 目录，并按相对路径移动文件。
+- 新增移动确认弹窗、冲突时不覆盖的安全策略，以及对生成分类目录的扫描排除，避免重复处理。
 
 ## 0.1.30 - 2026-07-13
 
-- Rebuilt the desktop visual system around a calmer macOS-style workbench with cool neutral surfaces, refined typography, and consistent control feedback.
-- Reworked matching and separation workspaces with continuous workflow sidebars, clearer primary actions, improved empty states, unified logs, and a readable status dock.
-- Refined dialogs and the step-by-step guide so transient interfaces share the same spacing, shadows, focus treatment, and accent color.
+- 以更安静的 macOS 风格工作台重建桌面视觉系统，统一冷灰表面、排版与控件反馈。
+- 重构匹配与分离工作区，提供连续工作流侧栏、更清晰的主操作、改进的空状态、统一日志和易读的状态浮层。
+- 优化弹窗和分步引导，使瞬态界面共享一致的间距、阴影、焦点样式和强调色。
 
 ## 0.1.29 - 2026-07-13
 
-- Added a dedicated file-separation workspace that scans mixed folders and safely copies recognized images and RAW files into separate output directories while preserving the source hierarchy.
-- Added keyboard-accessible workspace switching and refreshed the top-level navigation as a compact macOS-style tab bar.
-- Documented the product visual system, including navigation, spacing, color, typography, and state rules.
+- 新增独立的文件分离工作区：扫描混合文件夹，将已识别的图片和 RAW 文件安全复制到分类输出目录，并保留源目录层级。
+- 新增可通过键盘访问的工作区切换，并将顶级导航更新为紧凑的 macOS 风格 Tab 栏。
+- 补充产品视觉规范，覆盖导航、间距、色彩、排版和状态规则。
 
 ## 0.1.28 - 2026-07-10
 
-- Added bidirectional RAW/image matching, including JPG, JPEG, PNG, and text-list input support in both directions.
-- Improved the desktop pairing workspace with automatic matching, direction-switch animation, a custom macOS title bar, and a compact update action that appears only when a new version is available.
-- Added true rounded window corners for the borderless macOS window.
+- 新增双向 RAW/图片匹配，两个方向均支持 JPG、JPEG、PNG 和文本清单输入。
+- 优化桌面配对工作区，加入自动匹配、方向切换动画、自定义 macOS 标题栏，以及仅在有新版本时显示的紧凑更新操作。
+- 为无边框 macOS 窗口加入真实圆角。
 
 ## 0.1.27 - 2026-07-10
 
-- Added a GitHub Pages deployment workflow for the public RAW/JPEG Matcher download site.
-- Published the static download page with current application imagery and macOS/Windows installer links from the release manifest.
+- 为公开的 RAW/JPEG Matcher 下载站新增 GitHub Pages 部署工作流。
+- 发布静态下载页，展示当前应用图片以及从发布清单读取的 macOS/Windows 安装包链接。
 
 ## 0.1.26 - 2026-07-09
 
-- Refined the RAW/JPEG matcher into a Codex-style two-pane layout with header statistics and a bottom log sheet.
-- Added a step-by-step onboarding overlay with animated target transitions for the JPG, RAW directory, matching, and export workflow.
-- Replaced disabled action dead-ends with toast feedback that explains missing JPG input, RAW directory, RAW formats, or exportable matches.
-- Updated the header description, action styling, controls, and empty state for a clearer first-run experience.
+- 将 RAW/JPEG 匹配器优化为 Codex 风格双栏布局，加入顶部统计和底部日志抽屉。
+- 新增分步上手遮罩，为 JPG、RAW 目录、匹配和导出流程提供带动画的目标切换。
+- 使用 Toast 反馈替代不可操作的禁用状态，明确说明缺少 JPG 输入、RAW 目录、RAW 格式或可导出匹配结果的原因。
+- 更新顶部说明、操作样式、控件和空状态，改善首次使用体验。
 
 ## 0.1.25 - 2026-07-09
 
-- Simplified the Gitee update manifest so manual installer links only live in the top-level `installers` map.
-- Kept Tauri updater platform entries limited to updater `url` and `signature` fields.
+- 简化 Gitee 更新清单，使手动安装包链接仅保留在顶级 `installers` 映射中。
+- 将 Tauri 更新器的平台条目限定为 `url` 和 `signature` 字段。
 
 ## 0.1.24 - 2026-07-09
 
-- Fixed macOS installer app bundle signing so the DMG-installed app includes sealed resources and validates with `codesign`.
-- Kept single-workspace navigation hidden when only the RAW/JPEG pairing workspace is available.
+- 修复 macOS 安装包内应用的签名，使从 DMG 安装的应用包含密封资源并能通过 `codesign` 验证。
+- 当仅提供 RAW/JPEG 配对工作区时，保持隐藏单工作区导航。
 
 ## 0.1.23 - 2026-07-09
 
-- Hid the workspace tab bar when only one workspace is available.
-- Added explicit Gitee DMG installer links to the update manifest while keeping updater artifacts separate.
+- 当只有一个工作区可用时隐藏工作区 Tab 栏。
+- 在更新清单中新增明确的 Gitee DMG 安装包链接，同时保持更新器产物独立。
 
 ## 0.1.22 - 2026-07-08
 
-- Restored full Gitee release asset synchronization before publishing the updater manifest.
+- 在发布更新器清单前恢复完整的 Gitee Release 资源同步。
 
 ## 0.1.21 - 2026-07-08
 
-- Changed Gitee synchronization to mirror only the updater manifest while serving installer downloads from GitHub Releases.
+- 将 Gitee 同步调整为仅镜像更新器清单，安装包下载改由 GitHub Releases 提供。
 
 ## 0.1.20 - 2026-07-08
 
-- Added retry handling for transient Gitee API connection timeouts during release synchronization.
+- 为发布同步期间短暂的 Gitee API 连接超时新增重试处理。
 
 ## 0.1.19 - 2026-07-08
 
-- Replaced Gitee latest-manifest writes with git pushes and switched release asset uploads to timed curl multipart uploads.
+- 使用 git push 替代 Gitee 最新清单写入，并将发布资源上传切换为带超时控制的 curl multipart 上传。
 
 ## 0.1.18 - 2026-07-08
 
-- Pointed updater publishing to the actual Gitee repository path and restored Gitee sync as a required release step.
+- 将更新器发布指向实际的 Gitee 仓库路径，并恢复 Gitee 同步为必需发布步骤。
 
 ## 0.1.17 - 2026-07-08
 
-- Made Gitee release synchronization best-effort so GitHub installer publishing is not blocked when the mirror repository is unavailable.
+- 将 Gitee Release 同步调整为尽力执行，镜像仓库不可用时不阻塞 GitHub 安装包发布。
 
 ## 0.1.16 - 2026-07-08
 
-- Fixed release publishing by building the macOS app updater bundle together with the DMG artifact.
+- 修复发布流程：构建 DMG 时同时生成 macOS 应用更新器包。
 
 ## 0.1.15 - 2026-07-08
 
-- Fixed GitHub Actions `npm ci` failures by restoring lockfile entries for npm 11 optional `@emnapi` dependencies.
+- 恢复 npm 11 可选 `@emnapi` 依赖的锁文件条目，修复 GitHub Actions 中 `npm ci` 的失败问题。
 
 ## 0.1.14 - 2026-07-08
 
-- Split the RAW/JPEG matcher and watermark workspaces into separate frontend and Tauri backend modules.
-- Hid the incomplete watermark tab from the main navigation while keeping the module code isolated for later completion.
-- Added release asset preparation and Gitee synchronization steps for automated installer publishing.
+- 将 RAW/JPEG 匹配器和水印工作区拆分为独立的前端与 Tauri 后端模块。
+- 从主导航隐藏尚未完成的水印 Tab，同时保留隔离模块代码以便后续完善。
+- 为自动安装包发布新增发布资源准备和 Gitee 同步步骤。
 
 ## 0.1.13 - 2026-07-08
 
-- Refined the desktop UI with a more native macOS visual system, updated reports, and improved watermark workspace controls.
-- Added Tauri updater integration with signed updater artifacts, a header update button, progress dialog, and relaunch flow.
-- Documented the Gitee Release update workflow for domestic-network distribution without an ICP domain.
-- Replaced public-facing `bigo` identifiers and update URLs with `masongzhi`.
+- 以更原生的 macOS 视觉体系优化桌面界面，更新报告并改善水印工作区控件。
+- 集成 Tauri 更新器，提供签名更新产物、顶部更新按钮、进度弹窗和重启流程。
+- 记录无需 ICP 域名的国内网络 Gitee Release 更新分发流程。
+- 将面向用户的 `bigo` 标识和更新 URL 替换为 `masongzhi`。
 
 ## 0.1.12 - 2026-07-07
 
-- Added a repeatable macOS packaging command that leaves only the final DMG in the bundle output directory.
-- Applied the app icon to the generated DMG file so Finder displays the installer with the product icon.
+- 新增可重复执行的 macOS 打包命令，使 bundle 输出目录只保留最终 DMG。
+- 将应用图标应用到生成的 DMG 文件，使 Finder 使用产品图标显示安装包。
 
 ## 0.1.11 - 2026-07-07
 
-- Switched GitHub Release installer asset names to an ASCII app prefix so GitHub keeps a readable latest installer name.
+- 将 GitHub Release 安装包资源名切换为 ASCII 应用前缀，确保 GitHub 中最新安装包名称可读。
 
 ## 0.1.10 - 2026-07-07
 
-- Renamed GitHub Release installer assets before upload so the latest macOS and Windows installers display with the app name and platform.
+- 在上传前重命名 GitHub Release 安装包资源，使最新 macOS 和 Windows 安装包显示应用名与平台。
 
 ## 0.1.9 - 2026-07-07
 
-- Cleaned cached bundle output before CI packaging so GitHub Releases only include installers for the current version.
+- 在 CI 打包前清理缓存的 bundle 输出，确保 GitHub Releases 仅包含当前版本的安装包。
 
 ## 0.1.8 - 2026-07-07
 
-- Renamed the app, window, and interface header to the Chinese name "照片配对助手".
+- 将应用、窗口和界面标题改为中文名称“照片配对助手”。
 
 ## 0.1.7 - 2026-07-07
 
-- Added automatic GitHub Release publishing for successful macOS and Windows installer builds.
+- 为成功构建的 macOS 和 Windows 安装包新增自动 GitHub Release 发布。
 
 ## 0.1.6 - 2026-07-07
 
-- Added root-level npm lock entries for `@emnapi/core` and `@emnapi/runtime` so both npm 10 and npm 11 can run `npm ci` in GitHub Actions.
+- 为 `@emnapi/core` 和 `@emnapi/runtime` 新增根级 npm 锁文件条目，使 npm 10 和 npm 11 均可在 GitHub Actions 中运行 `npm ci`。
 
 ## 0.1.5 - 2026-07-07
 
-- Updated GitHub Actions to build with Node.js 24 and npm 11 to avoid npm 10 bundled optional dependency lockfile validation failures.
+- 将 GitHub Actions 更新为使用 Node.js 24 和 npm 11 构建，避免 npm 10 内置可选依赖的锁文件校验失败。
 
 ## 0.1.4 - 2026-07-07
 
-- Added missing bundled dependency lock entries required by GitHub Actions `npm ci`.
+- 补充 GitHub Actions `npm ci` 所需的缺失打包依赖锁文件条目。
 
 ## 0.1.3 - 2026-07-07
 
-- Synchronized `package-lock.json` so GitHub Actions can install dependencies with `npm ci`.
+- 同步 `package-lock.json`，使 GitHub Actions 可通过 `npm ci` 安装依赖。
 
 ## 0.1.2 - 2026-07-07
 
-- Reworked the RAW/JPEG matcher interface with shadcn/ui, Radix UI, Tailwind CSS, and lucide icons.
-- Added text-based JPEG list input, RAW format selection, native file opening, RAW thumbnails, and safer task clearing.
-- Improved RAW scanning, matching, conflict review, export flow, completion dialog, and leveled runtime logs.
-- Filtered tiny RAW candidates under 1 MB and treated identical-hash export conflicts as successful copies.
-- Configured app and installer icons for packaged macOS and Windows builds.
-- Added GitHub Actions packaging for macOS `.dmg` and Windows NSIS `.exe` installers on `main` pushes.
+- 使用 shadcn/ui、Radix UI、Tailwind CSS 和 lucide 图标重构 RAW/JPEG 匹配器界面。
+- 新增基于文本的 JPEG 清单输入、RAW 格式选择、原生打开文件、RAW 缩略图和更安全的任务清空。
+- 改进 RAW 扫描、匹配、冲突复核、导出流程、完成弹窗和分级运行日志。
+- 过滤小于 1 MB 的 RAW 候选，并将哈希相同的导出冲突视为成功复制。
+- 为打包的 macOS 和 Windows 构建配置应用与安装包图标。
+- 在推送到 `main` 时新增 GitHub Actions 对 macOS `.dmg` 和 Windows NSIS `.exe` 安装包的打包。
 
 ## 0.1.1 - 2026-07-07
 
-- Updated the app icon to the selected liquid-glass photography workflow design.
-- Regenerated Tauri icon assets for macOS, Windows, iOS, Android, and PNG sizes.
-- Added repository ignore rules for dependencies, build outputs, and local backups.
+- 将应用图标更新为选定的 Liquid Glass 摄影工作流设计。
+- 重新生成 macOS、Windows、iOS、Android 和各 PNG 尺寸的 Tauri 图标资源。
+- 为依赖、构建输出和本地备份新增仓库忽略规则。
