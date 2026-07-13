@@ -102,7 +102,7 @@ function App() {
 
   return (
     <TooltipProvider>
-      <main className="desk-grid relative grid h-screen grid-rows-[40px_40px_minmax(0,1fr)] overflow-hidden text-foreground">
+      <main className="desk-grid relative grid h-screen grid-rows-[42px_44px_minmax(0,1fr)] overflow-hidden text-foreground">
         <WindowTitlebar />
         <WorkspaceTabBar activeWorkspace={activeWorkspace} onChange={setActiveWorkspace} />
         <section className="codex-main min-h-0 overflow-hidden">
@@ -166,13 +166,13 @@ function WorkspaceTabBar({
   }
 
   return (
-    <nav aria-label="功能工作区" className="flex h-10 items-stretch border-b border-border bg-card px-4">
-      <div className="flex h-full items-stretch gap-1" role="tablist">
+    <nav aria-label="功能工作区" className="flex h-11 items-stretch border-b border-border bg-card px-5">
+      <div className="flex h-full items-stretch gap-2" role="tablist">
         <button
           aria-controls="workspace-panel-matcher"
           aria-selected={activeWorkspace === "matcher"}
           className={cn(
-            "relative inline-flex h-full items-center gap-1.5 rounded-[5px] px-3 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card after:absolute after:bottom-0 after:left-3 after:right-3 after:h-0.5 after:rounded-full",
+            "relative inline-flex h-full items-center gap-1.5 rounded-[5px] px-3.5 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card after:absolute after:bottom-0 after:left-3.5 after:right-3.5 after:h-0.5 after:rounded-full",
             activeWorkspace === "matcher"
               ? "text-foreground after:bg-accent"
               : "text-secondary-foreground/75 hover:bg-secondary/72 hover:text-foreground",
@@ -184,14 +184,14 @@ function WorkspaceTabBar({
           role="tab"
           type="button"
         >
-          <ArrowLeftRight className="size-3.5" />
+          <ArrowLeftRight className="size-3.5 stroke-[1.8]" />
           图片 / RAW 匹配
         </button>
         <button
           aria-controls="workspace-panel-separator"
           aria-selected={activeWorkspace === "separator"}
           className={cn(
-            "relative inline-flex h-full items-center gap-1.5 rounded-[5px] px-3 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card after:absolute after:bottom-0 after:left-3 after:right-3 after:h-0.5 after:rounded-full",
+            "relative inline-flex h-full items-center gap-1.5 rounded-[5px] px-3.5 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card after:absolute after:bottom-0 after:left-3.5 after:right-3.5 after:h-0.5 after:rounded-full",
             activeWorkspace === "separator"
               ? "text-foreground after:bg-accent"
               : "text-secondary-foreground/75 hover:bg-secondary/72 hover:text-foreground",
@@ -203,7 +203,7 @@ function WorkspaceTabBar({
           role="tab"
           type="button"
         >
-          <FolderTree className="size-3.5" />
+          <FolderTree className="size-3.5 stroke-[1.8]" />
           一键分离
         </button>
       </div>
@@ -213,9 +213,9 @@ function WorkspaceTabBar({
 
 function WindowTitlebar() {
   return (
-    <header className="relative h-10 bg-card">
+    <header className="relative h-[42px] bg-card">
       <div className="absolute inset-0" data-tauri-drag-region />
-      <div className="absolute left-4 top-[14px] z-10 flex items-center gap-2">
+      <div className="absolute left-4 top-[15px] z-10 flex items-center gap-2">
         <WindowControl
           ariaLabel="关闭窗口"
           className="bg-[#ff5f57]"
@@ -235,7 +235,7 @@ function WindowTitlebar() {
           onClick={() => getCurrentWindow().toggleMaximize()}
         />
       </div>
-      <h1 className="pointer-events-none absolute inset-0 z-10 grid place-items-center text-[13px] font-semibold text-foreground/90">
+      <h1 className="pointer-events-none absolute inset-0 z-10 grid place-items-center text-[13px] font-semibold tracking-[-0.01em] text-foreground/90">
         照片配对助手
       </h1>
       <div className="absolute inset-y-0 left-[5.25rem] z-10 flex items-center">
@@ -288,7 +288,7 @@ function MatcherStatusOverlay({
   return (
     <aside
       aria-label="当前配对统计"
-      className="absolute bottom-5 right-5 z-20 flex items-center gap-3 text-xs"
+      className="desktop-status-dock absolute bottom-5 right-5 z-20 flex items-center gap-3 rounded-[8px] border border-border px-3.5 py-2 text-xs backdrop-blur-sm"
     >
       <div className="flex items-center gap-4">
         <HeaderMetric label={config.inputNoun} value={status.inputCount} />
@@ -354,9 +354,9 @@ function LogBottomSheet({
     <section
       aria-label="运行日志"
       aria-live="polite"
-      className="absolute bottom-9 left-4 right-4 z-30 h-[260px] max-h-[42vh] animate-in fade-in slide-in-from-bottom-3 duration-150 min-[960px]:left-[328px]"
+      className="absolute bottom-5 left-4 right-4 z-30 h-[280px] max-h-[46vh] animate-in fade-in slide-in-from-bottom-3 duration-150 min-[960px]:left-[328px]"
     >
-      <div className="grid h-full grid-rows-[44px_minmax(0,1fr)] overflow-hidden rounded-[8px] border border-border bg-card shadow-[0_-12px_40px_rgba(0,0,0,0.12)]">
+      <div className="grid h-full grid-rows-[48px_minmax(0,1fr)] overflow-hidden rounded-[8px] border border-border bg-card shadow-[0_14px_42px_rgba(32,33,36,0.16)]">
         <header className="flex items-center justify-between gap-3 border-b border-border px-4">
           <div className="flex min-w-0 items-center gap-2">
             <span className="grid size-7 place-items-center rounded-[7px] border border-border bg-secondary text-muted-foreground">

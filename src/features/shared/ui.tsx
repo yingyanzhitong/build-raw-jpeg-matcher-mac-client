@@ -30,13 +30,13 @@ export function Pane({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-[8px] border border-border bg-card p-3 shadow-[0_1px_1px_rgba(0,0,0,0.025)]">
-      <div className="mb-3 flex items-center gap-2">
-        <span className="grid size-8 place-items-center rounded-[7px] border border-border bg-secondary text-muted-foreground">
+    <section className="border-b border-border/85 py-4 first:pt-0 last:border-b-0 last:pb-0">
+      <div className="mb-3 flex items-center gap-2.5">
+        <span className="grid size-8 place-items-center rounded-[7px] border border-border bg-card text-muted-foreground">
           {icon}
         </span>
         <div className="min-w-0">
-          <h2 className="truncate text-sm font-semibold leading-none">{title}</h2>
+          <h2 className="truncate text-[13px] font-semibold leading-none">{title}</h2>
           <p className="mt-1 truncate text-xs text-muted-foreground">{subtitle}</p>
         </div>
       </div>
@@ -55,7 +55,7 @@ export function StatTile({
   tone?: "neutral" | "success" | "danger";
 }) {
   return (
-    <div className="rounded-[7px] border border-border bg-secondary/72 p-2.5">
+    <div className="rounded-[7px] border border-border bg-card px-3 py-2.5">
       <span className="text-[11px] font-medium text-muted-foreground">{label}</span>
       <strong
         className={cn(
@@ -75,7 +75,7 @@ export function LogPanel({ logs }: { logs: LogEntry[] }) {
     <section
       aria-label="运行日志"
       aria-live="polite"
-      className="flex min-h-[220px] flex-1 flex-col overflow-hidden rounded-[8px] border border-border bg-panel text-panel-foreground"
+      className="flex min-h-[220px] flex-1 flex-col overflow-hidden rounded-[8px] border border-border bg-card text-panel-foreground"
     >
       <div className="flex h-10 items-center justify-between border-b border-border px-3">
         <h2 className="text-sm font-semibold">运行日志</h2>
@@ -130,7 +130,7 @@ export function PathDisplay({
   return (
     <div
       className={cn(
-        "codex-scrollbar flex min-w-0 items-center overflow-x-auto rounded-[7px] border border-input bg-secondary/64 px-2.5 font-mono text-xs text-muted-foreground",
+        "codex-scrollbar flex min-w-0 items-center overflow-x-auto rounded-[7px] border border-input bg-card px-2.5 font-mono text-xs text-muted-foreground",
         compact ? "h-9" : "min-h-10",
         className,
       )}

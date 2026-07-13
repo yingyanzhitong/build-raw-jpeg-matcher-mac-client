@@ -302,14 +302,14 @@ export function RawJpegMatcherView({
     <>
       <section
         className={cn(
-          "grid h-full min-h-0 grid-cols-1 overflow-auto bg-card min-[960px]:grid-cols-[312px_minmax(0,1fr)] min-[960px]:overflow-hidden",
+          "grid h-full min-h-0 grid-cols-1 overflow-auto bg-panel min-[960px]:grid-cols-[312px_minmax(0,1fr)] min-[960px]:overflow-hidden",
           !active && "hidden",
         )}
       >
-        <aside className="min-h-[520px] border-r border-border bg-background min-[960px]:min-h-0">
+        <aside className="min-h-[520px] border-r border-border bg-background/82 min-[960px]:min-h-0">
           <ScrollArea className="h-full min-h-0">
             <div className="grid min-h-[720px] content-start min-[960px]:min-h-0">
-              <div className="border-b border-border bg-card/72 px-4 py-2.5">
+              <div className="border-b border-border bg-card/76 px-4 py-3">
                 <DirectionConnector
                   busy={busy}
                   config={config}
@@ -444,7 +444,7 @@ function InputPane({
   const bottomCardMotion = getCardMotion(directionTransition, "bottom");
 
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-0">
       <WorkflowCard
         complete={inputComplete}
         current={!inputComplete}
@@ -457,7 +457,7 @@ function InputPane({
       >
         <button
           className={cn(
-            "drop-raster grid min-h-28 place-items-center rounded-[8px] border border-dashed border-border p-4 text-center transition-[background,border-color,box-shadow] duration-150 motion-reduce:transition-none hover:border-accent/55 hover:bg-accent/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60",
+            "drop-raster grid min-h-32 place-items-center rounded-[8px] border border-dashed border-border p-4 text-center transition-[background,border-color,box-shadow] duration-150 motion-reduce:transition-none hover:border-accent/55 hover:bg-accent/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60",
             dragActive &&
               "border-accent shadow-[0_0_0_4px_color-mix(in_oklch,var(--accent)_18%,transparent)]",
           )}
@@ -466,7 +466,7 @@ function InputPane({
           type="button"
         >
           <div className="grid justify-items-center gap-2">
-            <span className="grid size-9 place-items-center rounded-[7px] border border-accent/24 bg-accent/10 text-accent">
+            <span className="grid size-10 place-items-center rounded-[7px] border border-accent/24 bg-accent/10 text-accent">
               {!capabilitiesReady || busy === "collect" ? (
                 <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
               ) : config.inputKind === "image" ? (
@@ -596,13 +596,13 @@ function WorkflowCard({
   return (
     <section
       className={cn(
-        "rounded-[8px] border bg-card p-3 shadow-[0_1px_1px_rgba(0,0,0,0.025)]",
-        current ? "border-accent/42" : "border-border",
+        "border-b border-border py-5 first:pt-0 last:border-b-0 last:pb-0",
+        current && "bg-accent/[0.015]",
         motion && `matcher-direction-card-${motion}`,
       )}
       data-guide-target={guideTarget}
     >
-      <header className="mb-3 flex items-center gap-2">
+      <header className="mb-3.5 flex items-center gap-2">
         <span
           className={cn(
             "grid size-8 shrink-0 place-items-center rounded-[7px] border text-xs font-semibold",
@@ -680,7 +680,7 @@ function DirectionConnector({
   return (
     <section
       className={cn(
-        "matcher-direction-switcher grid h-9 grid-cols-[minmax(0,1fr)_auto] items-center gap-2.5",
+        "matcher-direction-switcher grid h-10 grid-cols-[minmax(0,1fr)_auto] items-center gap-2.5",
         transitionClass,
       )}
       data-guide-target="direction-connector"
@@ -768,10 +768,10 @@ function RawFormatSelector({
             <button
               aria-pressed={selected}
               className={cn(
-                "grid h-7 place-items-center rounded-[7px] border text-[11px] font-semibold transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-55",
+                "grid h-7 place-items-center rounded-[6px] border text-[11px] font-semibold transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-55",
                 selected
-                  ? "border-accent bg-accent text-accent-foreground"
-                  : "border-border bg-secondary text-muted-foreground hover:border-accent/60 hover:bg-card",
+                  ? "border-accent/35 bg-accent/10 text-accent"
+                  : "border-border bg-card text-muted-foreground hover:border-accent/60 hover:bg-accent/5",
               )}
               disabled={disabled || busy !== null}
               key={format}
@@ -883,10 +883,10 @@ function WorkbenchToolbar({
   onToggleLogPanel: () => void;
 }) {
   return (
-    <div className="border-b border-border bg-card px-5">
-      <div className="grid h-14 min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+    <div className="border-b border-border bg-card px-6">
+      <div className="grid h-16 min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
-          <h2 className="shrink-0 text-sm font-semibold leading-none">匹配结果</h2>
+          <h2 className="shrink-0 text-[15px] font-semibold leading-none tracking-[-0.01em]">匹配结果</h2>
           <Badge variant="muted" className="shrink-0">{resultCount} 条</Badge>
           <p className="hidden min-w-0 truncate text-xs text-muted-foreground min-[1260px]:block">
             {resultCount > 0
@@ -974,7 +974,7 @@ function WorkbenchActions({
           {config.matchButton}
         </Button>
         <Button
-          variant="accent"
+          variant="default"
           aria-disabled={!canExport}
           className={cn(!canExport && "cursor-not-allowed opacity-45")}
           onClick={() =>
@@ -1040,7 +1040,7 @@ function ActionToast({ toast }: { toast: ActionToastState | null }) {
   return (
     <div
       aria-live="polite"
-      className="pointer-events-none fixed right-5 top-[136px] z-50 flex max-w-[min(420px,calc(100vw-2rem))] items-start gap-2 rounded-[8px] border border-warning/25 bg-card px-3.5 py-3 text-sm text-card-foreground shadow-[0_16px_48px_rgba(0,0,0,0.18)] animate-in fade-in-0 slide-in-from-top-2 duration-200 motion-reduce:animate-none"
+      className="pointer-events-none fixed right-5 top-[150px] z-50 flex max-w-[min(420px,calc(100vw-2rem))] items-start gap-2 rounded-[8px] border border-warning/25 bg-card px-3.5 py-3 text-sm text-card-foreground shadow-[0_16px_48px_rgba(32,33,36,0.18)] animate-in fade-in-0 slide-in-from-top-2 duration-200 motion-reduce:animate-none"
       key={toast.id}
       role="status"
     >
@@ -1071,7 +1071,7 @@ function ResultTable({
 }) {
   if (results.length === 0) {
     return (
-      <div className="grid min-h-0 flex-1 place-items-center bg-card p-6">
+      <div className="empty-workbench grid min-h-0 flex-1 place-items-center bg-card p-8">
         <EmptyResultState config={config} onStartGuide={onStartGuide} />
       </div>
     );
@@ -1171,13 +1171,13 @@ function EmptyResultState({
   onStartGuide: () => void;
 }) {
   return (
-    <section className="grid max-w-sm justify-items-center gap-3 text-center">
-      <span className="grid size-12 place-items-center rounded-[8px] border border-border bg-secondary text-muted-foreground">
-        <Search className="size-5" />
+    <section className="grid max-w-md justify-items-center gap-4 text-center">
+      <span className="grid size-14 place-items-center rounded-[10px] border border-accent/20 bg-card text-accent shadow-[0_8px_20px_rgba(26,115,232,0.1)]">
+        <Search className="size-6" />
       </span>
       <div>
-        <h2 className="text-base font-semibold">暂无{config.candidateNoun}匹配结果</h2>
-        <p className="mt-1 text-sm text-muted-foreground">{config.emptyDescription}</p>
+        <h2 className="text-lg font-semibold tracking-[-0.015em]">暂无{config.candidateNoun}匹配结果</h2>
+        <p className="mt-1.5 text-sm leading-6 text-muted-foreground">{config.emptyDescription}</p>
       </div>
       <Button variant="utility" onClick={onStartGuide} type="button">
         <CircleHelp />
@@ -1304,14 +1304,14 @@ function GuidedTourOverlay({
       <div className={cn("absolute bottom-0 left-0 right-0 bg-foreground/55 transition-[top]", movingSurfaceClass)} style={bottomOverlayStyle} />
       <div
         className={cn(
-          "pointer-events-none absolute rounded-[10px] border-2 border-accent bg-transparent shadow-[0_0_0_4px_rgba(59,155,255,0.22),0_14px_48px_rgba(0,0,0,0.24)] transition-[top,left,width,height,box-shadow]",
+          "pointer-events-none absolute rounded-[10px] border-2 border-accent bg-transparent shadow-[0_0_0_4px_color-mix(in_oklch,var(--accent)_22%,transparent),0_14px_48px_rgba(32,33,36,0.24)] transition-[top,left,width,height,box-shadow]",
           movingSurfaceClass,
         )}
         style={highlightStyle}
       />
       <div
         className={cn(
-          "absolute grid gap-3 rounded-[8px] border border-border bg-card p-4 text-card-foreground shadow-[0_18px_60px_rgba(0,0,0,0.22)] transition-[top,left,transform]",
+          "absolute grid gap-3 rounded-[10px] border border-border bg-card p-4 text-card-foreground shadow-[0_18px_60px_rgba(32,33,36,0.22)] transition-[top,left,transform]",
           movingSurfaceClass,
         )}
         style={cardStyle}

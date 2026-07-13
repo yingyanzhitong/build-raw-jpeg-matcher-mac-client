@@ -50,7 +50,7 @@
   -moz-osx-font-smoothing: grayscale;
 
   --radius: 0.5rem;
-  --background: #f4f3f1;
+  --background: #f5f7fa;
   --foreground: #202124;
   --card: #ffffff;
   --card-foreground: #202124;
@@ -58,23 +58,23 @@
   --popover-foreground: #202124;
   --primary: #202124;
   --primary-foreground: #ffffff;
-  --secondary: #f1f0ee;
-  --secondary-foreground: #323438;
-  --muted: #ecebea;
-  --muted-foreground: #8a8d92;
+  --secondary: #eef2f6;
+  --secondary-foreground: #39424e;
+  --muted: #e9eef4;
+  --muted-foreground: #6f7782;
   --accent: #1a73e8;
   --accent-foreground: #ffffff;
   --destructive: #e5484d;
   --destructive-foreground: #ffffff;
   --success: #2f9e60;
   --warning: #b7791f;
-  --border: rgba(32, 33, 36, 0.11);
-  --input: rgba(32, 33, 36, 0.16);
+  --border: rgba(32, 33, 36, 0.12);
+  --input: rgba(32, 33, 36, 0.15);
   --ring: #1a73e8;
-  --panel: #f7f7f6;
+  --panel: #f8fafc;
   --panel-foreground: #202124;
-  --sidebar: #f0efed;
-  --sidebar-foreground: #303236;
+  --sidebar: #f3f6f9;
+  --sidebar-foreground: #303946;
 }
 
 * {
@@ -121,11 +121,11 @@ button:disabled {
 .desk-grid {
   border-radius: 12px;
   isolation: isolate;
-  background: var(--background);
+  background: linear-gradient(180deg, #fbfcfd 0, var(--background) 100%);
 }
 
 .codex-main {
-  background: var(--card);
+  background: var(--panel);
 }
 
 .codex-scrollbar {
@@ -135,8 +135,8 @@ button:disabled {
 
 .drop-raster {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0)),
-    var(--card);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.6)),
+    var(--secondary);
 }
 
 .log-surface {
@@ -145,6 +145,17 @@ button:disabled {
 
 .table-fade {
   mask-image: linear-gradient(to bottom, transparent, #000 10px, #000 calc(100% - 10px), transparent);
+}
+
+.empty-workbench {
+  background:
+    radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 36%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(248, 250, 252, 0.46));
+}
+
+.desktop-status-dock {
+  background: color-mix(in srgb, var(--card) 94%, transparent);
+  box-shadow: 0 6px 22px rgba(32, 33, 36, 0.08);
 }
 
 .guide-step-copy {

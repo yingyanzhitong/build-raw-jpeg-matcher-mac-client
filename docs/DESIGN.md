@@ -4,11 +4,11 @@ name: Photo Pairing Assistant
 description: A quiet, precise macOS utility for matching and separating photo files.
 colors:
   primary: "#202124"
-  secondary: "#5F6368"
-  neutral: "#F4F3F1"
+  secondary: "#6F7782"
+  neutral: "#F5F7FA"
   surface: "#FFFFFF"
-  surface-subtle: "#F7F7F6"
-  divider: "#E4E4E1"
+  surface-subtle: "#F8FAFC"
+  divider: "#E1E7EE"
   accent: "#1A73E8"
   on-accent: "#FFFFFF"
   success: "#2F9E60"
@@ -104,7 +104,7 @@ components:
 
 - **Primary** 用于标题、选中导航和关键内容；它是近黑墨色，而非纯黑。
 - **Secondary** 用于未选中导航、说明和次级信息。未选中不等于禁用，必须保持清晰可读。
-- **Neutral** 是工作台底色；**Surface** 是卡片和内容面，二者只用于建立内容层次。
+- **Neutral** 是工作台底色；**Surface** 是内容面，二者只用于建立内容层次。连续工作流优先用留白和细分隔线分组，避免在侧栏堆叠卡片。
 - **Accent** 只服务于单个主操作、键盘焦点和当前 Tab 的 2px 指示线。它不应用作 Tab 的整块填充背景。
 - 成功和错误色仅表达任务结果，不能承担导航状态。
 

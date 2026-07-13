@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.30 - 2026-07-13
+
+- Rebuilt the desktop visual system around a calmer macOS-style workbench with cool neutral surfaces, refined typography, and consistent control feedback.
+- Reworked matching and separation workspaces with continuous workflow sidebars, clearer primary actions, improved empty states, unified logs, and a readable status dock.
+- Refined dialogs and the step-by-step guide so transient interfaces share the same spacing, shadows, focus treatment, and accent color.
+
 ## 0.1.29 - 2026-07-13
 
 - Added a dedicated file-separation workspace that scans mixed folders and safely copies recognized images and RAW files into separate output directories while preserving the source hierarchy.

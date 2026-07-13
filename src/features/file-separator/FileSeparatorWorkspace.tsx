@@ -182,13 +182,13 @@ export function FileSeparatorWorkspace({ active }: { active: boolean }) {
     <section
       aria-label="一键分离工作区"
       className={cn(
-        "grid h-full min-h-0 grid-cols-1 overflow-auto bg-card min-[960px]:grid-cols-[312px_minmax(0,1fr)] min-[960px]:overflow-hidden",
+        "grid h-full min-h-0 grid-cols-1 overflow-auto bg-panel min-[960px]:grid-cols-[312px_minmax(0,1fr)] min-[960px]:overflow-hidden",
         !active && "hidden",
       )}
     >
-      <aside className="min-h-[520px] border-r border-border bg-background min-[960px]:min-h-0">
+      <aside className="min-h-[520px] border-r border-border bg-background/82 min-[960px]:min-h-0">
         <ScrollArea className="h-full min-h-0">
-          <div className="grid min-h-[600px] content-start gap-3 p-4 pb-6 min-[960px]:min-h-0">
+          <div className="grid min-h-[600px] content-start gap-0 p-4 pb-6 min-[960px]:min-h-0">
             <Pane
               icon={<FolderInput className="size-4" />}
               title="混合文件夹"
@@ -228,10 +228,10 @@ export function FileSeparatorWorkspace({ active }: { active: boolean }) {
       </aside>
 
       <section className="flex min-h-[620px] min-w-0 flex-col bg-card min-[960px]:min-h-0">
-        <header className="flex min-h-14 shrink-0 items-center justify-between gap-4 border-b border-border px-4">
+        <header className="flex min-h-16 shrink-0 items-center justify-between gap-4 border-b border-border px-6">
           <div className="min-w-0">
-            <h2 className="truncate text-sm font-semibold">一键分离</h2>
-            <p className="mt-0.5 truncate text-xs text-muted-foreground">{actionHint}</p>
+            <h2 className="truncate text-[15px] font-semibold tracking-[-0.01em]">一键分离</h2>
+            <p className="mt-1 truncate text-xs text-muted-foreground">{actionHint}</p>
           </div>
           <Button disabled={!canExport} onClick={exportFiles} type="button">
             {busy === "export" ? <Loader2 className="animate-spin" /> : <Split />}
@@ -239,8 +239,8 @@ export function FileSeparatorWorkspace({ active }: { active: boolean }) {
           </Button>
         </header>
 
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-auto p-4 min-[1180px]:grid-cols-[minmax(0,1fr)_280px] min-[1180px]:overflow-hidden">
-          <section className="flex min-h-[360px] min-w-0 flex-col overflow-hidden rounded-[8px] border border-border bg-background min-[1180px]:min-h-0">
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-5 overflow-auto p-6 min-[1180px]:grid-cols-[minmax(0,1fr)_320px] min-[1180px]:overflow-hidden">
+          <section className="flex min-h-[360px] min-w-0 flex-col overflow-hidden rounded-[10px] border border-border bg-card min-[1180px]:min-h-0">
             {inputRoot.length === 0 ? (
               <SeparatorEmptyState />
             ) : (
@@ -278,14 +278,14 @@ export function FileSeparatorWorkspace({ active }: { active: boolean }) {
 
 function SeparatorEmptyState() {
   return (
-    <div className="grid flex-1 place-items-center p-6 text-center">
-      <div className="grid max-w-sm justify-items-center gap-3">
-        <span className="grid size-12 place-items-center rounded-[10px] border border-border bg-secondary text-muted-foreground">
+    <div className="empty-workbench grid flex-1 place-items-center p-8 text-center">
+      <div className="grid max-w-md justify-items-center gap-4">
+        <span className="grid size-14 place-items-center rounded-[10px] border border-accent/20 bg-card text-accent shadow-[0_8px_20px_rgba(26,115,232,0.1)]">
           <Files className="size-6" />
         </span>
         <div>
-          <h3 className="text-sm font-semibold">等待扫描混合文件夹</h3>
-          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+          <h3 className="text-lg font-semibold tracking-[-0.015em]">等待扫描混合文件夹</h3>
+          <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
             选择目录后会预览可分离的图片和 RAW；确认输出位置后即可复制整理。
           </p>
         </div>
@@ -306,7 +306,7 @@ function SeparatorFileTable({
 
   return (
     <section aria-label="待分离文件预览" className="flex min-h-0 flex-1 flex-col">
-      <div className="flex min-h-11 items-center justify-between gap-3 border-b border-border bg-card px-3">
+      <div className="flex min-h-12 items-center justify-between gap-3 border-b border-border bg-card px-4">
         <h3 className="text-sm font-semibold">待分离文件</h3>
         <span className="text-xs text-muted-foreground">
           {files.length > previewLimit ? `预览前 ${previewLimit} 个 / 共 ${files.length} 个` : `共 ${files.length} 个`}
@@ -314,14 +314,14 @@ function SeparatorFileTable({
       </div>
       <ScrollArea className="min-h-0 flex-1">
         <div className="min-w-[460px] divide-y divide-border text-xs">
-          <div className="grid grid-cols-[72px_minmax(0,1fr)_88px] gap-3 bg-secondary/64 px-3 py-2 text-[11px] font-medium text-muted-foreground">
+          <div className="grid grid-cols-[72px_minmax(0,1fr)_88px] gap-3 bg-secondary/72 px-4 py-2.5 text-[11px] font-medium text-muted-foreground">
             <span>类型</span>
             <span>相对路径</span>
             <span className="text-right">大小</span>
           </div>
           {previewFiles.map((file) => (
             <div
-              className="grid grid-cols-[72px_minmax(0,1fr)_88px] items-center gap-3 px-3 py-2.5"
+              className="grid grid-cols-[72px_minmax(0,1fr)_88px] items-center gap-3 px-4 py-3 transition-colors hover:bg-secondary/45"
               key={file.path}
             >
               <span
