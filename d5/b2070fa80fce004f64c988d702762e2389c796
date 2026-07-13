@@ -1,0 +1,28 @@
+CHANGELOG.md
+  s_4b842b1fbac602::t_15fe4a1712ebe5 1,3-6,9-11,15-17,21-23,27-29,33-34,38-41,45-46,50-51,55-56,60,64,68,72,76,80,84,88,92-94,98-101,105-106,110,114,118,122,126,130,134,138,142,146-151,155-157
+package-lock.json
+  s_4b842b1fbac602::t_55ce0540f75544 3,9
+package.json
+  s_4b842b1fbac602::t_027910d65c95aa 3
+src-tauri/Cargo.lock
+  s_4b842b1fbac602::t_97e06d281a0cef 3064
+src-tauri/Cargo.toml
+  s_4b842b1fbac602::t_7bfca9fdb901d0 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "d5b2070fa80fce004f64c988d702762e2389c796",
+  "prompts": {},
+  "logical_commit_id": "d5b2070fa80fce004f64c988d702762e2389c796",
+  "sessions": {
+    "s_4b842b1fbac602": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f4b95-bf33-7300-9b99-90bd70532a43",
+        "model": "unknown"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
