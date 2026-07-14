@@ -1,0 +1,30 @@
+.github/workflows/build-installers.yml
+  s_5f5841f18f5bde::t_2418fadd3b213f 88-89,158-200
+CHANGELOG.md
+  s_5f5841f18f5bde::t_19f6c5c0a8c50c 3-8
+package-lock.json
+  s_5f5841f18f5bde::t_33982e9c9d6ef7 3,9
+package.json
+  s_5f5841f18f5bde::t_271f68a9242927 3
+src-tauri/Cargo.lock
+  s_5f5841f18f5bde::t_b412f8046147d5 3035
+src-tauri/Cargo.toml
+  s_5f5841f18f5bde::t_26c9af2716c41a 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "d23e4c561422b6a5197539cd317dbc86496fa58c",
+  "prompts": {},
+  "logical_commit_id": "d23e4c561422b6a5197539cd317dbc86496fa58c",
+  "sessions": {
+    "s_5f5841f18f5bde": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f5a71-61ad-7790-a2b9-69f9f31876a2",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
