@@ -24,6 +24,7 @@ import {
   syncWatermarkProfiles,
   thumbnailWindow,
   updateWatermarkProfile,
+  watermarkWorkflowStepStates,
   watermarkSettingsKey,
 } from "./state.ts";
 
@@ -72,6 +73,13 @@ test("文字与图片使用相互独立的默认参数", () => {
     defaultTextWatermarkTileSpacingPercent,
   );
   assert.notStrictEqual(profilesBySource.image.landscape, profilesBySource.text.landscape);
+});
+
+test("水印三步流程按来源与素材就绪状态推进", () => {
+  assert.deepEqual(watermarkWorkflowStepStates(0, false), ["current", "pending", "pending"]);
+  assert.deepEqual(watermarkWorkflowStepStates(3, false), ["complete", "current", "pending"]);
+  assert.deepEqual(watermarkWorkflowStepStates(3, true), ["complete", "complete", "current"]);
+  assert.deepEqual(watermarkWorkflowStepStates(0, true), ["current", "complete", "pending"]);
 });
 
 test("更新一个画幅不会修改其他画幅", () => {

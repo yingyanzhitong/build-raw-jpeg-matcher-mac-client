@@ -8,6 +8,7 @@ import {
   FolderOutput,
   Loader2,
   PanelBottom,
+  RotateCcw,
   Split,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -62,10 +63,20 @@ const initialSeparatorLogs: LogEntry[] = [
 
 export interface SeparatorWorkspaceStatus {
   logs: LogEntry[];
+  fileCount: number;
+  imageCount: number;
+  rawCount: number;
+  skippedCount: number;
+  hasExportReport: boolean;
 }
 
 export const defaultSeparatorWorkspaceStatus: SeparatorWorkspaceStatus = {
   logs: initialSeparatorLogs,
+  fileCount: 0,
+  imageCount: 0,
+  rawCount: 0,
+  skippedCount: 0,
+  hasExportReport: false,
 };
 
 export function FileSeparatorWorkspace({
@@ -91,6 +102,7 @@ export function FileSeparatorWorkspace({
   const [logs, setLogs] = useState<LogEntry[]>(initialSeparatorLogs);
   const [exportReport, setExportReport] = useState<ExportReport | null>(null);
   const [moveConfirmOpen, setMoveConfirmOpen] = useState(false);
+  const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
 
   const fileCount = images.length + raws.length;
   const exportDirectory = exportMode === "moveInPlace" ? inputRoot : outputRoot;
@@ -127,8 +139,15 @@ export function FileSeparatorWorkspace({
   }, [active, busy, inputRoot]);
 
   useEffect(() => {
-    onStatusChange({ logs });
-  }, [logs, onStatusChange]);
+    onStatusChange({
+      logs,
+      fileCount,
+      imageCount: images.length,
+      rawCount: raws.length,
+      skippedCount,
+      hasExportReport: exportReport !== null,
+    });
+  }, [exportReport, fileCount, images.length, logs, onStatusChange, raws.length, skippedCount]);
 
   function appendLogs(messages: string[], level?: LogLevel) {
     const entries = messages.map((message) => ({
@@ -256,6 +275,22 @@ export function FileSeparatorWorkspace({
     }
   }
 
+  function clearWorkspace() {
+    if (busy !== null) {
+      return;
+    }
+    setInputRoot("");
+    setOutputRoot("");
+    setExportMode("copy");
+    setImages([]);
+    setRaws([]);
+    setSkippedCount(0);
+    setExportReport(null);
+    setMoveConfirmOpen(false);
+    setClearConfirmOpen(false);
+    setLogs([{ level: "info", message: "已清空一键分离任务" }]);
+  }
+
   return (
     <section
       aria-label="一键分离工作区"
@@ -358,6 +393,21 @@ export function FileSeparatorWorkspace({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
+                  aria-label="清空一键分离任务"
+                  disabled={busy !== null}
+                  onClick={() => setClearConfirmOpen(true)}
+                  size="icon"
+                  type="button"
+                  variant="ghost"
+                >
+                  <RotateCcw />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>清空当前任务</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
                   aria-label={logPanelOpen ? "隐藏日志" : "显示日志"}
                   aria-pressed={logPanelOpen}
                   className={cn(
@@ -422,6 +472,11 @@ export function FileSeparatorWorkspace({
         onOpenChange={setMoveConfirmOpen}
         open={moveConfirmOpen}
       />
+      <ClearSeparatorDialog
+        onConfirm={clearWorkspace}
+        onOpenChange={setClearConfirmOpen}
+        open={clearConfirmOpen}
+      />
     </section>
   );
 }
@@ -483,6 +538,37 @@ function MoveConfirmDialog({
           </Button>
           <Button onClick={onConfirm} type="button">
             确认移动
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ClearSeparatorDialog({
+  onConfirm,
+  onOpenChange,
+  open,
+}: {
+  onConfirm: () => void;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>清空一键分离任务？</DialogTitle>
+          <DialogDescription>
+            将清空已选目录、扫描结果、导出结果和运行日志，不会删除或改动任何本地文件。
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button onClick={() => onOpenChange(false)} type="button" variant="outline">
+            取消
+          </Button>
+          <Button onClick={onConfirm} type="button" variant="destructive">
+            清空任务
           </Button>
         </DialogFooter>
       </DialogContent>

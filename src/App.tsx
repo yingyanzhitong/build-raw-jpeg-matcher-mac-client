@@ -58,6 +58,11 @@ import {
 import type { ExportFeedback, ExportToastState } from "@/features/shared/exportFeedback";
 import { scrollLogViewportToTail } from "@/features/shared/logTail";
 import {
+  separatorWorkspaceStatusMetrics,
+  watermarkWorkspaceStatusMetrics,
+  type WorkspaceStatusMetric,
+} from "@/features/shared/workspaceStatus";
+import {
   ExportResultToast,
   formatBytes,
   type LogEntry,
@@ -203,7 +208,13 @@ function App() {
             />
           </div>
         </section>
-        {activeWorkspace === "matcher" ? <MatcherStatusOverlay status={rawStatus} /> : null}
+        {activeWorkspace === "matcher" ? (
+          <MatcherStatusOverlay status={rawStatus} />
+        ) : activeWorkspace === "separator" ? (
+          <SeparatorStatusOverlay status={separatorStatus} />
+        ) : (
+          <WatermarkStatusOverlay status={watermarkStatus} />
+        )}
         <LogBottomSheet
           open={logPanelOpen}
           logs={
@@ -361,19 +372,64 @@ function MatcherStatusOverlay({
   const config = getDirectionConfig(status.direction);
 
   return (
+    <WorkspaceStatusOverlay
+      ariaLabel="当前配对统计"
+      className="bottom-5"
+      metrics={[
+        { label: config.inputNoun, value: status.inputCount },
+        {
+          label: "匹配",
+          value: status.counts.matched + status.counts.confirmed,
+          tone: "success",
+        },
+        { label: "冲突", value: status.counts.conflict, tone: "danger" },
+        { label: "可导出", value: status.exportableCount, tone: "accent" },
+      ]}
+    />
+  );
+}
+
+function SeparatorStatusOverlay({ status }: { status: SeparatorWorkspaceStatus }) {
+  return (
+    <WorkspaceStatusOverlay
+      ariaLabel="当前分离统计"
+      className={status.hasExportReport ? "bottom-[76px]" : "bottom-5"}
+      metrics={separatorWorkspaceStatusMetrics(status)}
+    />
+  );
+}
+
+function WatermarkStatusOverlay({ status }: { status: WatermarkWorkspaceStatus }) {
+  return (
+    <WorkspaceStatusOverlay
+      ariaLabel="当前水印统计"
+      className={status.hasExportReport ? "bottom-[168px]" : "bottom-[112px]"}
+      metrics={watermarkWorkspaceStatusMetrics(status)}
+    />
+  );
+}
+
+function WorkspaceStatusOverlay({
+  ariaLabel,
+  className,
+  metrics,
+}: {
+  ariaLabel: string;
+  className: string;
+  metrics: WorkspaceStatusMetric[];
+}) {
+  return (
     <aside
-      aria-label="当前配对统计"
-      className="desktop-status-dock absolute bottom-5 right-5 z-20 flex items-center gap-3 rounded-[8px] border border-border px-3.5 py-2 text-xs backdrop-blur-sm"
+      aria-label={ariaLabel}
+      className={cn(
+        "desktop-status-dock absolute right-5 z-20 flex items-center gap-3 rounded-[8px] border border-border px-3.5 py-2 text-xs backdrop-blur-sm",
+        className,
+      )}
     >
       <div className="flex items-center gap-4">
-        <HeaderMetric label={config.inputNoun} value={status.inputCount} />
-        <HeaderMetric
-          label="匹配"
-          value={status.counts.matched + status.counts.confirmed}
-          tone="success"
-        />
-        <HeaderMetric label="冲突" value={status.counts.conflict} tone="danger" />
-        <HeaderMetric label="可导出" value={status.exportableCount} tone="accent" />
+        {metrics.map((metric) => (
+          <HeaderMetric key={metric.label} {...metric} />
+        ))}
       </div>
     </aside>
   );
@@ -386,7 +442,7 @@ function HeaderMetric({
 }: {
   label: string;
   value: number;
-  tone?: "neutral" | "success" | "danger" | "accent";
+  tone?: WorkspaceStatusMetric["tone"];
 }) {
   return (
     <div className="flex min-w-0 items-center gap-2 text-[11px]">

@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
+  Check,
   CheckCircle2,
   FolderInput,
   FolderOutput,
@@ -12,6 +13,7 @@ import {
   Loader2,
   MapPin,
   PanelBottom,
+  RotateCcw,
   SlidersHorizontal,
   Stamp,
   Type,
@@ -25,10 +27,19 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  type ReactNode,
 } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -40,7 +51,6 @@ import {
 import {
   formatBytes,
   inferLogLevel,
-  Pane,
   PathDisplay,
   type LogEntry,
   type LogLevel,
@@ -61,6 +71,8 @@ import {
   syncWatermarkProfiles,
   thumbnailWindow,
   updateWatermarkProfile,
+  watermarkWorkflowStepStates,
+  type WatermarkWorkflowStepState,
 } from "./state";
 import type {
   AspectKind,
@@ -90,6 +102,11 @@ interface WatermarkExportReport {
 
 export interface WatermarkWorkspaceStatus {
   logs: LogEntry[];
+  imageCount: number;
+  landscapeCount: number;
+  portraitCount: number;
+  squareCount: number;
+  hasExportReport: boolean;
 }
 
 const initialWatermarkLogs: LogEntry[] = [
@@ -98,18 +115,17 @@ const initialWatermarkLogs: LogEntry[] = [
 
 export const defaultWatermarkWorkspaceStatus: WatermarkWorkspaceStatus = {
   logs: initialWatermarkLogs,
+  imageCount: 0,
+  landscapeCount: 0,
+  portraitCount: 0,
+  squareCount: 0,
+  hasExportReport: false,
 };
 
 const aspectLabels: Record<AspectKind, string> = {
   landscape: "横图",
   portrait: "竖图",
   square: "方图",
-};
-
-const aspectRatios: Record<AspectKind, string> = {
-  landscape: "3 / 2",
-  portrait: "2 / 3",
-  square: "1 / 1",
 };
 
 const anchorLabels: Record<WatermarkAnchor, string> = {
@@ -185,6 +201,7 @@ export function WatermarkWorkspace({
   const [logs, setLogs] = useState<LogEntry[]>(initialWatermarkLogs);
   const [progress, setProgress] = useState<WatermarkProgress>(createWatermarkProgress);
   const [exportReport, setExportReport] = useState<WatermarkExportReport | null>(null);
+  const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
   const previewPathsRef = useRef<Record<string, string>>({});
   const previewRequestsRef = useRef<Map<string, Promise<string>>>(new Map());
   const currentJobIdRef = useRef<string | null>(null);
@@ -229,10 +246,18 @@ export function WatermarkWorkspace({
     sourceKind,
     watermarkAsset,
   });
+  const workflowSteps = watermarkWorkflowStepStates(images.length, watermarkAsset !== null);
 
   useEffect(() => {
-    onStatusChange({ logs });
-  }, [logs, onStatusChange]);
+    onStatusChange({
+      logs,
+      imageCount: images.length,
+      landscapeCount: counts.landscape,
+      portraitCount: counts.portrait,
+      squareCount: counts.square,
+      hasExportReport: exportReport !== null,
+    });
+  }, [counts, exportReport, images.length, logs, onStatusChange]);
 
   useEffect(() => {
     saveWatermarkSettings(window.localStorage, {
@@ -648,6 +673,26 @@ export function WatermarkWorkspace({
     }
   }
 
+  function clearWorkspace() {
+    if (busy !== null || progress.running) {
+      return;
+    }
+    setInputRoot("");
+    setImages([]);
+    setSkippedCount(0);
+    setSelectedIndex(-1);
+    setActiveAspect("landscape");
+    previewPathsRef.current = {};
+    previewRequestsRef.current.clear();
+    setPreviewPaths({});
+    setProgress(createWatermarkProgress());
+    setExportReport(null);
+    setClearConfirmOpen(false);
+    setLogs([
+      { level: "info", message: "已清空图片水印任务；水印素材、文字和画幅参数已保留" },
+    ]);
+  }
+
   const exportHasWarnings =
     exportReport !== null &&
     (exportReport.summary.failedCount > 0 || exportReport.summary.cancelledRemainingCount > 0);
@@ -656,15 +701,17 @@ export function WatermarkWorkspace({
     <section
       aria-label="图片水印工作区"
       className={cn(
-        "grid h-full min-h-0 grid-cols-1 overflow-auto bg-panel min-[960px]:grid-cols-[320px_minmax(0,1fr)] min-[960px]:overflow-hidden",
+        "grid h-full min-h-0 grid-cols-1 overflow-auto bg-panel min-[960px]:grid-cols-[312px_minmax(0,1fr)] min-[960px]:overflow-hidden",
         !active && "hidden",
       )}
     >
-      <aside className="min-h-[640px] border-r border-border bg-background/82 min-[960px]:min-h-0">
+      <aside className="min-h-[520px] border-r border-border bg-background/82 min-[960px]:min-h-0">
         <ScrollArea className="h-full min-h-0">
-          <div className="grid min-h-[700px] content-start p-4 pb-6 min-[960px]:min-h-0">
-            <Pane
+          <div className="grid min-h-[720px] content-start p-4 pb-6 min-[960px]:min-h-0">
+            <WatermarkWorkflowSection
               icon={<FolderInput className="size-4" />}
+              state={workflowSteps[0]}
+              step={1}
               title="照片来源"
               subtitle={images.length > 0 ? `${images.length} 张可处理图片` : "递归识别 JPG、JPEG、PNG"}
             >
@@ -683,10 +730,12 @@ export function WatermarkWorkspace({
                   <Badge variant={skippedCount > 0 ? "warning" : "muted"}>跳过 {skippedCount}</Badge>
                 </div>
               ) : null}
-            </Pane>
+            </WatermarkWorkflowSection>
 
-            <Pane
+            <WatermarkWorkflowSection
               icon={<Stamp className="size-4" />}
+              state={workflowSteps[1]}
+              step={2}
               title="水印素材"
               subtitle={watermarkAsset ? `${watermarkAsset.width}×${watermarkAsset.height}` : "图片或文字"}
             >
@@ -782,10 +831,12 @@ export function WatermarkWorkspace({
                   )}
                 </>
               )}
-            </Pane>
+            </WatermarkWorkflowSection>
 
-            <Pane
+            <WatermarkWorkflowSection
               icon={<SlidersHorizontal className="size-4" />}
+              state={workflowSteps[2]}
+              step={3}
               title="画幅配置"
               subtitle={`${aspectLabels[activeAspect]}独立参数`}
             >
@@ -911,64 +962,83 @@ export function WatermarkWorkspace({
               <p className="text-xs leading-5 text-muted-foreground">
                 JPEG 固定质量 100，PNG 无损；源文件不会改写，已有同名目标会跳过。
               </p>
-            </Pane>
+            </WatermarkWorkflowSection>
           </div>
         </ScrollArea>
       </aside>
 
-      <section className="flex min-h-[660px] min-w-0 flex-col bg-card min-[960px]:min-h-0">
-        <header className="flex min-h-16 shrink-0 items-center justify-between gap-4 border-b border-border px-5">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h2 className="truncate text-[15px] font-semibold tracking-[-0.01em]">图片水印</h2>
-              {selectedImage ? <Badge variant="accent">{aspectLabels[selectedImage.aspect]}</Badge> : null}
+      <section className="flex min-h-[620px] min-w-0 flex-col bg-card min-[960px]:min-h-0">
+        <header className="shrink-0 border-b border-border bg-card px-6">
+          <div className="grid h-16 min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <h2 className="shrink-0 text-[15px] font-semibold leading-none tracking-[-0.01em]">
+                水印预览
+              </h2>
+              <Badge className="shrink-0" variant="muted">{images.length} 张</Badge>
+              <p className="hidden min-w-0 truncate text-xs text-muted-foreground min-[1260px]:block">
+                {selectedImage ? `${aspectLabels[selectedImage.aspect]} · ${actionHint}` : actionHint}
+              </p>
             </div>
-            <p className="mt-1 truncate text-xs text-muted-foreground">{actionHint}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            {progress.running ? (
-              <Button
-                disabled={progress.cancelling}
-                onClick={() => void cancelExport()}
-                type="button"
-                variant="outline"
-              >
-                {progress.cancelling ? <Loader2 className="animate-spin" /> : <X />}
-                {progress.cancelling ? "正在停止" : "取消导出"}
-              </Button>
-            ) : (
-              <Button disabled={!canExport} onClick={() => void startExport()} type="button">
-                <FolderOutput />
-                导出水印图片
-              </Button>
-            )}
-            <Separator className="h-8" orientation="vertical" />
-            <Tooltip>
-              <TooltipTrigger asChild>
+            <div className="flex min-w-0 items-center justify-end gap-2">
+              {progress.running ? (
                 <Button
-                  aria-label={logPanelOpen ? "隐藏水印日志" : "显示水印日志"}
-                  aria-pressed={logPanelOpen}
-                  className={cn(
-                    "size-9",
-                    logPanelOpen && "border-accent/30 bg-accent/10 text-accent hover:bg-accent/14",
-                  )}
-                  onClick={onToggleLogPanel}
-                  size="icon"
+                  disabled={progress.cancelling}
+                  onClick={() => void cancelExport()}
                   type="button"
-                  variant="ghost"
+                  variant="outline"
                 >
-                  <PanelBottom />
+                  {progress.cancelling ? <Loader2 className="animate-spin" /> : <X />}
+                  {progress.cancelling ? "正在停止" : "取消导出"}
                 </Button>
-              </TooltipTrigger>
-              <TooltipContent>{logPanelOpen ? "隐藏日志" : "显示日志"}</TooltipContent>
-            </Tooltip>
+              ) : (
+                <Button disabled={!canExport} onClick={() => void startExport()} type="button">
+                  <FolderOutput />
+                  导出水印图片
+                </Button>
+              )}
+              <Separator className="hidden h-8 sm:block" orientation="vertical" />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    aria-label="清空图片水印任务"
+                    disabled={busy !== null || progress.running}
+                    onClick={() => setClearConfirmOpen(true)}
+                    size="icon"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <RotateCcw />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>清空当前任务</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    aria-label={logPanelOpen ? "隐藏水印日志" : "显示水印日志"}
+                    aria-pressed={logPanelOpen}
+                    className={cn(
+                      "size-9",
+                      logPanelOpen && "border-accent/30 bg-accent/10 text-accent hover:bg-accent/14",
+                    )}
+                    onClick={onToggleLogPanel}
+                    size="icon"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <PanelBottom />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{logPanelOpen ? "隐藏日志" : "显示日志"}</TooltipContent>
+              </Tooltip>
+            </div>
           </div>
         </header>
 
         {progress.running || progress.processedCount > 0 ? <WatermarkProgressBar progress={progress} /> : null}
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-panel p-5 pb-3">
-          <section className="watermark-preview-surface relative flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-[10px] border border-border bg-card p-5">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-card">
+          <section className="empty-workbench relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-card p-8">
             {selectedImage && mainPreviewPath ? (
               <WatermarkCanvas
                 aspect={selectedImage.aspect}
@@ -987,7 +1057,7 @@ export function WatermarkWorkspace({
             )}
           </section>
 
-          <div className="mt-3 flex min-h-[92px] shrink-0 items-center gap-3 rounded-[9px] border border-border bg-card px-3 py-2">
+          <div className="flex min-h-[92px] shrink-0 items-center gap-3 border-t border-border bg-card px-5 py-2">
             <Button
               aria-label="上一张预览图片"
               disabled={selectedIndex <= 0}
@@ -1060,6 +1130,105 @@ export function WatermarkWorkspace({
           </footer>
         ) : null}
       </section>
+      <ClearWatermarkDialog
+        onConfirm={clearWorkspace}
+        onOpenChange={setClearConfirmOpen}
+        open={clearConfirmOpen}
+      />
+    </section>
+  );
+}
+
+function ClearWatermarkDialog({
+  onConfirm,
+  onOpenChange,
+  open,
+}: {
+  onConfirm: () => void;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>清空图片水印任务？</DialogTitle>
+          <DialogDescription>
+            将清空照片目录、样片预览、任务进度、导出结果和运行日志。水印素材、文字、字体及三种画幅参数会继续保留。
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button onClick={() => onOpenChange(false)} type="button" variant="outline">
+            取消
+          </Button>
+          <Button onClick={onConfirm} type="button" variant="destructive">
+            清空任务
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function WatermarkWorkflowSection({
+  children,
+  icon,
+  state,
+  step,
+  subtitle,
+  title,
+}: {
+  children: ReactNode;
+  icon: ReactNode;
+  state: WatermarkWorkflowStepState;
+  step: 1 | 2 | 3;
+  subtitle: string;
+  title: string;
+}) {
+  const complete = state === "complete";
+  const current = state === "current";
+  const stepLabel = complete ? "已完成" : current ? "当前步骤" : "待完成";
+
+  return (
+    <section
+      className={cn(
+        "border-b border-border py-5 first:pt-0 last:border-b-0 last:pb-0",
+        current && "bg-accent/[0.015]",
+      )}
+    >
+      <header className="mb-3.5 flex items-center gap-2">
+        <span
+          aria-label={`第 ${step} 步，${stepLabel}`}
+          className={cn(
+            "grid size-8 shrink-0 place-items-center rounded-[7px] border text-xs font-semibold",
+            complete
+              ? "border-success/30 bg-success/10 text-success"
+              : current
+                ? "border-accent/30 bg-accent/10 text-accent"
+                : "border-border bg-secondary text-muted-foreground",
+          )}
+        >
+          {complete ? <Check className="size-4" /> : step}
+        </span>
+        <span className="grid size-8 shrink-0 place-items-center rounded-[7px] border border-border bg-secondary text-muted-foreground [&_svg]:size-4">
+          {icon}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 items-center justify-between gap-2">
+            <h2 className="truncate text-sm font-semibold leading-none">{title}</h2>
+            <span
+              className={cn(
+                "shrink-0 text-[10px] font-medium",
+                complete ? "text-success" : current ? "text-accent" : "text-muted-foreground",
+              )}
+            >
+              {stepLabel}
+            </span>
+          </div>
+          <p className="mt-1 truncate text-xs text-muted-foreground">{subtitle}</p>
+        </div>
+      </header>
+      <div className="grid gap-2.5">{children}</div>
     </section>
   );
 }
@@ -1310,28 +1479,21 @@ const ThumbnailButton = memo(function ThumbnailButton({
 
 function EmptyWatermarkPreview({ aspect, hasImages }: { aspect: AspectKind; hasImages: boolean }) {
   return (
-    <div className="grid h-full w-full place-items-center p-6 text-center">
-      <div
-        className="empty-workbench grid max-h-full w-full max-w-[520px] place-items-center rounded-[10px] border border-dashed border-border p-8"
-        style={{ aspectRatio: aspectRatios[aspect] }}
-      >
-        <div className="grid max-w-sm justify-items-center gap-3">
-          <span className="grid size-12 place-items-center rounded-[9px] border border-accent/20 bg-card text-accent">
-            <Stamp className="size-5" />
-          </span>
-          <div>
-            <h3 className="text-base font-semibold">
-              {hasImages ? `没有可预览的${aspectLabels[aspect]}` : "等待图片与水印素材"}
-            </h3>
-            <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
-              {hasImages
-                ? "仍可先配置该画幅参数；选择包含此画幅的目录后会显示真实预览。"
-                : "选择图片目录并准备图片或文字水印后，可实时检查三种画幅的玻璃效果。"}
-            </p>
-          </div>
-        </div>
+    <section className="grid max-w-md justify-items-center gap-4 text-center">
+      <span className="grid size-14 place-items-center rounded-[10px] border border-accent/20 bg-card text-accent shadow-[0_8px_20px_rgba(26,115,232,0.1)]">
+        <Stamp className="size-6" />
+      </span>
+      <div>
+        <h3 className="text-lg font-semibold tracking-[-0.015em]">
+          {hasImages ? `没有可预览的${aspectLabels[aspect]}` : "等待图片与水印素材"}
+        </h3>
+        <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
+          {hasImages
+            ? "仍可先配置该画幅参数；选择包含此画幅的目录后会显示真实预览。"
+            : "选择图片目录并准备图片或文字水印后，可实时检查三种画幅的玻璃效果。"}
+        </p>
       </div>
-    </div>
+    </section>
   );
 }
 

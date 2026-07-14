@@ -153,8 +153,7 @@ button:disabled {
     linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(248, 250, 252, 0.46));
 }
 
-.watermark-checkerboard,
-.watermark-preview-surface {
+.watermark-checkerboard {
   background-color: #f8fafc;
   background-image:
     linear-gradient(45deg, rgba(32, 33, 36, 0.045) 25%, transparent 25%),

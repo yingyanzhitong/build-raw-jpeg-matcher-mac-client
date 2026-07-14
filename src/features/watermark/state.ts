@@ -25,6 +25,20 @@ export const maxTextWatermarkCharacters = 120;
 export const defaultTextWatermarkClarity = 0.4;
 export const defaultTextWatermarkTileSpacingPercent = 2;
 
+export type WatermarkWorkflowStepState = "complete" | "current" | "pending";
+
+export function watermarkWorkflowStepStates(
+  imageCount: number,
+  hasWatermarkAsset: boolean,
+): [WatermarkWorkflowStepState, WatermarkWorkflowStepState, WatermarkWorkflowStepState] {
+  const sourceReady = imageCount > 0;
+  return [
+    sourceReady ? "complete" : "current",
+    hasWatermarkAsset ? "complete" : sourceReady ? "current" : "pending",
+    sourceReady && hasWatermarkAsset ? "current" : "pending",
+  ];
+}
+
 const validAnchors = new Set<WatermarkAnchor>([
   "topLeft",
   "topCenter",
