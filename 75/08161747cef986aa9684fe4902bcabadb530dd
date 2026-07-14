@@ -1,0 +1,66 @@
+openspec/changes/rebuild-pixcake-style-watermark/design.md
+  s_5f5841f18f5bde::t_1c6e47e205b143 17,66-73
+openspec/changes/rebuild-pixcake-style-watermark/proposal.md
+  s_5f5841f18f5bde::t_4942afa6711cbb 13,33
+openspec/changes/rebuild-pixcake-style-watermark/specs/watermark-workspace-navigation/spec.md
+  s_5f5841f18f5bde::t_1cab537c25b5db 34-49
+openspec/changes/unify-export-feedback/tasks.md
+  s_5f5841f18f5bde::t_24210c2b48ea65 19-25
+src/features/shared/workspaceStatus.test.mjs
+  s_016fa4053668b5::t_a5306b150eca1b 1-57
+src/features/shared/workspaceStatus.ts
+  s_016fa4053668b5::t_2e33a127eadf6d 1-39
+src/features/watermark/state.test.mjs
+  s_016fa4053668b5::t_154be98860298f 27,76-82
+src/features/watermark/state.ts
+  s_016fa4053668b5::t_b93336e2026a56 28-41
+openspec/changes/rebuild-pixcake-style-watermark/tasks.md
+  s_c27cb76072e5ac::t_a368bf0e9bbb48 49-55
+openspec/changes/unify-export-feedback/design.md
+  s_c27cb76072e5ac::t_b110a94d91b35e 14,29-30,38
+openspec/changes/unify-export-feedback/proposal.md
+  s_c27cb76072e5ac::t_7b6ba6f462a77c 12-13,27
+openspec/changes/unify-export-feedback/specs/export-result-feedback/spec.md
+  s_c27cb76072e5ac::t_2ceda3702bbc54 54-85
+src/App.tsx
+  s_c27cb76072e5ac::t_355262177e3627 61-65,211-217,375-421,423-427,430-432,445
+src/features/file-separator/FileSeparatorWorkspace.tsx
+  s_c27cb76072e5ac::t_371674db7ac979 11,66-70,75-79,105,142-150,275-280,282-291,393-407,475-479,541-571
+src/features/watermark/WatermarkWorkspace.tsx
+  s_c27cb76072e5ac::t_411a96a130a462 7,16,30,35-42,74-75,105-109,118-122,204,249,252-260,673-678,680-693,704,708,710-711,713-714,733,735,737-738,834,836,838-839,965,970-980,982-983,985-986,988,990-996,998-1034,1040-1041,1060,1133-1137,1142-1235,1482-1494,1496
+src/styles.css
+  s_c27cb76072e5ac::t_c277317d10f96e 156
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "7508161747cef986aa9684fe4902bcabadb530dd",
+  "prompts": {},
+  "logical_commit_id": "7508161747cef986aa9684fe4902bcabadb530dd",
+  "sessions": {
+    "s_016fa4053668b5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f4cce-0e1e-7a00-b270-cd79fbd1f593",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    },
+    "s_5f5841f18f5bde": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f5a71-61ad-7790-a2b9-69f9f31876a2",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    },
+    "s_c27cb76072e5ac": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f5aba-ed2f-7e41-acc3-579a5e42e80b",
+        "model": "unknown"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
