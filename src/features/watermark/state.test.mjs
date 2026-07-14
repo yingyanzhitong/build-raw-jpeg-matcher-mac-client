@@ -9,9 +9,11 @@ import {
   createDefaultProfilesBySource,
   createDefaultWatermarkSettings,
   createWatermarkProgress,
+  defaultJpegQuality,
   glassAlphaFactor,
   defaultTextWatermarkClarity,
   defaultTextWatermarkTileSpacingPercent,
+  legacyWatermarkV5SettingsKey,
   legacyWatermarkV4SettingsKey,
   legacyWatermarkV3SettingsKey,
   legacyWatermarkV2SettingsKey,
@@ -75,6 +77,14 @@ test("文字与图片使用相互独立的默认参数", () => {
   assert.notStrictEqual(profilesBySource.image.landscape, profilesBySource.text.landscape);
 });
 
+test("JPEG 导出质量默认 100 且属于全局水印设置", () => {
+  const settings = createDefaultWatermarkSettings();
+
+  assert.equal(defaultJpegQuality, 100);
+  assert.equal(settings.jpegQuality, 100);
+  assert.equal("jpegQuality" in settings.profilesBySource.image.landscape, false);
+});
+
 test("水印三步流程按来源与素材就绪状态推进", () => {
   assert.deepEqual(watermarkWorkflowStepStates(0, false), ["current", "pending", "pending"]);
   assert.deepEqual(watermarkWorkflowStepStates(3, false), ["complete", "current", "pending"]);
@@ -105,13 +115,14 @@ test("同步按值复制且后续仍相互独立", () => {
   assert.equal(next.landscape.rotationDegrees, 28);
 });
 
-test("v5 配置保存素材来源、文字字体与来源独立参数", () => {
+test("v6 配置保存 JPEG 质量、素材来源、文字字体与来源独立参数", () => {
   const storage = memoryStorage();
   const settings = {
     sourceKind: "text",
     watermarkPath: "/logos/watermark.png",
     text: "© 本地摄影",
     fontId: "PingFangSC-Regular",
+    jpegQuality: 86,
     profilesBySource: {
       image: createDefaultProfiles("image"),
       text: updateWatermarkProfile(createDefaultProfiles("text"), "square", {
@@ -123,6 +134,23 @@ test("v5 配置保存素材来源、文字字体与来源独立参数", () => {
   assert.equal(saveWatermarkSettings(storage, settings), true);
   assert.ok(storage.values.has(watermarkSettingsKey));
   assert.deepEqual(loadWatermarkSettings(storage), settings);
+});
+
+test("v5 配置迁移时 JPEG 质量默认为 100", () => {
+  const storage = memoryStorage({
+    [legacyWatermarkV5SettingsKey]: JSON.stringify({
+      sourceKind: "image",
+      watermarkPath: "/logos/v5.png",
+      text: "",
+      fontId: "",
+      profilesBySource: createDefaultProfilesBySource(),
+    }),
+  });
+
+  const loaded = loadWatermarkSettings(storage);
+  assert.equal(loaded.watermarkPath, "/logos/v5.png");
+  assert.equal(loaded.jpegQuality, 100);
+  assert.deepEqual(loaded.profilesBySource, createDefaultProfilesBySource());
 });
 
 test("v4 文字配置仅迁移仍为旧默认值的通透度与间距", () => {
@@ -240,6 +268,7 @@ test("损坏或越界配置安全恢复并钳制", () => {
   const outOfRange = memoryStorage({
     [watermarkSettingsKey]: JSON.stringify({
       watermarkPath: 42,
+      jpegQuality: 0,
       profilesBySource: {
         image: {
           landscape: { clarity: 5, sizePercent: -3, rotationDegrees: 999 },
@@ -249,6 +278,7 @@ test("损坏或越界配置安全恢复并钳制", () => {
   });
   const loaded = loadWatermarkSettings(outOfRange);
   assert.equal(loaded.watermarkPath, "");
+  assert.equal(loaded.jpegQuality, 1);
   assert.equal(loaded.profilesBySource.image.landscape.clarity, 1);
   assert.equal(loaded.profilesBySource.image.landscape.sizePercent, 1);
   assert.equal(loaded.profilesBySource.image.landscape.rotationDegrees, 180);

@@ -14,7 +14,8 @@ import type {
   WatermarkSourceKind,
 } from "./types";
 
-export const watermarkSettingsKey = "watermark-settings:v5";
+export const watermarkSettingsKey = "watermark-settings:v6";
+export const legacyWatermarkV5SettingsKey = "watermark-settings:v5";
 export const legacyWatermarkV4SettingsKey = "watermark-settings:v4";
 export const legacyWatermarkV3SettingsKey = "watermark-settings:v3";
 export const legacyWatermarkV2SettingsKey = "watermark-settings:v2";
@@ -24,6 +25,7 @@ export const maxWatermarkTileCount = 5_000;
 export const maxTextWatermarkCharacters = 120;
 export const defaultTextWatermarkClarity = 0.4;
 export const defaultTextWatermarkTileSpacingPercent = 2;
+export const defaultJpegQuality = 100;
 
 export type WatermarkWorkflowStepState = "complete" | "current" | "pending";
 
@@ -119,9 +121,14 @@ export function loadWatermarkSettings(
   const fallback = createDefaultWatermarkSettings();
   try {
     const current = storage.getItem(watermarkSettingsKey);
-    const legacyV4 = current === null ? storage.getItem(legacyWatermarkV4SettingsKey) : null;
+    const legacyV5 = current === null ? storage.getItem(legacyWatermarkV5SettingsKey) : null;
+    const legacyV4 =
+      current === null && legacyV5 === null
+        ? storage.getItem(legacyWatermarkV4SettingsKey)
+        : null;
     const serialized =
       current ??
+      legacyV5 ??
       legacyV4 ??
       storage.getItem(legacyWatermarkV3SettingsKey) ??
       storage.getItem(legacyWatermarkV2SettingsKey) ??
@@ -139,7 +146,7 @@ export function loadWatermarkSettings(
       ? value.profilesBySource
       : {};
     const legacyImageProfiles = sanitizeProfiles(value.profiles, "image");
-    const profilesBySource: WatermarkProfilesBySource = current
+    const profilesBySource: WatermarkProfilesBySource = current !== null || legacyV5 !== null
       ? {
           image: sanitizeProfiles(storedProfilesBySource.image, "image"),
           text: sanitizeProfiles(storedProfilesBySource.text, "text"),
@@ -156,6 +163,7 @@ export function loadWatermarkSettings(
       watermarkPath,
       text: sanitizeTextWatermarkInput(value.text),
       fontId: typeof value.fontId === "string" ? value.fontId : "",
+      jpegQuality: sanitizeJpegQuality(value.jpegQuality),
       profilesBySource,
     };
   } catch {
@@ -169,6 +177,7 @@ export function createDefaultWatermarkSettings(): WatermarkSettingsSnapshot {
     watermarkPath: "",
     text: "",
     fontId: "",
+    jpegQuality: defaultJpegQuality,
     profilesBySource: createDefaultProfilesBySource(),
   };
 }
@@ -185,6 +194,7 @@ export function saveWatermarkSettings(
         watermarkPath: settings.watermarkPath,
         text: sanitizeTextWatermarkInput(settings.text),
         fontId: settings.fontId,
+        jpegQuality: sanitizeJpegQuality(settings.jpegQuality),
         profilesBySource: {
           image: sanitizeProfiles(settings.profilesBySource.image, "image"),
           text: sanitizeProfiles(settings.profilesBySource.text, "text"),
@@ -195,6 +205,13 @@ export function saveWatermarkSettings(
   } catch {
     return false;
   }
+}
+
+export function sanitizeJpegQuality(value: unknown) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return defaultJpegQuality;
+  }
+  return clamp(Math.round(value), 1, 100);
 }
 
 function sanitizeProfiles(

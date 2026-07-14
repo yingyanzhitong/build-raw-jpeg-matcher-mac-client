@@ -30,7 +30,8 @@ const DEFAULT_PREVIEW_EDGE: u32 = 1_400;
 const WATERMARK_PREVIEW_EDGE: u32 = 1_024;
 const MIN_PREVIEW_EDGE: u32 = 64;
 const MAX_PREVIEW_EDGE: u32 = 2_048;
-const JPEG_QUALITY: u8 = 100;
+const MIN_JPEG_QUALITY: u8 = 1;
+const MAX_JPEG_QUALITY: u8 = 100;
 const SAFE_MARGIN_PERCENT: f32 = 3.0;
 const BACKGROUND_TOLERANCE: u8 = 32;
 const BACKGROUND_FEATHER: u8 = 20;
@@ -248,6 +249,7 @@ pub(crate) struct WatermarkExportRequest {
     job_id: String,
     input_root: String,
     export_dir: String,
+    jpeg_quality: u8,
     source: WatermarkSource,
     image_paths: Vec<String>,
     profiles: WatermarkProfiles,
@@ -1220,6 +1222,7 @@ struct PreparedSource {
 struct PreparedExport {
     job_id: String,
     output_root: PathBuf,
+    jpeg_quality: u8,
     watermark: RgbaImage,
     size_basis: WatermarkSizeBasis,
     sources: Vec<PreparedSource>,
@@ -1229,6 +1232,7 @@ struct PreparedExport {
 fn prepare_export(request: WatermarkExportRequest) -> Result<PreparedExport, String> {
     validate_job_id(&request.job_id)?;
     request.profiles.validate()?;
+    validate_jpeg_quality(request.jpeg_quality)?;
     if request.image_paths.is_empty() {
         return Err("没有可导出的图片".to_string());
     }
@@ -1282,6 +1286,7 @@ fn prepare_export(request: WatermarkExportRequest) -> Result<PreparedExport, Str
     Ok(PreparedExport {
         job_id: request.job_id,
         output_root,
+        jpeg_quality: request.jpeg_quality,
         watermark,
         size_basis,
         sources,
@@ -1321,6 +1326,7 @@ where
             &prepared.watermark,
             prepared.profiles,
             prepared.size_basis,
+            prepared.jpeg_quality,
         );
         summary.processed_count += 1;
         match result {
@@ -1390,6 +1396,7 @@ fn export_one_image(
     watermark: &RgbaImage,
     profiles: WatermarkProfiles,
     size_basis: WatermarkSizeBasis,
+    jpeg_quality: u8,
 ) -> Result<ExportOneOutcome, Box<dyn std::error::Error>> {
     ensure_safe_destination_parent(output_root, &source.relative_path)?;
     match fs::symlink_metadata(destination) {
@@ -1409,6 +1416,7 @@ fn export_one_image(
         DynamicImage::ImageRgba8(target),
         decoded.exif.take(),
         decoded.icc.take(),
+        jpeg_quality,
     )? {
         WriteOutcome::Written(mut warnings) => {
             warnings.splice(0..0, decoded.warnings);
@@ -1869,6 +1877,7 @@ fn write_encoded_image(
     image: DynamicImage,
     exif: Option<Vec<u8>>,
     icc: Option<Vec<u8>>,
+    jpeg_quality: u8,
 ) -> Result<WriteOutcome, Box<dyn std::error::Error>> {
     let file = match OpenOptions::new()
         .write(true)
@@ -1886,7 +1895,7 @@ fn write_encoded_image(
     let encode_result: Result<(), Box<dyn std::error::Error>> = match extension.as_str() {
         "jpg" | "jpeg" => {
             let rgb = image.to_rgb8();
-            let mut encoder = JpegEncoder::new_with_quality(file, JPEG_QUALITY);
+            let mut encoder = JpegEncoder::new_with_quality(file, jpeg_quality);
             attach_metadata(&mut encoder, exif, icc, &mut warnings);
             encoder
                 .write_image(
@@ -1917,6 +1926,15 @@ fn write_encoded_image(
         return Err(error);
     }
     Ok(WriteOutcome::Written(warnings))
+}
+
+fn validate_jpeg_quality(quality: u8) -> Result<(), String> {
+    if !(MIN_JPEG_QUALITY..=MAX_JPEG_QUALITY).contains(&quality) {
+        return Err(format!(
+            "JPEG 导出质量超出允许范围 {MIN_JPEG_QUALITY}–{MAX_JPEG_QUALITY}: {quality}"
+        ));
+    }
+    Ok(())
 }
 
 fn attach_metadata<E: ImageEncoder>(
@@ -2141,6 +2159,7 @@ mod tests {
             job_id: job_id.to_string(),
             input_root: input_root.to_string_lossy().to_string(),
             export_dir: output_root.to_string_lossy().to_string(),
+            jpeg_quality: MAX_JPEG_QUALITY,
             source: WatermarkSource::Image {
                 path: watermark_path.to_string_lossy().to_string(),
             },
@@ -2150,6 +2169,58 @@ mod tests {
                 .collect(),
             profiles: default_profiles(),
         }
+    }
+
+    #[test]
+    fn jpeg_quality_is_validated_and_changes_encoding() {
+        assert!(validate_jpeg_quality(0).is_err());
+        assert!(validate_jpeg_quality(1).is_ok());
+        assert!(validate_jpeg_quality(100).is_ok());
+        assert!(validate_jpeg_quality(101).is_err());
+
+        let root = tempdir().unwrap();
+        let low_path = root.path().join("low.jpg");
+        let high_path = root.path().join("high.jpg");
+        let image = RgbaImage::from_fn(256, 256, |x, y| {
+            Rgba([
+                ((x * 13 + y * 7) % 256) as u8,
+                ((x * 3 + y * 17) % 256) as u8,
+                ((x * 19 + y * 5) % 256) as u8,
+                255,
+            ])
+        });
+
+        assert!(matches!(
+            write_encoded_image(
+                &low_path,
+                DynamicImage::ImageRgba8(image.clone()),
+                None,
+                None,
+                20,
+            )
+            .unwrap(),
+            WriteOutcome::Written(_)
+        ));
+        assert!(matches!(
+            write_encoded_image(&high_path, DynamicImage::ImageRgba8(image), None, None, 100,)
+                .unwrap(),
+            WriteOutcome::Written(_)
+        ));
+        assert!(fs::metadata(high_path).unwrap().len() > fs::metadata(low_path).unwrap().len());
+    }
+
+    #[test]
+    fn png_encoding_ignores_jpeg_quality() {
+        let root = tempdir().unwrap();
+        let low_path = root.path().join("low.png");
+        let high_path = root.path().join("high.png");
+        let image =
+            DynamicImage::ImageRgba8(RgbaImage::from_pixel(32, 24, Rgba([20, 80, 160, 200])));
+
+        write_encoded_image(&low_path, image.clone(), None, None, 1).unwrap();
+        write_encoded_image(&high_path, image, None, None, 100).unwrap();
+
+        assert_eq!(fs::read(low_path).unwrap(), fs::read(high_path).unwrap());
     }
 
     #[test]
@@ -2554,6 +2625,7 @@ mod tests {
             job_id: "text-tile".to_string(),
             input_root: input.to_string_lossy().to_string(),
             export_dir: output.to_string_lossy().to_string(),
+            jpeg_quality: MAX_JPEG_QUALITY,
             source: WatermarkSource::Text {
                 text: "Glass".to_string(),
                 font_id: default_font_id,

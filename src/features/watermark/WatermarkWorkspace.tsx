@@ -191,6 +191,7 @@ export function WatermarkWorkspace({
   const [watermarkPath, setWatermarkPath] = useState(rememberedSettings.watermarkPath);
   const [text, setText] = useState(rememberedSettings.text);
   const [fontId, setFontId] = useState(rememberedSettings.fontId);
+  const [jpegQuality, setJpegQuality] = useState(rememberedSettings.jpegQuality);
   const [fonts, setFonts] = useState<WatermarkFontInfo[]>([]);
   const [fontCatalogError, setFontCatalogError] = useState("");
   const [imageAsset, setImageAsset] = useState<WatermarkAssetInfo | null>(null);
@@ -265,9 +266,10 @@ export function WatermarkWorkspace({
       watermarkPath,
       text,
       fontId,
+      jpegQuality,
       profilesBySource,
     });
-  }, [fontId, profilesBySource, sourceKind, text, watermarkPath]);
+  }, [fontId, jpegQuality, profilesBySource, sourceKind, text, watermarkPath]);
 
   useEffect(() => {
     if (restoredWatermarkRef.current || rememberedSettings.watermarkPath.length === 0) {
@@ -588,6 +590,7 @@ export function WatermarkWorkspace({
       jobId,
       inputRoot,
       exportDir,
+      jpegQuality,
       source:
         sourceKind === "image"
           ? { type: "image", path: watermarkAsset.path }
@@ -959,8 +962,19 @@ export function WatermarkWorkspace({
                 <Images />
                 同步到全部画幅
               </Button>
+              <RangeControl
+                label="JPEG 导出质量"
+                max={100}
+                min={1}
+                onChange={(value) => {
+                  setJpegQuality(value);
+                  setExportReport(null);
+                }}
+                suffix=""
+                value={jpegQuality}
+              />
               <p className="text-xs leading-5 text-muted-foreground">
-                JPEG 固定质量 100，PNG 无损；源文件不会改写，已有同名目标会跳过。
+                JPEG 按质量 {jpegQuality} 编码，PNG 无损；源文件不会改写，已有同名目标会跳过。
               </p>
             </WatermarkWorkflowSection>
           </div>

@@ -19,7 +19,7 @@
 - **THEN** 系统跳过该图片、记录冲突且不修改已有文件
 
 ### Requirement: 保留方向与照片元数据
-系统 SHALL 在合成前应用 EXIF 方向，在输出 EXIF 中移除旧方向标记，并尽量写回 EXIF 与 ICC；JPEG SHALL 使用质量 100，PNG SHALL 使用无损编码。
+系统 SHALL 在合成前应用 EXIF 方向，在输出 EXIF 中移除旧方向标记，并尽量写回 EXIF 与 ICC；JPEG SHALL 使用用户配置的全局导出质量，PNG SHALL 使用无损编码。
 
 #### Scenario: 导出带方向和 ICC 的 JPEG
 - **WHEN** 来源 JPEG 包含非默认方向、EXIF 和 ICC
@@ -28,6 +28,21 @@
 #### Scenario: 元数据无法写回
 - **WHEN** 编码器不能安全写入某段 EXIF 或 ICC
 - **THEN** 系统继续保存水印图片并发送明确警告
+
+### Requirement: 可配置 JPEG 导出质量
+系统 SHALL 提供范围 1–100 的全局 JPEG 导出质量设置，默认值 SHALL 为 100，并 SHALL 将该设置随水印配置在本地记忆。后端 MUST 在创建任何输出文件前验证质量范围；PNG 导出 MUST NOT 因该设置改变无损编码行为。
+
+#### Scenario: 首次使用默认质量
+- **WHEN** 用户尚未修改 JPEG 导出质量
+- **THEN** 界面显示 100，JPEG 以质量 100 编码
+
+#### Scenario: 调低 JPEG 质量
+- **WHEN** 用户将质量调整为 80 并导出包含 JPEG 与 PNG 的目录
+- **THEN** JPEG 以质量 80 编码，PNG 仍使用无损编码
+
+#### Scenario: 提交非法质量
+- **WHEN** 导出请求中的 JPEG 质量小于 1 或大于 100
+- **THEN** 后端在创建输出文件前拒绝整个任务并返回明确错误
 
 ### Requirement: 流式报告批量进度
 系统 SHALL 通过当前调用专属的 IPC Channel 发送任务开始、逐项完成、警告和取消事件，最终 SHALL 返回总数、已处理、成功、同名跳过、失败和取消剩余汇总。

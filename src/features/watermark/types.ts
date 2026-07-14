@@ -91,6 +91,7 @@ export interface WatermarkExportRequest {
   jobId: string;
   inputRoot: string;
   exportDir: string;
+  jpegQuality: number;
   source: WatermarkSource;
   imagePaths: string[];
   profiles: WatermarkProfiles;
@@ -136,6 +137,7 @@ export interface WatermarkSettingsSnapshot {
   watermarkPath: string;
   text: string;
   fontId: string;
+  jpegQuality: number;
   profilesBySource: WatermarkProfilesBySource;
 }
 
