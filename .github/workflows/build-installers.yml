@@ -85,6 +85,8 @@ jobs:
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     timeout-minutes: 90
+    outputs:
+      release_tag: ${{ steps.version.outputs.tag }}
 
     steps:
       - name: Checkout
@@ -153,3 +155,46 @@ jobs:
           GITEE_PAGES_SOURCE_DIR: gitee-pages
           LATEST_JSON_PATH: normalized-release-assets/latest.json
         run: node scripts/sync-gitee-pages.mjs
+
+  notify:
+    name: Notify WeCom
+    runs-on: ubuntu-latest
+    needs: release
+    if: ${{ needs.release.result == 'success' }}
+    permissions: {}
+
+    steps:
+      - name: Send release success notification
+        env:
+          WECOM_WEBHOOK_KEY: ${{ secrets.WECOM_WEBHOOK_KEY }}
+          RELEASE_TAG: ${{ needs.release.outputs.release_tag }}
+          REPOSITORY: ${{ github.repository }}
+          COMMIT_SHA: ${{ github.sha }}
+          ACTOR: ${{ github.actor }}
+          SERVER_URL: ${{ github.server_url }}
+          RUN_ID: ${{ github.run_id }}
+        shell: bash
+        run: |
+          if [ -z "$WECOM_WEBHOOK_KEY" ]; then
+            echo "::warning::未配置 WECOM_WEBHOOK_KEY，跳过企业微信通知"
+            exit 0
+          fi
+
+          SHORT_SHA="${COMMIT_SHA:0:7}"
+          COMMIT_URL="${SERVER_URL}/${REPOSITORY}/commit/${COMMIT_SHA}"
+          RUN_URL="${SERVER_URL}/${REPOSITORY}/actions/runs/${RUN_ID}"
+          CONTENT="$(printf '✅ **照片配对助手发布成功**\n> 版本：`%s`\n> 仓库：%s\n> 提交：[%s](%s)\n> 触发人：%s\n> [查看 GitHub Actions](%s)' "$RELEASE_TAG" "$REPOSITORY" "$SHORT_SHA" "$COMMIT_URL" "$ACTOR" "$RUN_URL")"
+          PAYLOAD="$(jq -n --arg content "$CONTENT" '{msgtype: "markdown", markdown: {content: $content}}')"
+
+          if ! RESPONSE="$(curl --silent --show-error --fail-with-body \
+            --retry 3 --retry-all-errors --max-time 20 \
+            "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=${WECOM_WEBHOOK_KEY}" \
+            -H 'Content-Type: application/json' \
+            --data "$PAYLOAD")"; then
+            echo "::warning::企业微信发布成功通知发送失败"
+            exit 0
+          fi
+
+          if [ "$(jq -r '.errcode // -1' <<<"$RESPONSE")" != "0" ]; then
+            echo "::warning::企业微信机器人拒绝消息：$(jq -c . <<<"$RESPONSE")"
+          fi
