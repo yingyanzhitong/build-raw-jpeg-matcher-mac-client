@@ -1,0 +1,102 @@
+openspec/changes/add-glass-text-watermark/.openspec.yaml
+  s_c27cb76072e5ac::t_8c6a6077f1152c 2
+openspec/changes/add-glass-text-watermark/tasks.md
+  s_016fa4053668b5::t_2314ee4440b02d 1,3-6,8,10-12,14,16-19,21,23-26,28,30-34,36,38-40,42,44-47
+openspec/changes/rebuild-pixcake-style-watermark/.openspec.yaml
+  s_c27cb76072e5ac::t_44bf9dee8db954 1-2
+openspec/changes/rebuild-pixcake-style-watermark/proposal.md
+  s_016fa4053668b5::t_f9cd8ab55de722 1-35
+openspec/changes/rebuild-pixcake-style-watermark/specs/watermark-batch-export/spec.md
+  s_016fa4053668b5::t_cb9e71304d1711 3-4,6-8,10-11,13-15,17-19,21-22,24-26,28-30,32-33,35-37,39-40,42-44,46-47,49-51
+openspec/changes/rebuild-pixcake-style-watermark/specs/watermark-layout-profiles/spec.md
+  s_016fa4053668b5::t_22124ba4e92065 3-56
+openspec/changes/rebuild-pixcake-style-watermark/specs/watermark-workspace-navigation/spec.md
+  s_5f5841f18f5bde::t_94ded474a1e2a5 3-4,6-8,10-11,13-15,17-19,21-22,24-26,28-29,31-33
+openspec/changes/unify-export-feedback/.openspec.yaml
+  s_c27cb76072e5ac::t_ebf55276ffe79d 1-2
+src-tauri/src/lib.rs
+  s_c27cb76072e5ac::t_1a378497fd2c19 13-17,42,60-64,66
+src-tauri/src/shared.rs
+  s_016fa4053668b5::t_105942c89cad8c 4
+src-tauri/src/watermark.rs
+  s_016fa4053668b5::t_c772ccc065cfcf 1-8,10-11,14-23,25,28-54,56-62,64-76,78,81-226,229-273,275-281,283-286,288-292,295,297-303,306-390,394-401,405,407-415,417-419,422-454,456-457,459-462,464-468,476,480,483,485,488-492,496,500-1970,1972,1975-1977,1979,1982-1990,1992-1993,1995-1999,2001-2002,2004-2015,2017-2021,2023-2026,2028-2032,2034-2043,2045,2047-2051,2055-2060,2062-2091,2093-2109,2112-2131,2133-2152,2155-2164,2166,2168,2170-2175,2178-2189,2191-2214,2217-2233,2236-2250,2252-2258,2261-2263,2265-2267,2269-2270,2272-2296,2299-2306,2309-2314,2317-2350,2352-2363,2366-2379,2382-2386,2388-2391,2394-2402,2404-2412,2415-2424,2426-2433,2436-2464,2466-2485,2487-2498,2500,2502-2504,2507-2540,2543-2570,2572-2588,2590-2592,2594-2595,2597-2666,2669-2675,2677-2683,2687-2740,2742,2744-2745,2749-2767,2769,2773-2791,2793-2795,2797-2799,2803-2828,2831-2839,2842-2851,2854-2879,2881,2884-2915
+src/features/watermark/WatermarkWorkspace.tsx
+  s_5f5841f18f5bde::t_691f311d442027 1,4-9,11,13-14,16,18,20-28,33-39,47-82,84,90-107,109-112,115-163,167-186,188-231,234-248,251-257,260-262,264-266,268-270,272-275,277-303,305,307-427,431-433,437,444,450-462,464,470-473,477-478,483,485-499,501-503,507-508,511-517,520-548,551,554,557,560-595,597,599-600,602-604,606-614,616-618,620,622-639,643-648,651-654,657,659,663,665,667-669,671,673,677,680-685,689-691,693,695-697,700,702-703,706-708,711,713-714,718,720,722-723,725,727-728,730-782,784-848,852-855,857,860-863,865,868-873,876-881,884-889,891-913,918-988,990,992-995,997,999,1001-1019,1021-1033,1037-1042,1044-1063,1067-1069,1071-1072,1075-1076,1078-1088,1091,1098,1100-1106,1108-1112,1114,1122-1123,1129-1130,1133-1135,1138-1139,1141-1143,1147-1148,1150-1153,1160-1165,1167-1171,1173-1221,1223-1239,1241-1242,1244-1263,1266-1270,1274-1309,1311-1334,1336,1338-1367,1369-1371,1373-1410
+src/features/watermark/state.test.mjs
+  s_016fa4053668b5::t_b268f00b2fbba0 1-512
+src/features/watermark/types.ts
+  s_016fa4053668b5::t_689950b5cae487 1-2,4-30,36-38,47,50-66,69-74,76,78-81,83,85-87,90-99,101-124,126-127,129,131,134-160
+src/styles.css
+  s_5f5841f18f5bde::t_c9baf322033b08 156-177
+openspec/changes/add-glass-text-watermark/design.md
+  s_c27cb76072e5ac::t_a7a0110624488d 1-87
+openspec/changes/add-glass-text-watermark/proposal.md
+  s_c27cb76072e5ac::t_aa92ecbc23c3cc 3,7-15,21,29-32
+openspec/changes/add-glass-text-watermark/specs/glass-text-watermark/spec.md
+  s_c27cb76072e5ac::t_d4702a54dabf83 1-95
+openspec/changes/rebuild-pixcake-style-watermark/design.md
+  s_c27cb76072e5ac::t_41181627e1bcdc 1-86
+openspec/changes/rebuild-pixcake-style-watermark/specs/watermark-source-preview/spec.md
+  s_c27cb76072e5ac::t_e21850fc0bb4ee 1-56
+openspec/changes/rebuild-pixcake-style-watermark/tasks.md
+  s_c27cb76072e5ac::t_7eb9c07d2400c2 1-48
+openspec/changes/unify-export-feedback/design.md
+  s_c27cb76072e5ac::t_6f4cb00609e1a0 1-34
+openspec/changes/unify-export-feedback/proposal.md
+  s_c27cb76072e5ac::t_73c5f2bd988851 1-27
+openspec/changes/unify-export-feedback/specs/export-result-feedback/spec.md
+  s_c27cb76072e5ac::t_3da967afd404bc 3-4,6-8,10-12,14-16,18-20,22-23,25-27,29-31,33-34,36-38,40-42,44-45,47-49,51-53
+openspec/changes/unify-export-feedback/tasks.md
+  s_c27cb76072e5ac::t_9ed91e2a4feeba 1-18
+src/App.tsx
+  s_c27cb76072e5ac::t_36ebbcbf40b216 16,53-74,101-103,107-120,122-125,147-149,171,186,188-201,209-215,218,239-244,248-257,263-283,424-439,465
+src/components/ui/scroll-area.tsx
+  s_c27cb76072e5ac::t_a12f6ce747f028 9,11-13,21
+src/features/file-separator/FileSeparatorWorkspace.tsx
+  s_c27cb76072e5ac::t_d702f76c3f95bf 27-31,74,80,237,245
+src/features/raw-matcher/RawMatcherWorkspace.tsx
+  s_c27cb76072e5ac::t_b734a03b9533fa 24-28,119,125,656,663
+src/features/shared/exportFeedback.test.mjs
+  s_c27cb76072e5ac::t_2f300a4fd59f78 1-125
+src/features/shared/exportFeedback.ts
+  s_c27cb76072e5ac::t_f3d04497d4b84b 1-90
+src/features/shared/logTail.ts
+  s_c27cb76072e5ac::t_f30815ec511e4e 1-8
+src/features/shared/ui.tsx
+  s_c27cb76072e5ac::t_97cc859634eb87 1-2,7,22-81
+src/features/watermark/state.ts
+  s_c27cb76072e5ac::t_08d768e4a7a2c0 1-663
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "f17e7d8b288e1021c860f2d7637cfac81af9333f",
+  "prompts": {},
+  "logical_commit_id": "f17e7d8b288e1021c860f2d7637cfac81af9333f",
+  "sessions": {
+    "s_016fa4053668b5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f4cce-0e1e-7a00-b270-cd79fbd1f593",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    },
+    "s_5f5841f18f5bde": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f5a71-61ad-7790-a2b9-69f9f31876a2",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    },
+    "s_c27cb76072e5ac": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f5aba-ed2f-7e41-acc3-579a5e42e80b",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
