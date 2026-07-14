@@ -1,5 +1,10 @@
 # 变更日志
 
+## 0.1.38 - 2026-07-14
+
+- 移除安装包发布流程中的 Gitee `pages` 分支同步，仅保留 GitHub Release 与 Gitee 发行资产同步。
+- 删除独立的 Gitee Pages 同步工作流及其专用脚本，避免后续提交或发布继续写入 Gitee `pages` 分支。
+
 ## 0.1.37 - 2026-07-14
 
 - 修复当前仓库未配置 `WECOM_WEBHOOK_KEY` 时企业微信通知被静默跳过、但 GitHub Actions 仍显示成功的问题。
