@@ -24,6 +24,11 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  exportFailureFeedback,
+  separatorExportFeedback,
+  type ExportFeedback,
+} from "@/features/shared/exportFeedback";
 import { cn } from "@/lib/utils";
 import {
   formatBytes,
@@ -66,11 +71,13 @@ export const defaultSeparatorWorkspaceStatus: SeparatorWorkspaceStatus = {
 export function FileSeparatorWorkspace({
   active,
   logPanelOpen,
+  onExportFeedback,
   onStatusChange,
   onToggleLogPanel,
 }: {
   active: boolean;
   logPanelOpen: boolean;
+  onExportFeedback: (feedback: ExportFeedback) => void;
   onStatusChange: (status: SeparatorWorkspaceStatus) => void;
   onToggleLogPanel: () => void;
 }) {
@@ -227,6 +234,7 @@ export function FileSeparatorWorkspace({
       });
       appendLogs(response.logs);
       setExportReport({ directory: exportDirectory, mode: exportMode, summary: response.summary });
+      onExportFeedback(separatorExportFeedback(response.summary, exportMode));
       if (exportMode === "moveInPlace") {
         setImages([]);
         setRaws([]);
@@ -234,6 +242,7 @@ export function FileSeparatorWorkspace({
       }
     } catch (error) {
       appendLogs([`分离文件失败: ${String(error)}`], "error");
+      onExportFeedback(exportFailureFeedback("一键分离", error));
     } finally {
       setBusy(null);
     }

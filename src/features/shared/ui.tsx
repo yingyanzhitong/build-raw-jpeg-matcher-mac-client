@@ -1,8 +1,10 @@
-import type { ReactNode } from "react";
+import { AlertTriangle, CheckCircle2, CircleX } from "lucide-react";
+import { useEffect, type ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import type { ExportToastState } from "./exportFeedback";
 
 export type LogLevel = "info" | "success" | "warning" | "error";
 
@@ -17,6 +19,66 @@ const logLevelCode: Record<LogLevel, string> = {
   warning: "WRN",
   error: "ERR",
 };
+
+export function ExportResultToast({
+  toast,
+  onDismiss,
+}: {
+  toast: ExportToastState | null;
+  onDismiss: (id: number) => void;
+}) {
+  useEffect(() => {
+    if (!toast) {
+      return;
+    }
+
+    const toastId = toast.id;
+    const timeoutId = window.setTimeout(
+      () => onDismiss(toastId),
+      toast.tone === "error" ? 5_000 : 3_200,
+    );
+    return () => window.clearTimeout(timeoutId);
+  }, [onDismiss, toast]);
+
+  if (!toast) {
+    return null;
+  }
+
+  const Icon =
+    toast.tone === "success" ? CheckCircle2 : toast.tone === "error" ? CircleX : AlertTriangle;
+
+  return (
+    <aside
+      aria-atomic="true"
+      aria-live={toast.tone === "error" ? "assertive" : "polite"}
+      className={cn(
+        "pointer-events-none fixed right-5 top-[104px] z-[80] grid max-w-[min(440px,calc(100vw-2rem))] grid-cols-[auto_minmax(0,1fr)] gap-2.5 rounded-[9px] border bg-card px-4 py-3.5 text-card-foreground shadow-[0_18px_54px_rgba(32,33,36,0.2)] animate-in fade-in-0 slide-in-from-top-2 duration-200 motion-reduce:animate-none",
+        toast.tone === "success" && "border-success/30",
+        toast.tone === "warning" && "border-warning/30",
+        toast.tone === "error" && "border-destructive/35",
+      )}
+      key={toast.id}
+      role={toast.tone === "error" ? "alert" : "status"}
+    >
+      <span
+        className={cn(
+          "mt-0.5 grid size-6 place-items-center rounded-full",
+          toast.tone === "success" && "bg-success/12 text-success",
+          toast.tone === "warning" && "bg-warning/12 text-warning",
+          toast.tone === "error" && "bg-destructive/12 text-destructive",
+        )}
+      >
+        <Icon className="size-4" />
+      </span>
+      <span className="min-w-0">
+        <strong className="block text-sm font-semibold leading-5">{toast.title}</strong>
+        <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">
+          {toast.message}
+        </span>
+      </span>
+    </aside>
+  );
+}
 
 export function Pane({
   icon,

@@ -10,7 +10,11 @@ use raw_matcher::{
     collect_match_inputs, export_matched_files, file_thumbnail_path, match_counterpart_files,
     matcher_capabilities,
 };
-use watermark::{export_watermarked_images, scan_watermark_images};
+use watermark::{
+    cancel_watermark_export, export_watermarked_images, inspect_text_watermark,
+    inspect_watermark_asset, list_watermark_fonts, scan_watermark_source, watermark_preview_asset,
+    WatermarkJobState,
+};
 
 #[tauri::command]
 fn open_file_path(path: String) -> Result<(), String> {
@@ -35,6 +39,7 @@ fn open_file_path(path: String) -> Result<(), String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(WatermarkJobState::default())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_process::init())
@@ -52,8 +57,13 @@ pub fn run() {
             export_matched_files,
             scan_separator_source,
             export_separated_files,
-            scan_watermark_images,
+            scan_watermark_source,
+            inspect_watermark_asset,
+            list_watermark_fonts,
+            inspect_text_watermark,
+            watermark_preview_asset,
             export_watermarked_images,
+            cancel_watermark_export,
             open_file_path,
             file_thumbnail_path
         ])

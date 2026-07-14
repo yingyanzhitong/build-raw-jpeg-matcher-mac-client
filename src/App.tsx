@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -49,9 +50,28 @@ import {
   FileSeparatorWorkspace,
   type SeparatorWorkspaceStatus,
 } from "@/features/file-separator/FileSeparatorWorkspace";
-import { formatBytes, type LogEntry, type LogLevel } from "@/features/shared/ui";
+import {
+  defaultWatermarkWorkspaceStatus,
+  WatermarkWorkspace,
+  type WatermarkWorkspaceStatus,
+} from "@/features/watermark/WatermarkWorkspace";
+import type { ExportFeedback, ExportToastState } from "@/features/shared/exportFeedback";
+import { scrollLogViewportToTail } from "@/features/shared/logTail";
+import {
+  ExportResultToast,
+  formatBytes,
+  type LogEntry,
+  type LogLevel,
+} from "@/features/shared/ui";
 
-type Workspace = "matcher" | "separator";
+type Workspace = "matcher" | "separator" | "watermark";
+
+const workspaceOrder: Workspace[] = ["matcher", "separator", "watermark"];
+const workspaceLabels: Record<Workspace, string> = {
+  matcher: "图片 / RAW 匹配",
+  separator: "一键分离",
+  watermark: "图片水印",
+};
 
 type UpdateStatus =
   | "idle"
@@ -79,8 +99,29 @@ function App() {
   const [separatorStatus, setSeparatorStatus] = useState<SeparatorWorkspaceStatus>(
     defaultSeparatorWorkspaceStatus,
   );
+  const [watermarkStatus, setWatermarkStatus] = useState<WatermarkWorkspaceStatus>(
+    defaultWatermarkWorkspaceStatus,
+  );
   const [logPanelOpen, setLogPanelOpen] = useState(false);
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace>("matcher");
+  const [exportToast, setExportToast] = useState<ExportToastState | null>(null);
+  const nextExportToastIdRef = useRef(0);
+
+  const reportExportFeedback = useCallback(
+    (workspace: Workspace, feedback: ExportFeedback) => {
+      nextExportToastIdRef.current += 1;
+      setExportToast({ ...feedback, id: nextExportToastIdRef.current });
+      if (feedback.tone === "error") {
+        setActiveWorkspace(workspace);
+        setLogPanelOpen(true);
+      }
+    },
+    [],
+  );
+
+  const dismissExportToast = useCallback((id: number) => {
+    setExportToast((current) => (current?.id === id ? null : current));
+  }, []);
 
   function activateWorkspace(workspace: Workspace) {
     setActiveWorkspace(workspace);
@@ -103,6 +144,9 @@ function App() {
       } else if (event.key === "2") {
         event.preventDefault();
         activateWorkspace("separator");
+      } else if (event.key === "3") {
+        event.preventDefault();
+        activateWorkspace("watermark");
       }
     }
 
@@ -124,6 +168,7 @@ function App() {
           >
             <RawMatcherWorkspace
               active={activeWorkspace === "matcher"}
+              onExportFeedback={(feedback) => reportExportFeedback("matcher", feedback)}
               onStatusChange={setRawStatus}
               logPanelOpen={logPanelOpen}
               onToggleLogPanel={() => setLogPanelOpen((open) => !open)}
@@ -138,7 +183,22 @@ function App() {
             <FileSeparatorWorkspace
               active={activeWorkspace === "separator"}
               logPanelOpen={logPanelOpen}
+              onExportFeedback={(feedback) => reportExportFeedback("separator", feedback)}
               onStatusChange={setSeparatorStatus}
+              onToggleLogPanel={() => setLogPanelOpen((open) => !open)}
+            />
+          </div>
+          <div
+            aria-labelledby="workspace-tab-watermark"
+            className={cn("h-full", activeWorkspace !== "watermark" && "hidden")}
+            id="workspace-panel-watermark"
+            role="tabpanel"
+          >
+            <WatermarkWorkspace
+              active={activeWorkspace === "watermark"}
+              logPanelOpen={logPanelOpen}
+              onExportFeedback={(feedback) => reportExportFeedback("watermark", feedback)}
+              onStatusChange={setWatermarkStatus}
               onToggleLogPanel={() => setLogPanelOpen((open) => !open)}
             />
           </div>
@@ -146,9 +206,16 @@ function App() {
         {activeWorkspace === "matcher" ? <MatcherStatusOverlay status={rawStatus} /> : null}
         <LogBottomSheet
           open={logPanelOpen}
-          logs={activeWorkspace === "matcher" ? rawStatus.logs : separatorStatus.logs}
+          logs={
+            activeWorkspace === "matcher"
+              ? rawStatus.logs
+              : activeWorkspace === "separator"
+                ? separatorStatus.logs
+                : watermarkStatus.logs
+          }
           onClose={() => setLogPanelOpen(false)}
         />
+        <ExportResultToast onDismiss={dismissExportToast} toast={exportToast} />
       </main>
     </TooltipProvider>
   );
@@ -169,52 +236,51 @@ function WorkspaceTabBar({
   }
 
   function handleKeyDown(event: ReactKeyboardEvent<HTMLButtonElement>) {
-    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
+    if (
+      event.key !== "ArrowLeft" &&
+      event.key !== "ArrowRight" &&
+      event.key !== "Home" &&
+      event.key !== "End"
+    ) {
       return;
     }
     event.preventDefault();
-    activateWithFocus(activeWorkspace === "matcher" ? "separator" : "matcher");
+    const currentIndex = workspaceOrder.indexOf(activeWorkspace);
+    const nextIndex =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? workspaceOrder.length - 1
+          : event.key === "ArrowLeft"
+            ? (currentIndex - 1 + workspaceOrder.length) % workspaceOrder.length
+            : (currentIndex + 1) % workspaceOrder.length;
+    activateWithFocus(workspaceOrder[nextIndex]);
   }
 
   return (
     <nav aria-label="功能工作区" className="flex h-11 items-stretch border-b border-border bg-card px-5">
       <div className="flex h-full items-stretch gap-2" role="tablist">
-        <button
-          aria-controls="workspace-panel-matcher"
-          aria-selected={activeWorkspace === "matcher"}
-          className={cn(
-            "relative inline-flex h-full items-center rounded-[5px] px-3.5 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card after:absolute after:bottom-0 after:left-3.5 after:right-3.5 after:h-0.5 after:rounded-full",
-            activeWorkspace === "matcher"
-              ? "text-foreground after:bg-accent"
-              : "text-secondary-foreground/75 hover:bg-secondary/72 hover:text-foreground",
-          )}
-          data-workspace-tab="matcher"
-          id="workspace-tab-matcher"
-          onClick={() => onChange("matcher")}
-          onKeyDown={handleKeyDown}
-          role="tab"
-          type="button"
-        >
-          图片 / RAW 匹配
-        </button>
-        <button
-          aria-controls="workspace-panel-separator"
-          aria-selected={activeWorkspace === "separator"}
-          className={cn(
-            "relative inline-flex h-full items-center rounded-[5px] px-3.5 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card after:absolute after:bottom-0 after:left-3.5 after:right-3.5 after:h-0.5 after:rounded-full",
-            activeWorkspace === "separator"
-              ? "text-foreground after:bg-accent"
-              : "text-secondary-foreground/75 hover:bg-secondary/72 hover:text-foreground",
-          )}
-          data-workspace-tab="separator"
-          id="workspace-tab-separator"
-          onClick={() => onChange("separator")}
-          onKeyDown={handleKeyDown}
-          role="tab"
-          type="button"
-        >
-          一键分离
-        </button>
+        {workspaceOrder.map((workspace) => (
+          <button
+            aria-controls={`workspace-panel-${workspace}`}
+            aria-selected={activeWorkspace === workspace}
+            className={cn(
+              "relative inline-flex h-full items-center rounded-[5px] px-3.5 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card after:absolute after:bottom-0 after:left-3.5 after:right-3.5 after:h-0.5 after:rounded-full",
+              activeWorkspace === workspace
+                ? "text-foreground after:bg-accent"
+                : "text-secondary-foreground/75 hover:bg-secondary/72 hover:text-foreground",
+            )}
+            data-workspace-tab={workspace}
+            id={`workspace-tab-${workspace}`}
+            key={workspace}
+            onClick={() => onChange(workspace)}
+            onKeyDown={handleKeyDown}
+            role="tab"
+            type="button"
+          >
+            {workspaceLabels[workspace]}
+          </button>
+        ))}
       </div>
     </nav>
   );
@@ -355,6 +421,22 @@ function LogBottomSheet({
   logs: LogEntry[];
   onClose: () => void;
 }) {
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const latestLogMessage = logs.at(-1)?.message ?? "";
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      if (viewportRef.current) {
+        scrollLogViewportToTail(viewportRef.current);
+      }
+    });
+    return () => window.cancelAnimationFrame(frameId);
+  }, [latestLogMessage, logs.length, open]);
+
   if (!open) {
     return null;
   }
@@ -380,7 +462,7 @@ function LogBottomSheet({
             <X />
           </Button>
         </header>
-        <ScrollArea className="min-h-0 bg-panel">
+        <ScrollArea className="min-h-0 bg-panel" viewportRef={viewportRef}>
           <div className="divide-y divide-border font-mono text-[12px]">
             {logs.map((log, index) => (
               <div

@@ -1,28 +1,11 @@
 use std::{
     fs,
     io::{BufReader, Read},
-    path::{Path, PathBuf},
+    path::Path,
     time::UNIX_EPOCH,
 };
 
 const FILE_COMPARE_BUFFER_SIZE: usize = 64 * 1024;
-
-pub(crate) fn safe_relative_path(relative_path: &str, source_path: &Path) -> PathBuf {
-    let candidate = PathBuf::from(relative_path);
-    if candidate.is_absolute()
-        || candidate
-            .components()
-            .any(|component| matches!(component, std::path::Component::ParentDir))
-    {
-        return PathBuf::from(
-            source_path
-                .file_name()
-                .map(|name| name.to_string_lossy().to_string())
-                .unwrap_or_else(|| "watermarked-image".to_string()),
-        );
-    }
-    candidate
-}
 
 pub(crate) fn files_have_same_contents(
     left: &Path,

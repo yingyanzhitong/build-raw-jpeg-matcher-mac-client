@@ -21,6 +21,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  exportFailureFeedback,
+  matcherExportFeedback,
+  type ExportFeedback,
+} from "@/features/shared/exportFeedback";
 import { cn } from "@/lib/utils";
 import {
   canStartDirectionTransition,
@@ -111,11 +116,13 @@ export const defaultRawWorkspaceStatus: RawWorkspaceStatus = {
 export function RawMatcherWorkspace({
   active,
   logPanelOpen,
+  onExportFeedback,
   onToggleLogPanel,
   onStatusChange,
 }: {
   active: boolean;
   logPanelOpen: boolean;
+  onExportFeedback: (feedback: ExportFeedback) => void;
   onToggleLogPanel: () => void;
   onStatusChange: (status: RawWorkspaceStatus) => void;
 }) {
@@ -646,12 +653,14 @@ export function RawMatcherWorkspace({
         logs: appendLogEntries(latest.logs, response.logs),
         exportReport: { directory: selected, summary: response.summary },
       }));
+      onExportFeedback(matcherExportFeedback(response.summary));
     } catch (error) {
       appendLogs(
         direction,
         [`导出${candidateRole(direction)}失败: ${String(error)}`],
         "error",
       );
+      onExportFeedback(exportFailureFeedback(`导出${candidateRole(direction)}`, error));
     } finally {
       setDirectionBusy(direction, null);
     }
