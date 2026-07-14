@@ -176,8 +176,8 @@ jobs:
         shell: bash
         run: |
           if [ -z "$WECOM_WEBHOOK_KEY" ]; then
-            echo "::warning::未配置 WECOM_WEBHOOK_KEY，跳过企业微信通知"
-            exit 0
+            echo "::error::当前仓库未配置 WECOM_WEBHOOK_KEY，无法发送企业微信通知"
+            exit 1
           fi
 
           SHORT_SHA="${COMMIT_SHA:0:7}"
@@ -191,10 +191,13 @@ jobs:
             "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=${WECOM_WEBHOOK_KEY}" \
             -H 'Content-Type: application/json' \
             --data "$PAYLOAD")"; then
-            echo "::warning::企业微信发布成功通知发送失败"
-            exit 0
+            echo "::error::企业微信发布成功通知请求失败"
+            exit 1
           fi
 
           if [ "$(jq -r '.errcode // -1' <<<"$RESPONSE")" != "0" ]; then
-            echo "::warning::企业微信机器人拒绝消息：$(jq -c . <<<"$RESPONSE")"
+            echo "::error::企业微信机器人拒绝消息：$(jq -c . <<<"$RESPONSE")"
+            exit 1
           fi
+
+          echo "企业微信发布成功通知已发送：${RELEASE_TAG}"
