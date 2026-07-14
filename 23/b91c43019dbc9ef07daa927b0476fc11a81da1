@@ -1,0 +1,70 @@
+CHANGELOG.md
+  s_016fa4053668b5::t_8dfc6b404bbacf 3-9
+openspec/changes/rebuild-pixcake-style-watermark/design.md
+  s_016fa4053668b5::t_5807d12dd59f96 51,61,78
+openspec/changes/rebuild-pixcake-style-watermark/proposal.md
+  s_016fa4053668b5::t_a5b218d5cfbe71 13
+openspec/changes/rebuild-pixcake-style-watermark/specs/watermark-batch-export/spec.md
+  s_016fa4053668b5::t_6fc25492ddd31c 22,31-45
+openspec/changes/rebuild-pixcake-style-watermark/tasks.md
+  s_84e4a24965b28c::t_d9dbcfaa8fd500 56-62
+package-lock.json
+  s_016fa4053668b5::t_4aa9e9f9f49eef 3,9
+package.json
+  s_016fa4053668b5::t_9e9461015b1fd5 3
+src-tauri/Cargo.lock
+  s_016fa4053668b5::t_f6e9845fd161e8 3035
+src-tauri/Cargo.toml
+  s_016fa4053668b5::t_12e7b4a8f28bfc 3
+src-tauri/src/watermark.rs
+  s_c27cb76072e5ac::t_61f870fa0bc48c 33-34,252,1225,1235,1289,1329,1399,1419,1880,1898,1931-1939,2162,2172-2223,2628
+src/features/watermark/WatermarkWorkspace.tsx
+  s_016fa4053668b5::t_e1ac0dae6216c9 194,269,272,593,965-975,977
+src/features/watermark/state.test.mjs
+  s_5f5841f18f5bde::t_1d73a372bce297 12,16,80-87,118,125,137-153,271,281
+src/features/watermark/state.ts
+  s_016fa4053668b5::t_e8eedecac25ac2 17-18,28,124-128,131,149,166,180,197,208-214
+src/features/watermark/types.ts
+  s_016fa4053668b5::t_5408b3a4a78e2d 94,140
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "23b91c43019dbc9ef07daa927b0476fc11a81da1",
+  "prompts": {},
+  "logical_commit_id": "23b91c43019dbc9ef07daa927b0476fc11a81da1",
+  "sessions": {
+    "s_016fa4053668b5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f4cce-0e1e-7a00-b270-cd79fbd1f593",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    },
+    "s_5f5841f18f5bde": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f5a71-61ad-7790-a2b9-69f9f31876a2",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    },
+    "s_84e4a24965b28c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f5f56-230c-7c71-b4b2-5f4bd93f6e4a",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    },
+    "s_c27cb76072e5ac": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f5aba-ed2f-7e41-acc3-579a5e42e80b",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
