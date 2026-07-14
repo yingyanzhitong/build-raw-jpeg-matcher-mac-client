@@ -1,0 +1,36 @@
+CHANGELOG.md
+  s_a93354108d3913::t_b231926f56c7cb 3-7
+package-lock.json
+  s_a93354108d3913::t_8443f89f4b6c90 3,9
+src-tauri/Cargo.lock
+  s_a93354108d3913::t_2ca8976f477560 3035
+src-tauri/Cargo.toml
+  s_a93354108d3913::t_bb985565193225 3
+package.json
+  s_c27cb76072e5ac::t_40b79df05db157 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "58e2f2727f416eac2c75586d75b2353543e4c66c",
+  "prompts": {},
+  "logical_commit_id": "58e2f2727f416eac2c75586d75b2353543e4c66c",
+  "sessions": {
+    "s_a93354108d3913": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f5fa7-a9c5-7eb3-b1b3-c4db6ad7f1b7",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    },
+    "s_c27cb76072e5ac": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f5aba-ed2f-7e41-acc3-579a5e42e80b",
+        "model": "unknown"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
