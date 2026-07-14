@@ -1,0 +1,38 @@
+CHANGELOG.md
+  s_5f5841f18f5bde::t_388ff67c6c11e7 3-8
+package-lock.json
+  s_5f5841f18f5bde::t_cb9983406b2ff7 3,9
+package.json
+  s_5f5841f18f5bde::t_77c2b70e6c68e9 3
+src-tauri/Cargo.lock
+  s_5f5841f18f5bde::t_72a979393eae24 3035
+src-tauri/Cargo.toml
+  s_5f5841f18f5bde::t_1e6ef04e2357db 3
+.github/workflows/build-installers.yml
+  s_c27cb76072e5ac::t_2141f5802fe62f 179-180,194-195,199-200,202-203
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "cfacfb644274f6f816a8d45f7e81a37e17304b75",
+  "prompts": {},
+  "logical_commit_id": "cfacfb644274f6f816a8d45f7e81a37e17304b75",
+  "sessions": {
+    "s_5f5841f18f5bde": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f5a71-61ad-7790-a2b9-69f9f31876a2",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    },
+    "s_c27cb76072e5ac": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f5aba-ed2f-7e41-acc3-579a5e42e80b",
+        "model": "unknown"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
