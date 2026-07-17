@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>照片配对助手 · macOS 全面 UI 优化交付报告</title>
+  <style>
+    :root {
+      --bg: #f4efe7;
+      --panel: rgba(255, 252, 247, 0.92);
+      --panel-strong: #fffaf2;
+      --text: #2d241f;
+      --muted: #74675c;
+      --line: rgba(98, 74, 56, 0.16);
+      --accent: #bd6237;
+      --accent-deep: #8e3e28;
+      --accent-soft: rgba(189, 98, 55, 0.14);
+      --teal: #287e74;
+      --teal-soft: rgba(40, 126, 116, 0.14);
+      --gold: #9b712a;
+      --gold-soft: rgba(155, 113, 42, 0.13);
+      --red: #aa493d;
+      --red-soft: rgba(170, 73, 61, 0.13);
+      --shadow: 0 18px 44px rgba(71, 48, 32, 0.12);
+      --radius: 22px;
+      --sans: -apple-system, BlinkMacSystemFont, "SF Pro SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+      --serif: "Iowan Old Style", "Songti SC", "STSong", Georgia, serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 4% 2%, rgba(189, 98, 55, 0.15), transparent 30rem),
+        radial-gradient(circle at 94% 16%, rgba(40, 126, 116, 0.13), transparent 34rem),
+        linear-gradient(180deg, #f7f2eb 0%, var(--bg) 54%, #eee5d8 100%);
+      font-family: var(--sans);
+      line-height: 1.58;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--teal); text-underline-offset: 3px; }
+    h1, h2, h3, p { margin-top: 0; }
+    button { font: inherit; }
+
+    .shell { width: min(1400px, calc(100% - 48px)); margin: 24px auto 72px; }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(320px, .65fr);
+      gap: 44px;
+      min-height: 470px;
+      padding: clamp(34px, 6vw, 78px);
+      border: 1px solid rgba(98, 74, 56, 0.15);
+      border-radius: 30px;
+      background:
+        radial-gradient(circle at 90% 4%, rgba(40, 126, 116, 0.16), transparent 25rem),
+        linear-gradient(145deg, rgba(255, 253, 248, .98), rgba(247, 238, 226, .94));
+      box-shadow: var(--shadow);
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      width: 320px;
+      height: 320px;
+      right: -130px;
+      bottom: -170px;
+      border: 1px solid rgba(189, 98, 55, .19);
+      border-radius: 50%;
+      box-shadow: 0 0 0 62px rgba(189, 98, 55, .035), 0 0 0 124px rgba(189, 98, 55, .025);
+    }
+
+    .hero-copy, .hero-score { position: relative; z-index: 1; }
+
+    .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+    .pill { display: inline-flex; align-items: center; min-height: 31px; padding: 6px 11px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.52); color: var(--muted); font-size: 12px; font-weight: 670; }
+
+    .eyebrow { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; color: var(--accent); font-size: 12px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+    .eyebrow::before { content: ""; width: 32px; height: 2px; background: var(--accent); }
+
+    h1 { max-width: 850px; margin-bottom: 22px; font-family: var(--serif); font-size: clamp(46px, 5.5vw, 82px); font-weight: 620; letter-spacing: -.045em; line-height: 1.02; }
+    .lede { max-width: 760px; margin-bottom: 28px; color: var(--muted); font-size: clamp(16px, 1.7vw, 20px); }
+    .rule-chips { display: flex; flex-wrap: wrap; gap: 9px; }
+    .rule-chip { padding: 7px 10px; border: 1px dashed rgba(189,98,55,.38); border-radius: 9px; color: var(--accent-deep); background: var(--accent-soft); font-size: 12px; font-weight: 680; }
+
+    .hero-score { align-self: stretch; display: flex; flex-direction: column; justify-content: flex-end; padding: 30px; border: 1px solid rgba(40,126,116,.21); border-radius: 24px; background: rgba(255,255,255,.58); }
+    .score-label { color: var(--muted); font-size: 13px; }
+    .score-value { margin: 10px 0 6px; font-family: var(--serif); font-size: clamp(92px, 11vw, 140px); line-height: .78; }
+    .score-value span { font-family: var(--sans); font-size: 17px; color: var(--muted); }
+    .score-verdict { color: var(--teal); font-size: 16px; font-weight: 780; }
+    .score-track { height: 9px; margin: 22px 0 13px; overflow: hidden; border-radius: 999px; background: rgba(40,126,116,.12); }
+    .score-track i { display: block; width: 86%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--accent), #d38b52 46%, var(--teal)); }
+    .score-note { margin: 0; color: var(--muted); font-size: 12px; }
+
+    main { margin-top: 18px; }
+    .section { margin-top: 18px; padding: clamp(28px, 4.4vw, 56px); border: 1px solid var(--line); border-radius: 26px; background: var(--panel); box-shadow: 0 12px 32px rgba(71,48,32,.075); }
+    .section-head { display: grid; grid-template-columns: minmax(280px,.72fr) minmax(0,1.28fr); gap: 42px; align-items: end; margin-bottom: 30px; }
+    .section-index { color: var(--accent); font-size: 11px; font-weight: 820; letter-spacing: .14em; }
+    h2 { margin: 8px 0 0; font-family: var(--serif); font-size: clamp(32px, 3.8vw, 54px); font-weight: 620; letter-spacing: -.035em; line-height: 1.08; }
+    .section-intro { margin: 0; color: var(--muted); font-size: 15px; }
+
+    .kpi-grid { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 12px; }
+    .kpi { min-height: 168px; padding: 21px; border: 1px solid var(--line); border-radius: var(--radius); background: rgba(255,255,255,.58); }
+    .kpi[data-tone="accent"] { background: var(--accent-soft); border-color: rgba(189,98,55,.24); }
+    .kpi[data-tone="teal"] { background: var(--teal-soft); border-color: rgba(40,126,116,.23); }
+    .kpi[data-tone="gold"] { background: var(--gold-soft); border-color: rgba(155,113,42,.22); }
+    .kpi-label { color: var(--muted); font-size: 11px; font-weight: 780; letter-spacing: .08em; text-transform: uppercase; }
+    .kpi-value { margin: 14px 0 7px; font-family: var(--serif); font-size: 45px; line-height: .92; }
+    .kpi-detail { margin: 0; color: var(--muted); font-size: 12px; }
+
+    .summary-grid, .charts, .compare-grid, .focus-grid, .verification-grid { display: grid; gap: 16px; }
+    .summary-grid { grid-template-columns: 1.2fr .8fr; margin-top: 16px; }
+    .panel { padding: 25px; border: 1px solid var(--line); border-radius: var(--radius); background: rgba(255,255,255,.55); }
+    .panel h3 { margin-bottom: 9px; font-size: 17px; }
+    .panel p:last-child { margin-bottom: 0; }
+    .panel.highlight { color: #fffaf3; background: linear-gradient(145deg, #2e443f, #245f58); border-color: transparent; }
+    .panel.highlight p { color: rgba(255,250,243,.76); }
+
+    .compare-stack { display: grid; gap: 22px; }
+    .compare-block { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: rgba(255,255,255,.55); }
+    .compare-head { display: flex; justify-content: space-between; align-items: center; gap: 18px; padding: 18px 20px; border-bottom: 1px solid var(--line); }
+    .compare-head h3 { margin: 0; font-size: 17px; }
+    .compare-head span { color: var(--muted); font-size: 12px; }
+    .compare-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1px; background: var(--line); }
+    .shot { min-width: 0; background: var(--panel-strong); }
+    .shot-button { display: block; width: 100%; padding: 0; border: 0; background: transparent; cursor: zoom-in; }
+    .shot-button:focus-visible { outline: 4px solid rgba(40,126,116,.34); outline-offset: -4px; }
+    .shot img { display: block; width: 100%; height: auto; background: #eef0f3; }
+    .shot-copy { padding: 16px 18px 18px; }
+    .shot-tag { display: inline-flex; margin-bottom: 8px; padding: 4px 8px; border-radius: 999px; color: var(--accent-deep); background: var(--accent-soft); font-size: 10px; font-weight: 820; letter-spacing: .08em; }
+    .shot.after .shot-tag { color: var(--teal); background: var(--teal-soft); }
+    .shot-copy b { display: block; margin-bottom: 4px; font-size: 14px; }
+    .shot-copy p { margin: 0; color: var(--muted); font-size: 12px; }
+
+    .charts { grid-template-columns: repeat(2,minmax(0,1fr)); }
+    .chart-card { min-height: 390px; padding: 27px; border: 1px solid var(--line); border-radius: var(--radius); background: rgba(255,255,255,.56); }
+    .chart-card h3 { margin-bottom: 4px; }
+    .caption { margin: 0 0 24px; color: var(--muted); font-size: 12px; }
+    .trend-svg { width: 100%; height: 260px; overflow: visible; }
+    .trend-svg text { font-family: var(--sans); fill: var(--muted); font-size: 11px; }
+    .trend-svg .grid { stroke: rgba(98,74,56,.14); stroke-width: 1; }
+    .trend-svg .area { fill: url(#trendArea); }
+    .trend-svg .line { fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+    .trend-svg .dot { fill: var(--panel-strong); stroke: var(--accent); stroke-width: 4; }
+    .trend-svg .value { fill: var(--accent-deep); font-weight: 820; font-size: 12px; }
+
+    .bar-list { display: grid; gap: 16px; }
+    .bar-head { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 7px; font-size: 12px; }
+    .bar-head strong { color: var(--teal); }
+    .bar-track { height: 10px; overflow: hidden; border-radius: 999px; background: rgba(40,126,116,.10); }
+    .bar-fill { width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--teal), #5aa193); transition: width 700ms cubic-bezier(.2,.7,.2,1); }
+
+    .focus-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+    .focus-card { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: rgba(255,255,255,.55); }
+    .focus-card img { display: block; width: 100%; height: auto; }
+    .focus-copy { padding: 18px 20px; }
+    .focus-copy b { display: block; margin-bottom: 5px; }
+    .focus-copy p { margin: 0; color: var(--muted); font-size: 12px; }
+
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: rgba(255,255,255,.58); }
+    table { width: 100%; min-width: 960px; border-collapse: collapse; }
+    th, td { padding: 14px 15px; border-bottom: 1px solid rgba(98,74,56,.12); text-align: left; vertical-align: top; font-size: 12px; }
+    th { position: sticky; top: 0; z-index: 1; color: var(--muted); background: rgba(247,239,228,.97); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+    tr:last-child td { border-bottom: 0; }
+    tbody tr:hover { background: rgba(189,98,55,.04); }
+    td code { color: #5b4f46; font-size: 10px; word-break: break-word; }
+    .done { display: inline-flex; padding: 4px 8px; border-radius: 999px; color: var(--teal); background: var(--teal-soft); font-size: 10px; font-weight: 820; }
+
+    .verification-grid { grid-template-columns: repeat(4,minmax(0,1fr)); }
+    .check-card { padding: 21px; border: 1px solid var(--line); border-radius: var(--radius); background: rgba(255,255,255,.55); }
+    .check-card span { color: var(--accent); font-size: 11px; font-weight: 820; letter-spacing: .08em; }
+    .check-card b { display: block; margin: 9px 0 6px; font-size: 16px; }
+    .check-card p { margin: 0; color: var(--muted); font-size: 12px; }
+
+    .risk-list { display: grid; gap: 1px; margin: 0; padding: 0; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); list-style: none; background: var(--line); }
+    .risk-list li { display: grid; grid-template-columns: auto 1fr; gap: 14px; padding: 17px 19px; background: rgba(255,255,255,.7); }
+    .risk-no { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; color: var(--gold); background: var(--gold-soft); font-size: 11px; font-weight: 820; }
+    .risk-list b { display: block; margin-bottom: 3px; font-size: 13px; }
+    .risk-list p { margin: 0; color: var(--muted); font-size: 12px; }
+
+    footer { display: flex; justify-content: space-between; gap: 24px; margin-top: 18px; padding: 22px 28px; border-radius: 18px; color: #ede4d8; background: #2f312d; font-size: 11px; }
+
+    dialog { width: min(1260px, calc(100vw - 30px)); max-height: calc(100vh - 30px); padding: 0; overflow: hidden; border: 0; border-radius: 18px; background: #181a18; box-shadow: 0 30px 100px rgba(0,0,0,.45); }
+    dialog::backdrop { background: rgba(24,25,22,.8); backdrop-filter: blur(8px); }
+    dialog img { display: block; width: 100%; max-height: calc(100vh - 84px); object-fit: contain; }
+    .dialog-bar { display: flex; justify-content: space-between; align-items: center; gap: 16px; min-height: 54px; padding: 9px 12px 9px 18px; color: #f5eee5; }
+    .dialog-close { min-width: 44px; min-height: 34px; border: 1px solid rgba(255,255,255,.15); border-radius: 9px; color: #fff; background: rgba(255,255,255,.08); cursor: pointer; }
+    .dialog-close:focus-visible { outline: 3px solid #75b8ff; outline-offset: 2px; }
+
+    @media (max-width: 1040px) {
+      .hero { grid-template-columns: 1fr; }
+      .hero-score { min-height: 300px; }
+      .section-head, .summary-grid { grid-template-columns: 1fr; }
+      .kpi-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+      .charts, .focus-grid { grid-template-columns: 1fr; }
+      .verification-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+    }
+
+    @media (max-width: 680px) {
+      .shell { width: calc(100% - 20px); margin: 10px auto 40px; }
+      .hero, .section { padding: 26px 22px; border-radius: 22px; }
+      .hero { min-height: auto; gap: 28px; }
+      h1 { font-size: 35px; line-height: 1.06; }
+      h1 br { display: none; }
+      .kpi-grid, .compare-grid, .verification-grid { grid-template-columns: 1fr; }
+      .kpi { min-height: auto; }
+      .compare-grid { gap: 1px; }
+      .chart-card { padding: 22px 16px; }
+      footer { flex-direction: column; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .bar-fill { transition: none; }
+    }
+
+    @media print {
+      body { background: #fff; }
+      .shell { width: 100%; margin: 0; }
+      .hero, .section { box-shadow: none; break-inside: avoid; }
+      .shot-button { cursor: default; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="hero">
+      <div class="hero-copy">
+        <div class="meta">
+          <span class="pill">分支 · codex/apple-design-ui-optimization</span>
+          <span class="pill">交付版本 · 0.1.39</span>
+          <span class="pill">日期 · 2026-07-17</span>
+          <span class="pill">真实实现截图</span>
+        </div>
+        <div class="eyebrow">macOS App Design · Comprehensive Pass</div>
+        <h1>不止修饰界面，<br>而是重建 Mac 工作流。</h1>
+        <p class="lede">本轮按 macOS Pro Utility 原型全面重审三个工作区：将 90px 的双层顶部导航收敛为 54px 统一工具栏，重构检查器信息层级，补齐原生菜单命令、主操作、键盘焦点和系统外观适配。报告中的“优化后”均为当前分支真实运行截图。</p>
+        <div class="rule-chips">
+          <span class="rule-chip">系统组件优先</span>
+          <span class="rule-chip">材质只用于导航层</span>
+          <span class="rule-chip">内容层稳定不透明</span>
+          <span class="rule-chip">键盘路径可验证</span>
+        </div>
+      </div>
+      <aside class="hero-score" aria-label="优化后启发式评分">
+        <div class="score-label">Apple / macOS 体验启发式复评</div>
+        <div class="score-value">8.9<span> / 10</span></div>
+        <div class="score-verdict">由“Web 工具”进入“完整 Mac Pro Utility”</div>
+        <div class="score-track" aria-hidden="true"><i></i></div>
+        <p class="score-note">初始 6.8；复评分来自 macOS 启发式审查、代码、构建与运行态验证，并非用户研究得分。</p>
+      </aside>
+    </header>
+
+    <main>
+      <section class="section" id="outcome">
+        <div class="section-head">
+          <div><span class="section-index">01 / 交付结果</span><h2>业务流程不变，<br>界面结构全面重写。</h2></div>
+          <p class="section-intro">本轮没有扩张业务范围，而是重构窗口壳层、工作区导航、侧栏检查器、内容空状态、菜单命令和焦点模型。高优先级问题已从审查结论转为可运行代码，并保留清晰的后续边界。</p>
+        </div>
+        <div class="kpi-grid" id="kpiGrid" aria-label="优化交付指标"></div>
+        <div class="summary-grid">
+          <div class="panel">
+            <h3>最明显的用户收益</h3>
+            <p>顶部空间减少 40%，工作区切换进入统一分段控件；三套侧栏收敛为 296px 检查器；空状态提供明确主操作；工作区、画幅和水印锚点都可用方向键操作；文件、视图与工作区命令进入 macOS 原生菜单。</p>
+          </div>
+          <div class="panel highlight">
+            <h3>设计判断</h3>
+            <p>这次优化的价值不在颜色与圆角，而在于平台壳层和任务内容重新分工：材质只服务导航与控制，业务内容保持稳定不透明；检查器降低卡片嵌套，主操作、状态和渐进披露回到 macOS 熟悉的位置。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="comparison">
+        <div class="section-head">
+          <div><span class="section-index">02 / 前后截图</span><h2>三个工作区，<br>逐一实拍对比。</h2></div>
+          <p class="section-intro">所有截图均使用 1180×820 视口。左侧是主分支优化前，右侧是当前分支真实实现；点击任意截图可查看原图。</p>
+        </div>
+        <div class="compare-stack">
+          <article class="compare-block">
+            <div class="compare-head"><h3>图片 / RAW 匹配</h3><span>统一工具栏、检查器层级与渐进披露</span></div>
+            <div class="compare-grid">
+              <div class="shot"><button class="shot-button" data-full="assets/apple-ui-current-matcher-1180x820.jpg" data-title="优化前 · 图片 / RAW 匹配" aria-label="放大查看优化前匹配工作区"><img src="assets/apple-ui-current-matcher-1180x820.jpg" alt="优化前的图片与 RAW 匹配工作区"></button><div class="shot-copy"><span class="shot-tag">BEFORE</span><b>浮动统计与自绘小目标交通灯</b><p>统计悬浮在内容上方，窗口控件只有约 12px 命中目标。</p></div></div>
+              <div class="shot after"><button class="shot-button" data-full="assets/apple-ui-comprehensive-matcher-1180x820.jpg" data-title="全面优化后 · 图片 / RAW 匹配" aria-label="放大查看全面优化后的匹配工作区"><img src="assets/apple-ui-comprehensive-matcher-1180x820.jpg" alt="全面优化后的图片与 RAW 匹配工作区"></button><div class="shot-copy"><span class="shot-tag">AFTER</span><b>54px 统一工具栏与轻量检查器</b><p>应用身份、工作区切换和更新入口合并；流程步骤改为单层分组，RAW 格式使用 Disclosure 按需展开。</p></div></div>
+            </div>
+          </article>
+
+          <article class="compare-block">
+            <div class="compare-head"><h3>一键分离</h3><span>主操作、稳定内容边界与 296px 检查器</span></div>
+            <div class="compare-grid">
+              <div class="shot"><button class="shot-button" data-full="assets/apple-ui-current-separator-1180x820.jpg" data-title="优化前 · 一键分离" aria-label="放大查看优化前一键分离工作区"><img src="assets/apple-ui-current-separator-1180x820.jpg" alt="优化前的一键分离工作区"></button><div class="shot-copy"><span class="shot-tag">BEFORE</span><b>统计浮层依赖内容高度避让</b><p>导出报告出现时需要动态调整 bottom 值，长列表存在遮挡风险。</p></div></div>
+              <div class="shot after"><button class="shot-button" data-full="assets/apple-ui-comprehensive-separator-1180x820.jpg" data-title="全面优化后 · 一键分离" aria-label="放大查看全面优化后的一键分离工作区"><img src="assets/apple-ui-comprehensive-separator-1180x820.jpg" alt="全面优化后的一键分离工作区"></button><div class="shot-copy"><span class="shot-tag">AFTER</span><b>空状态直接进入核心任务</b><p>移除重复的大边框容器，以“选择混合文件夹”作为主操作；统计保持在 30px 固定状态栏。</p></div></div>
+            </div>
+          </article>
+
+          <article class="compare-block">
+            <div class="compare-head"><h3>图片水印</h3><span>统一流程、画幅切换与九宫格键盘模型</span></div>
+            <div class="compare-grid">
+              <div class="shot"><button class="shot-button" data-full="assets/apple-ui-current-watermark-1180x820.jpg" data-title="优化前 · 图片水印" aria-label="放大查看优化前图片水印工作区"><img src="assets/apple-ui-current-watermark-1180x820.jpg" alt="优化前的图片水印工作区"></button><div class="shot-copy"><span class="shot-tag">BEFORE</span><b>三个画幅标签全部进入 Tab 序列</b><p>缺少 aria-controls，方向键无法按 tablist 模型切换。</p></div></div>
+              <div class="shot after"><button class="shot-button" data-full="assets/apple-ui-comprehensive-watermark-1180x820.jpg" data-title="全面优化后 · 图片水印" aria-label="放大查看全面优化后的图片水印工作区"><img src="assets/apple-ui-comprehensive-watermark-1180x820.jpg" alt="全面优化后的图片水印工作区"></button><div class="shot-copy"><span class="shot-tag">AFTER</span><b>参数面板收敛，键盘路径完整</b><p>画幅与九宫格锚点均采用 roving tabindex；方向键同步选择与焦点，流程步骤不再层层套卡片。</p></div></div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="metrics">
+        <div class="section-head">
+          <div><span class="section-index">03 / 改进幅度</span><h2>分数提升，<br>来自可验证改动。</h2></div>
+          <p class="section-intro">左图是启发式复评分的阶段变化；右图按本轮明确承诺项统计实现覆盖，不包含用户研究或未执行的大规模文件性能结论。</p>
+        </div>
+        <div class="charts">
+          <figure class="chart-card">
+            <h3>启发式复评分阶段变化</h3>
+            <figcaption class="caption">10 分制；每个节点对应已落地的一组改动。</figcaption>
+            <svg class="trend-svg" id="trendChart" viewBox="0 0 540 260" role="img" aria-label="评分从 6.8 提升到 8.9"><defs><linearGradient id="trendArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bd6237" stop-opacity=".26"/><stop offset="1" stop-color="#bd6237" stop-opacity="0"/></linearGradient></defs></svg>
+          </figure>
+          <figure class="chart-card">
+            <h3>承诺项实现覆盖</h3>
+            <figcaption class="caption">分子为已完成项，分母为本轮计划项。</figcaption>
+            <div class="bar-list" id="coverageBars"></div>
+          </figure>
+        </div>
+      </section>
+
+      <section class="section" id="focus">
+        <div class="section-head">
+          <div><span class="section-index">04 / 焦点证据</span><h2>弹层打开后，<br>键盘上下文不再丢失。</h2></div>
+          <p class="section-intro">优化前焦点仍停留在背景按钮；优化后自动进入“跳过”，Tab 被限制在弹层内，Escape 关闭后焦点返回“查看分步引导”。</p>
+        </div>
+        <div class="focus-grid">
+          <article class="focus-card"><button class="shot-button" data-full="assets/apple-ui-current-guide-focus.jpg" data-title="优化前 · 引导焦点" aria-label="放大查看优化前引导焦点"><img src="assets/apple-ui-current-guide-focus.jpg" alt="优化前引导弹层焦点仍停留在背景"></button><div class="focus-copy"><b>优化前 · 背景仍持有焦点</b><p>弹层虽声明 aria-modal，但没有焦点转移与循环。</p></div></article>
+          <article class="focus-card"><button class="shot-button" data-full="assets/apple-ui-after-guide-focus.jpg" data-title="优化后 · 引导焦点" aria-label="放大查看优化后引导焦点"><img src="assets/apple-ui-after-guide-focus.jpg" alt="优化后引导弹层的跳过按钮获得明显焦点环"></button><div class="focus-copy"><b>优化后 · 焦点进入并留在弹层</b><p>截图可见“跳过”的 focus-visible 环；Escape 与焦点回退已实测。</p></div></article>
+        </div>
+      </section>
+
+      <section class="section" id="evidence">
+        <div class="section-head">
+          <div><span class="section-index">05 / 代码证据</span><h2>每个结论，<br>都能定位到改动。</h2></div>
+          <p class="section-intro">下表是本轮实际交付项。状态“已完成”表示代码落地并通过相应的编译、运行态或浏览器交互检查。</p>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>状态</th><th>交付项</th><th>优化前</th><th>优化后</th><th>证据 / 文件</th></tr></thead>
+            <tbody id="evidenceRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section" id="verification">
+        <div class="section-head">
+          <div><span class="section-index">06 / 验证结果</span><h2>构建通过，<br>关键路径已复测。</h2></div>
+          <p class="section-intro">验证覆盖前端构建、状态逻辑、Rust 编译、两档窗口尺寸、日志快捷键、水印锚点方向键以及报告自身的桌面与移动布局。</p>
+        </div>
+        <div class="verification-grid">
+          <div class="check-card"><span>BUILD</span><b>TypeScript + Vite 通过</b><p>1870 个模块完成生产构建，无编译错误。</p></div>
+          <div class="check-card"><span>STATE TESTS</span><b>45 / 45 通过</b><p>匹配、水印、反馈和状态统计测试全部成功。</p></div>
+          <div class="check-card"><span>RUST</span><b>cargo check 通过</b><p>原生菜单、事件与窗口配置匹配当前 Tauri 2.11。</p></div>
+          <div class="check-card"><span>LAYOUT</span><b>0 横向溢出</b><p>1180×820 与最小 980×680 均保持 296px 检查器和 30px 状态栏。</p></div>
+        </div>
+        <div class="compare-block" style="margin-top:16px">
+          <div class="compare-head"><h3>最小窗口验证</h3><span>980 × 680 · 实际运行截图</span></div>
+          <div class="shot after"><button class="shot-button" data-full="assets/apple-ui-comprehensive-min-window-980x680.jpg" data-title="全面优化后 · 最小窗口" aria-label="放大查看全面优化后的最小窗口布局"><img src="assets/apple-ui-comprehensive-min-window-980x680.jpg" alt="全面优化后在 980×680 最小窗口的水印工作区"></button><div class="shot-copy"><span class="shot-tag">MIN WINDOW</span><b>统一工具栏在最小窗口仍稳定</b><p>内容区、检查器、工具栏和底部状态栏无横向溢出，核心操作保持可见。</p></div></div>
+        </div>
+      </section>
+
+      <section class="section" id="risks">
+        <div class="section-head">
+          <div><span class="section-index">07 / 剩余边界</span><h2>已完成优化，<br>不等于没有后续。</h2></div>
+          <p class="section-intro">以下事项未被本轮 UI 优化隐性扩张。它们需要真实素材、辅助技术或更大的产品范围，适合单独进入后续迭代。</p>
+        </div>
+        <ul class="risk-list">
+          <li><span class="risk-no">1</span><span><b>千级结果列表性能</b><p>匹配结果仍是直接 map；建议在真实千级素材下评估缩略图解码与列表虚拟化。</p></span></li>
+          <li><span class="risk-no">2</span><span><b>VoiceOver 与系统外观人工验收</b><p>代码已提供标签、深色、高对比度和降低透明度分支，但发布前仍应在真实系统设置中手工巡检。</p></span></li>
+          <li><span class="risk-no">3</span><span><b>设置、多窗口与更深系统集成</b><p>当前仍按单窗口 Utility / Pro Tool 定位；没有为了“像原生”而虚构未定义的设置或多窗口需求。</p></span></li>
+        </ul>
+      </section>
+    </main>
+
+    <footer><span>照片配对助手 · macOS 全面 UI 优化交付报告</span><span>Filled report · 代码 + 构建 + 运行态证据 · 2026-07-17</span></footer>
+  </div>
+
+  <dialog id="lightbox" aria-labelledby="lightboxTitle">
+    <div class="dialog-bar"><span id="lightboxTitle">界面截图</span><button class="dialog-close" type="button" aria-label="关闭大图">关闭</button></div>
+    <img id="lightboxImage" alt="">
+  </dialog>
+
+  <script>
+    const reportData = {
+      kpis: [
+        { label: "启发式复评", value: "8.9", detail: "初始 6.8，提升 2.1 分", tone: "accent" },
+        { label: "顶部占用", value: "90 → 54px", detail: "双层导航收敛为统一工具栏", tone: "teal" },
+        { label: "状态测试", value: "45 / 45", detail: "全部通过", tone: "teal" },
+        { label: "原生命令", value: "7", detail: "文件、视图与工作区菜单", tone: "gold" },
+        { label: "布局溢出", value: "0", detail: "1180 与 980 两档验证", tone: "teal" }
+      ],
+      trend: [
+        { label: "优化前", value: 6.8 },
+        { label: "平台壳层", value: 7.5 },
+        { label: "导航 / 检查器", value: 8.1 },
+        { label: "交互 / 外观", value: 8.6 },
+        { label: "交付复评", value: 8.9 }
+      ],
+      coverage: [
+        { label: "平台壳层与菜单", done: 5, total: 5 },
+        { label: "信息架构与主操作", done: 4, total: 4 },
+        { label: "键盘与焦点", done: 6, total: 6 },
+        { label: "外观适配", done: 3, total: 3 },
+        { label: "布局与缩放", done: 2, total: 2 },
+        { label: "更新安全层级", done: 1, total: 1 }
+      ],
+      evidence: [
+        { item: "原生窗口控件", before: "decorations=false，自绘 12×12 交通灯", after: "decorations=true + Overlay；Tauri 使用系统交通灯，预览目标扩大到 20px", file: "src-tauri/tauri.conf.json · src/App.tsx" },
+        { item: "统一顶部工具栏", before: "46px 标题栏 + 44px 工作区栏，占用 90px", after: "应用身份、分段式工作区切换、更新入口合并为 54px", file: "src/App.tsx · src/styles.css · tauri.conf.json" },
+        { item: "原生应用菜单", before: "命令只存在于 WebView", after: "文件、视图、工作区菜单提供 7 个命令，支持 ⌘O / ⇧⌘O / ⌘E / ⇧⌘L / ⌘1–3", file: "src-tauri/src/lib.rs · src/App.tsx" },
+        { item: "检查器层级", before: "312px 侧栏，流程、图标与控件层层套卡片", after: "296px mac-inspector，使用分组、留白和分隔线建立层级", file: "src/features/** · src/styles.css" },
+        { item: "状态统计", before: "absolute 浮层，按业务状态调整 bottom", after: "独立 30px 底部状态栏，始终位于正常布局流", file: "src/App.tsx · src/styles.css" },
+        { item: "工作区分段控件", before: "独立导航行，三个标签 tabIndex 都为 0", after: "进入工具栏；roving tabindex，仅活动项为 0，保留 Arrow / Home / End", file: "src/App.tsx" },
+        { item: "空状态主操作", before: "只有说明文案或重复描边容器", after: "三个工作区均从空状态直达选择来源，主次按钮明确", file: "src/features/**" },
+        { item: "RAW 格式披露", before: "格式按钮长期占用侧栏高度", after: "使用原生 details / Disclosure 按需展开，并显示格式数量", file: "src/features/raw-matcher/RawJpegMatcherView.tsx" },
+        { item: "水印画幅与锚点", before: "无完整关联，九宫格只支持鼠标", after: "画幅与九宫格均采用 roving tabindex；Arrow / Home / End 同步选择与焦点", file: "src/features/watermark/WatermarkWorkspace.tsx" },
+        { item: "分步引导", before: "aria-modal 但焦点留在背景", after: "自动聚焦、Tab 循环、Escape、关闭后焦点回退", file: "src/features/raw-matcher/RawJpegMatcherView.tsx" },
+        { item: "运行日志", before: "Escape 无效，打开后不接管焦点", after: "聚焦关闭按钮，Escape 关闭并返回触发器", file: "src/App.tsx" },
+        { item: "更新操作", before: "点击按钮直接安装并重启，8px 标签", after: "复用更新详情对话框确认，按钮字号提升至 11px", file: "src/App.tsx" },
+        { item: "系统外观", before: "固定 light 与硬编码浅色 token", after: "Light / Dark 语义 token，增加对比度与降低透明度降级", file: "src/styles.css" },
+        { item: "侧栏与材质", before: "内容卡片与背景层级接近", after: "材质仅用于标题栏、导航、侧栏和状态栏；内容区保持不透明", file: "src/styles.css · 3 个 workspace" },
+        { item: "表单焦点", before: "文字与字体控件主要依靠细边框", after: "补充 2px focus-visible ring", file: "src/features/watermark/WatermarkWorkspace.tsx" },
+        { item: "状态色对比", before: "成功、警告、错误色约 3.4–3.9:1", after: "浅色状态 token 加深，正文灰提升到更稳定读数", file: "src/styles.css" },
+        { item: "文案排版", before: "加载状态使用三个句点 ...", after: "统一为排版省略号 …", file: "src/features/raw-matcher/RawJpegMatcherView.tsx" }
+      ]
+    };
+
+    document.querySelector("#kpiGrid").innerHTML = reportData.kpis.map(item => `
+      <article class="kpi" data-tone="${item.tone}">
+        <div class="kpi-label">${item.label}</div>
+        <div class="kpi-value">${item.value}</div>
+        <p class="kpi-detail">${item.detail}</p>
+      </article>`).join("");
+
+    document.querySelector("#coverageBars").innerHTML = reportData.coverage.map(item => `
+      <div>
+        <div class="bar-head"><span>${item.label}</span><strong>${item.done} / ${item.total}</strong></div>
+        <div class="bar-track"><div class="bar-fill" style="width:${item.done / item.total * 100}%"></div></div>
+      </div>`).join("");
+
+    const chart = document.querySelector("#trendChart");
+    const chartLeft = 42, chartRight = 505, chartTop = 28, chartBottom = 202;
+    const x = index => chartLeft + (chartRight - chartLeft) * index / (reportData.trend.length - 1);
+    const y = value => chartBottom - (value - 6) / 3 * (chartBottom - chartTop);
+    const points = reportData.trend.map((item,index) => `${x(index)},${y(item.value)}`).join(" ");
+    const area = `M ${x(0)} ${chartBottom} L ${points.replaceAll(" ", " L ")} L ${x(reportData.trend.length - 1)} ${chartBottom} Z`;
+    chart.insertAdjacentHTML("beforeend", `
+      <g aria-hidden="true">
+        <line class="grid" x1="${chartLeft}" y1="${chartBottom}" x2="${chartRight}" y2="${chartBottom}" />
+        <line class="grid" x1="${chartLeft}" y1="${y(8)}" x2="${chartRight}" y2="${y(8)}" />
+        <line class="grid" x1="${chartLeft}" y1="${y(9)}" x2="${chartRight}" y2="${y(9)}" />
+        <path class="area" d="${area}" />
+        <polyline class="line" points="${points}" />
+        ${reportData.trend.map((item,index) => `<circle class="dot" cx="${x(index)}" cy="${y(item.value)}" r="6"/><text class="value" x="${x(index)}" y="${y(item.value)-15}" text-anchor="middle">${item.value.toFixed(1)}</text><text x="${x(index)}" y="${chartBottom+28}" text-anchor="middle">${item.label}</text>`).join("")}
+      </g>`);
+
+    document.querySelector("#evidenceRows").innerHTML = reportData.evidence.map(item => `
+      <tr><td><span class="done">已完成</span></td><td><strong>${item.item}</strong></td><td>${item.before}</td><td>${item.after}</td><td><code>${item.file}</code></td></tr>`).join("");
+
+    const lightbox = document.querySelector("#lightbox");
+    const lightboxImage = document.querySelector("#lightboxImage");
+    const lightboxTitle = document.querySelector("#lightboxTitle");
+    document.querySelectorAll(".shot-button").forEach(button => {
+      button.addEventListener("click", () => {
+        const source = button.dataset.full;
+        const image = button.querySelector("img");
+        if (!source || !image) return;
+        lightboxImage.src = source;
+        lightboxImage.alt = image.alt;
+        lightboxTitle.textContent = button.dataset.title || "界面截图";
+        lightbox.showModal();
+      });
+    });
+    document.querySelector(".dialog-close").addEventListener("click", () => lightbox.close());
+    lightbox.addEventListener("click", event => { if (event.target === lightbox) lightbox.close(); });
+  </script>
+</body>
+</html>

@@ -1,0 +1,697 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>RAW 与 JPEG 匹配工具 · Apple Design UI 审查报告</title>
+  <style>
+    :root {
+      --paper: #f3ecdf;
+      --paper-deep: #e8ddca;
+      --sheet: #fffdf8;
+      --ink: #252722;
+      --muted: #6f6d63;
+      --faint: #959084;
+      --line: #d9cebc;
+      --terracotta: #b8543f;
+      --terracotta-dark: #8f3d2d;
+      --terracotta-soft: #f5e3dc;
+      --teal: #236d67;
+      --teal-soft: #dfeeea;
+      --gold: #b2812e;
+      --gold-soft: #f4ead2;
+      --blue: #1f67b1;
+      --shadow: 0 20px 60px rgba(74, 58, 36, 0.11);
+      --radius-xl: 30px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
+      --serif: "Iowan Old Style", "Songti SC", "STSong", Georgia, serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 7% 4%, rgba(184, 84, 63, 0.12), transparent 30rem),
+        radial-gradient(circle at 95% 28%, rgba(35, 109, 103, 0.10), transparent 34rem),
+        var(--paper);
+      font-family: var(--sans);
+      line-height: 1.58;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--teal); text-underline-offset: 3px; }
+    button, input, select { font: inherit; }
+
+    .report-shell {
+      width: min(1320px, calc(100% - 40px));
+      margin: 28px auto 72px;
+    }
+
+    .paper {
+      overflow: hidden;
+      background: rgba(255, 253, 248, 0.96);
+      border: 1px solid rgba(131, 111, 81, 0.20);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      position: relative;
+      min-height: 520px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.12fr) minmax(340px, 0.88fr);
+      gap: 44px;
+      align-items: end;
+      padding: clamp(34px, 6vw, 84px);
+      color: #fffaf2;
+      background:
+        linear-gradient(105deg, rgba(33, 39, 34, 0.96) 0%, rgba(37, 55, 48, 0.94) 52%, rgba(35, 109, 103, 0.87) 100%),
+        linear-gradient(160deg, #233c35, #18322d);
+    }
+
+    .hero::before,
+    .hero::after {
+      content: "";
+      position: absolute;
+      border-radius: 999px;
+      pointer-events: none;
+    }
+
+    .hero::before {
+      width: 360px;
+      height: 360px;
+      top: -160px;
+      right: 10%;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: 0 0 0 70px rgba(255, 255, 255, 0.025), 0 0 0 140px rgba(255, 255, 255, 0.018);
+    }
+
+    .hero::after {
+      width: 160px;
+      height: 160px;
+      left: 54%;
+      bottom: -110px;
+      background: var(--terracotta);
+      opacity: 0.82;
+      filter: blur(1px);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+      color: #ead6c4;
+      font-size: 12px;
+      font-weight: 760;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 34px;
+      height: 2px;
+      background: #e69a81;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+
+    h1 {
+      max-width: 830px;
+      margin-bottom: 26px;
+      font-family: var(--serif);
+      font-size: clamp(46px, 5.2vw, 78px);
+      font-weight: 620;
+      letter-spacing: -0.045em;
+      line-height: 0.98;
+    }
+
+    .hero-lede {
+      max-width: 710px;
+      margin-bottom: 30px;
+      color: rgba(255, 250, 242, 0.76);
+      font-size: clamp(16px, 1.7vw, 21px);
+    }
+
+    .meta-row { display: flex; flex-wrap: wrap; gap: 9px; }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 7px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.07);
+      color: rgba(255, 250, 242, 0.88);
+      font-size: 12px;
+      font-weight: 650;
+      backdrop-filter: blur(14px);
+    }
+
+    .hero-score {
+      position: relative;
+      z-index: 1;
+      align-self: stretch;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 26px;
+      background: rgba(255, 255, 255, 0.075);
+      backdrop-filter: blur(20px);
+    }
+
+    .score-kicker { color: rgba(255, 250, 242, 0.63); font-size: 13px; }
+    .score-number { margin: 10px 0 4px; font-family: var(--serif); font-size: clamp(92px, 12vw, 148px); line-height: 0.82; }
+    .score-number span { font-family: var(--sans); font-size: 18px; color: rgba(255, 250, 242, 0.58); }
+    .score-label { margin-bottom: 24px; color: #ffd9c9; font-size: 16px; font-weight: 720; }
+
+    .score-rule { height: 8px; overflow: hidden; border-radius: 999px; background: rgba(255, 255, 255, 0.13); }
+    .score-rule > i { display: block; width: 68%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #e7886d, #f2b76f); }
+    .score-note { margin: 16px 0 0; color: rgba(255, 250, 242, 0.66); font-size: 13px; }
+
+    main { padding: clamp(28px, 5vw, 68px); }
+
+    .section { padding: clamp(44px, 6vw, 84px) 0; border-top: 1px solid var(--line); }
+    .section:first-child { padding-top: 4px; border-top: 0; }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.72fr) minmax(340px, 1.28fr);
+      gap: 42px;
+      margin-bottom: 36px;
+      align-items: end;
+    }
+
+    .section-index { color: var(--terracotta); font-size: 12px; font-weight: 780; letter-spacing: 0.15em; }
+
+    h2 {
+      margin: 8px 0 0;
+      font-family: var(--serif);
+      font-size: clamp(34px, 4vw, 58px);
+      font-weight: 620;
+      letter-spacing: -0.035em;
+      line-height: 1.05;
+    }
+
+    .section-intro { margin: 0; color: var(--muted); font-size: 16px; }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin: 22px 0 34px;
+    }
+
+    .kpi {
+      min-height: 176px;
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: #fffefa;
+    }
+
+    .kpi[data-tone="danger"] { background: var(--terracotta-soft); border-color: #e7c6ba; }
+    .kpi[data-tone="warning"] { background: var(--gold-soft); border-color: #e8d6ac; }
+    .kpi[data-tone="good"] { background: var(--teal-soft); border-color: #c3ded7; }
+    .kpi-label { color: var(--muted); font-size: 12px; font-weight: 740; letter-spacing: 0.08em; text-transform: uppercase; }
+    .kpi-value { margin: 13px 0 7px; font-family: var(--serif); font-size: 50px; line-height: 0.95; }
+    .kpi-detail { margin: 0; color: var(--muted); font-size: 13px; }
+
+    .verdict-grid, .chart-grid, .comparison-grid, .action-grid, .evidence-gallery {
+      display: grid;
+      gap: 18px;
+    }
+
+    .verdict-grid { grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr); }
+
+    .panel {
+      padding: clamp(22px, 3vw, 32px);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: #fffefa;
+    }
+
+    .panel.dark { color: #fffaf2; background: #26322d; border-color: #26322d; }
+    .panel h3 { margin-bottom: 10px; font-size: 18px; }
+    .panel p:last-child { margin-bottom: 0; }
+    .panel.dark p { color: rgba(255, 250, 242, 0.72); }
+
+    .finding-list { display: grid; gap: 1px; margin: 0; padding: 0; list-style: none; background: var(--line); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+    .finding-list li { display: grid; grid-template-columns: auto 1fr; gap: 14px; padding: 16px 18px; background: #fffefa; }
+    .finding-list strong { display: block; margin-bottom: 3px; font-size: 14px; }
+    .finding-list span:last-child { color: var(--muted); font-size: 13px; }
+
+    .rank {
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--terracotta-soft);
+      color: var(--terracotta-dark);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .chart-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .chart-card { min-height: 390px; padding: 28px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: #fffefa; }
+    .chart-card h3 { margin-bottom: 5px; }
+    .chart-caption { margin: 0 0 26px; color: var(--muted); font-size: 13px; }
+
+    .bar-list { display: grid; gap: 17px; }
+    .bar-label { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 7px; font-size: 13px; }
+    .bar-label span:last-child { color: var(--teal); font-weight: 780; }
+    .bar-track { height: 10px; overflow: hidden; border-radius: 999px; background: #ece5da; }
+    .bar-fill { width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--teal), #5e9a8c); transition: width 700ms cubic-bezier(.2,.7,.2,1); }
+
+    .roadmap-chart { width: 100%; height: 238px; overflow: visible; }
+    .roadmap-chart .grid { stroke: #e3d8c8; stroke-width: 1; }
+    .roadmap-chart .line { fill: none; stroke: var(--terracotta); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+    .roadmap-chart .area { fill: url(#roadmapArea); opacity: 0.9; }
+    .roadmap-chart .dot { fill: #fffefa; stroke: var(--terracotta); stroke-width: 4; }
+    .roadmap-chart text { font-family: var(--sans); fill: var(--muted); font-size: 11px; }
+    .roadmap-chart .value { fill: var(--terracotta-dark); font-weight: 800; font-size: 12px; }
+
+    .evidence-gallery { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .shot-card, .comparison-card { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-lg); background: #fffefa; }
+
+    .shot-button {
+      display: block;
+      width: 100%;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      cursor: zoom-in;
+    }
+
+    .shot-button:focus-visible { outline: 4px solid rgba(31, 103, 177, 0.35); outline-offset: -4px; }
+    .shot-card img, .comparison-card img, .focus-evidence img { display: block; width: 100%; height: auto; background: #eef1f4; }
+    .shot-copy, .comparison-copy { padding: 18px 20px 20px; }
+    .shot-copy h3, .comparison-copy h3 { margin-bottom: 5px; font-size: 16px; }
+    .shot-copy p, .comparison-copy p { margin: 0; color: var(--muted); font-size: 13px; }
+
+    .focus-evidence { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr); margin-top: 18px; overflow: hidden; border: 1px solid #e6c0b3; border-radius: var(--radius-lg); background: var(--terracotta-soft); }
+    .focus-evidence .copy { padding: clamp(24px, 4vw, 42px); align-self: center; }
+    .flag { display: inline-flex; margin-bottom: 13px; padding: 5px 9px; border-radius: 999px; color: #fff; background: var(--terracotta); font-size: 11px; font-weight: 780; }
+    .focus-evidence h3 { font-family: var(--serif); font-size: 30px; line-height: 1.12; }
+    .focus-evidence p { color: #6c433a; }
+
+    .comparison-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .comparison-card.after { border-color: #b8d7cf; box-shadow: 0 16px 40px rgba(35, 109, 103, 0.09); }
+    .comparison-card .tag { display: inline-flex; margin-bottom: 9px; padding: 4px 8px; border-radius: 999px; color: var(--muted); background: #eee7dc; font-size: 11px; font-weight: 760; }
+    .comparison-card.after .tag { color: var(--teal); background: var(--teal-soft); }
+
+    .change-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+    .change-item { padding: 20px; border-radius: var(--radius-md); background: #eee8de; }
+    .change-item b { display: block; margin-bottom: 5px; font-size: 14px; }
+    .change-item span { color: var(--muted); font-size: 13px; }
+
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius-lg); }
+    table { width: 100%; min-width: 940px; border-collapse: collapse; background: #fffefa; }
+    th, td { padding: 15px 16px; border-bottom: 1px solid #e7ded1; text-align: left; vertical-align: top; font-size: 13px; }
+    th { position: sticky; top: 0; z-index: 1; color: var(--muted); background: #f2ede4; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+    tr:last-child td { border-bottom: 0; }
+    td code { color: #554f48; font-size: 11px; word-break: break-all; }
+
+    .severity { display: inline-flex; min-width: 54px; justify-content: center; padding: 4px 8px; border-radius: 999px; font-size: 11px; font-weight: 800; }
+    .severity.high { color: #8f3d2d; background: var(--terracotta-soft); }
+    .severity.medium { color: #7a5c1e; background: var(--gold-soft); }
+    .severity.low { color: var(--teal); background: var(--teal-soft); }
+
+    .action-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .action-card { position: relative; min-height: 260px; padding: 26px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: #fffefa; }
+    .action-card .phase { color: var(--terracotta); font-size: 11px; font-weight: 820; letter-spacing: 0.12em; }
+    .action-card h3 { margin: 10px 0 12px; font-family: var(--serif); font-size: 26px; }
+    .action-card ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; }
+    .action-card li + li { margin-top: 8px; }
+
+    .method-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+    .method-grid h3 { margin-bottom: 8px; }
+    .source-list { margin: 0; padding-left: 18px; }
+    .source-list li + li { margin-top: 8px; }
+
+    .report-footer { display: flex; justify-content: space-between; gap: 24px; padding: 26px clamp(28px, 5vw, 68px); color: #ded4c4; background: #272d29; font-size: 12px; }
+
+    dialog {
+      width: min(1260px, calc(100vw - 32px));
+      max-height: calc(100vh - 32px);
+      padding: 0;
+      overflow: hidden;
+      border: 0;
+      border-radius: 18px;
+      background: #171a18;
+      box-shadow: 0 28px 100px rgba(0, 0, 0, 0.45);
+    }
+
+    dialog::backdrop { background: rgba(17, 20, 18, 0.78); backdrop-filter: blur(8px); }
+    dialog img { display: block; width: 100%; max-height: calc(100vh - 90px); object-fit: contain; }
+    .dialog-bar { display: flex; justify-content: space-between; align-items: center; gap: 16px; min-height: 54px; padding: 10px 14px 10px 20px; color: #eee8de; }
+    .dialog-close { min-width: 42px; min-height: 34px; border: 1px solid rgba(255,255,255,.15); border-radius: 9px; color: #fff; background: rgba(255,255,255,.08); cursor: pointer; }
+    .dialog-close:focus-visible { outline: 3px solid #75b8ff; outline-offset: 2px; }
+
+    @media (max-width: 980px) {
+      .hero { grid-template-columns: 1fr; min-height: auto; }
+      .hero-score { min-height: 300px; }
+      .section-head, .verdict-grid, .focus-evidence, .method-grid { grid-template-columns: 1fr; }
+      .kpi-grid, .evidence-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .chart-grid, .comparison-grid { grid-template-columns: 1fr; }
+      .change-grid, .action-grid { grid-template-columns: 1fr; }
+      .focus-evidence .copy { order: -1; }
+    }
+
+    @media (max-width: 620px) {
+      .report-shell { width: min(100% - 20px, 1320px); margin: 10px auto 40px; }
+      .paper { border-radius: 20px; }
+      .hero { padding: 32px 24px 40px; }
+      h1 { font-size: 40px; }
+      main { padding: 24px; }
+      .section { padding: 52px 0; }
+      .section-head { gap: 20px; }
+      .kpi-grid, .evidence-gallery { grid-template-columns: 1fr; }
+      .kpi { min-height: auto; }
+      .chart-card { padding: 22px 18px; }
+      .report-footer { flex-direction: column; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .bar-fill { transition: none; }
+    }
+
+    @media print {
+      body { background: #fff; }
+      .report-shell { width: 100%; margin: 0; }
+      .paper { border: 0; border-radius: 0; box-shadow: none; }
+      .section, .chart-card, .shot-card, .comparison-card, .action-card { break-inside: avoid; }
+      .shot-button { cursor: default; }
+    }
+  </style>
+</head>
+<body>
+  <div class="report-shell">
+    <article class="paper">
+      <header class="hero">
+        <div>
+          <div class="eyebrow">Apple Design UI Audit</div>
+          <h1>功能成熟，<br>平台感仍待补齐。</h1>
+          <p class="hero-lede">对 RAW 与 JPEG 匹配工具 0.1.38 的完整界面进行 macOS 设计审查。当前信息架构和空状态基础扎实，但自绘窗口控件、键盘焦点、系统菜单与自适应外观构成了最主要的体验债务。</p>
+          <div class="meta-row">
+            <span class="chip">审查日期 · 2026-07-17</span>
+            <span class="chip">基准视口 · 1180 × 820</span>
+            <span class="chip">3 个工作区 · 代码 + 运行态</span>
+            <span class="chip">概念稿 · AI 生成，未实现</span>
+          </div>
+        </div>
+        <aside class="hero-score" aria-label="综合评分">
+          <div class="score-kicker">综合体验成熟度</div>
+          <div class="score-number">6.8<span> / 10</span></div>
+          <div class="score-label">可用，但距离原生 macOS 体验仍有明显差距</div>
+          <div class="score-rule" aria-hidden="true"><i></i></div>
+          <p class="score-note">评分来自启发式审查和运行态验证，并非用户研究或线上遥测。</p>
+        </aside>
+      </header>
+
+      <main>
+        <section class="section" id="summary">
+          <div class="section-head">
+            <div><span class="section-index">01 / 执行摘要</span><h2>先修平台壳层，<br>再扩展功能。</h2></div>
+            <p class="section-intro">整体不是“推倒重做”型问题。应用的三工作区组织、流程侧栏和空状态已经形成清楚骨架；优先把窗口、菜单、焦点和外观接入 macOS 约定，就能用相对克制的改动显著提升可信度。</p>
+          </div>
+
+          <div class="kpi-grid" id="kpiGrid" aria-label="关键指标"></div>
+
+          <div class="verdict-grid">
+            <div class="panel">
+              <h3>最值得保留的基础</h3>
+              <ul class="finding-list">
+                <li><span class="rank">1</span><span><strong>三工作区信息架构清楚</strong><span>“图片 / RAW 匹配、 一键分离、图片水印”职责分离明确，切换成本低。</span></span></li>
+                <li><span class="rank">2</span><span><strong>关键状态覆盖较完整</strong><span>空状态、禁用态、进度态和危险确认均有产品化表达。</span></span></li>
+                <li><span class="rank">3</span><span><strong>基础响应式表现稳定</strong><span>1180×820 与最小 980×680 验证均未出现横向溢出或结构坍塌。</span></span></li>
+              </ul>
+            </div>
+            <aside class="panel dark">
+              <h3>一句话判断</h3>
+              <p>它现在更像一套完成度不错的 Web 工具装进了 macOS 窗口，而不是从 macOS 交互模型出发构建的桌面工具。</p>
+              <p>首轮整改应集中在平台壳层与无障碍，不建议先做更多装饰性视觉升级。</p>
+            </aside>
+          </div>
+        </section>
+
+        <section class="section" id="scores">
+          <div class="section-head">
+            <div><span class="section-index">02 / 维度评分</span><h2>优势在结构，<br>短板在平台整合。</h2></div>
+            <p class="section-intro">左侧是本次启发式评分的相对排序；右侧为分阶段整改后的规划性目标，用于表达优先级收益，不代表已实现结果。</p>
+          </div>
+          <div class="chart-grid">
+            <figure class="chart-card">
+              <h3>六维成熟度排序</h3>
+              <figcaption class="chart-caption">10 分制专家审查；分数越低，整改优先级越高。</figcaption>
+              <div class="bar-list" id="scoreBars"></div>
+            </figure>
+            <figure class="chart-card">
+              <h3>建议整改路线</h3>
+              <figcaption class="chart-caption">规划性目标：平台壳层 → 无障碍 → 扩展性与性能。</figcaption>
+              <svg class="roadmap-chart" id="roadmapChart" viewBox="0 0 520 238" role="img" aria-label="整改目标评分从 6.8 提升至 8.8">
+                <defs><linearGradient id="roadmapArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b8543f" stop-opacity="0.25"/><stop offset="1" stop-color="#b8543f" stop-opacity="0"/></linearGradient></defs>
+              </svg>
+            </figure>
+          </div>
+        </section>
+
+        <section class="section" id="evidence">
+          <div class="section-head">
+            <div><span class="section-index">03 / 运行态证据</span><h2>三个工作区，<br>一套共同语言。</h2></div>
+            <p class="section-intro">当前界面整体干净克制，视觉语言也较一致。下面截图均来自本地运行版本，统一按 1180×820 视口采集；点击可查看原图。</p>
+          </div>
+          <div class="evidence-gallery">
+            <article class="shot-card">
+              <button class="shot-button" data-full="assets/apple-ui-current-matcher-1180x820.jpg" data-title="当前界面 · 图片 / RAW 匹配" aria-label="放大查看图片与 RAW 匹配工作区截图">
+                <img src="assets/apple-ui-current-matcher-1180x820.jpg" alt="当前图片与 RAW 匹配工作区，左侧为五步流程，右侧为空结果列表">
+              </button>
+              <div class="shot-copy"><h3>图片 / RAW 匹配</h3><p>工作流清晰，但顶部窗口控件、选项卡与浮动统计不够 macOS 原生。</p></div>
+            </article>
+            <article class="shot-card">
+              <button class="shot-button" data-full="assets/apple-ui-current-separator-1180x820.jpg" data-title="当前界面 · 一键分离" aria-label="放大查看一键分离工作区截图">
+                <img src="assets/apple-ui-current-separator-1180x820.jpg" alt="当前一键分离工作区，左侧为分离配置，右侧为空文件列表">
+              </button>
+              <div class="shot-copy"><h3>一键分离</h3><p>左右分栏易读；底部浮层在低高度与长列表场景中存在遮挡风险。</p></div>
+            </article>
+            <article class="shot-card">
+              <button class="shot-button" data-full="assets/apple-ui-current-watermark-1180x820.jpg" data-title="当前界面 · 图片水印" aria-label="放大查看图片水印工作区截图">
+                <img src="assets/apple-ui-current-watermark-1180x820.jpg" alt="当前图片水印工作区，左侧为水印参数，右侧为空预览列表">
+              </button>
+              <div class="shot-copy"><h3>图片水印</h3><p>设置密度合理；比例分段控件与表单焦点仍需按键盘模型补齐。</p></div>
+            </article>
+          </div>
+
+          <div class="focus-evidence">
+            <button class="shot-button" data-full="assets/apple-ui-current-guide-focus.jpg" data-title="焦点验证 · 引导弹层" aria-label="放大查看引导弹层焦点问题截图">
+              <img src="assets/apple-ui-current-guide-focus.jpg" alt="分步引导弹层已打开，但键盘焦点仍停留在背景按钮上">
+            </button>
+            <div class="copy">
+              <span class="flag">高优先级证据</span>
+              <h3>弹层打开后，焦点仍留在背景。</h3>
+              <p>运行态验证中，“分步引导”显示后，活动焦点仍是背景的“查看分步引导”按钮。缺少焦点转移、循环与背景 inert，会让键盘和辅助技术用户失去上下文。</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="concept">
+          <div class="section-head">
+            <div><span class="section-index">04 / 调整后 UI</span><h2>做减法，<br>让工具回到内容。</h2></div>
+            <p class="section-intro">概念稿保持功能、信息结构与中文标签不变，仅重组平台壳层、导航、侧栏和状态区。它用于明确设计方向，不代表代码已经落地。</p>
+          </div>
+
+          <div class="comparison-grid">
+            <article class="comparison-card">
+              <button class="shot-button" data-full="assets/apple-ui-current-matcher-1180x820.jpg" data-title="调整前 · 当前匹配工作区" aria-label="放大查看调整前界面">
+                <img src="assets/apple-ui-current-matcher-1180x820.jpg" alt="调整前的图片与 RAW 匹配界面">
+              </button>
+              <div class="comparison-copy"><span class="tag">BEFORE · 当前实现</span><h3>多层容器 + 自绘平台控件</h3><p>卡片分隔清楚，但窗口栏、选项卡、统计浮层各自争夺视觉注意力。</p></div>
+            </article>
+            <article class="comparison-card after">
+              <button class="shot-button" data-full="assets/apple-ui-optimized-concept.png" data-title="调整后 · macOS UI 概念稿" aria-label="放大查看调整后的 UI 概念稿">
+                <img src="assets/apple-ui-optimized-concept.png" alt="调整后的 macOS UI 概念稿，使用标准窗口控件、系统式侧栏和底部状态栏">
+              </button>
+              <div class="comparison-copy"><span class="tag">AFTER · AI 生成概念</span><h3>原生层级 + 单一主操作</h3><p>保留三工作区与五步流程，将统计收回布局流，并降低内容区边框噪声。</p></div>
+            </article>
+          </div>
+
+          <div class="change-grid" aria-label="概念稿的核心调整">
+            <div class="change-item"><b>01 · 平台壳层</b><span>标准交通灯与更清晰的标题栏 / 工具栏层级。</span></div>
+            <div class="change-item"><b>02 · 导航表达</b><span>弱化大胶囊选中态，用紧凑指示器表达当前工作区。</span></div>
+            <div class="change-item"><b>03 · 侧栏结构</b><span>流程改为来源列表式分组，减少重复卡片边界。</span></div>
+            <div class="change-item"><b>04 · 操作优先级</b><span>只保留一个系统蓝主按钮，其余操作回归中性层级。</span></div>
+            <div class="change-item"><b>05 · 状态归位</b><span>统计进入底部状态栏，不再悬浮遮盖列表内容。</span></div>
+            <div class="change-item"><b>06 · 材质克制</b><span>透明材质仅用于标题栏与导航，内容面保持稳定不透明。</span></div>
+          </div>
+        </section>
+
+        <section class="section" id="issues">
+          <div class="section-head">
+            <div><span class="section-index">05 / 问题清单</span><h2>问题可定位，<br>也可逐项验收。</h2></div>
+            <p class="section-intro">优先级综合考虑平台违和、可访问性、任务中断概率和改动收益。文件位置是本次审查时的代码证据，后续行号可能随修改漂移。</p>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>优先级</th><th>问题</th><th>证据</th><th>用户影响</th><th>建议动作</th></tr></thead>
+              <tbody id="issueRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section" id="plan">
+          <div class="section-head">
+            <div><span class="section-index">06 / 整改路线</span><h2>三段推进，<br>每段都可验证。</h2></div>
+            <p class="section-intro">建议先处理平台壳层和阻断型无障碍问题，再统一适配外观，最后优化大规模文件场景。这样能以最小范围的改动先获得最明显的体验提升。</p>
+          </div>
+          <div class="action-grid">
+            <article class="action-card"><span class="phase">PHASE 01 · P0 / P1</span><h3>平台与焦点</h3><ul><li>恢复系统窗口控件或完整模拟 macOS 交通灯行为</li><li>为引导弹层与日志抽屉补焦点转移、循环、Escape 和 inert</li><li>接入原生应用菜单与核心快捷键</li><li>验收：仅键盘完成三个主流程且不会丢失上下文</li></ul></article>
+            <article class="action-card"><span class="phase">PHASE 02 · P1</span><h3>外观与对比度</h3><ul><li>把固定浅色 token 改为 Light / Dark 自适应语义色</li><li>补 Increase Contrast 与 Reduce Transparency 降级</li><li>修正状态色和小字号的 4.5:1 对比度</li><li>验收：四类系统外观组合均保持可读与层级稳定</li></ul></article>
+            <article class="action-card"><span class="phase">PHASE 03 · P2</span><h3>扩展性与性能</h3><ul><li>统计区进入正常布局流，消除长列表遮挡</li><li>统一 roving tabindex、aria-controls 与方向键模型</li><li>对匹配与分离结果列表进行虚拟化 / 分页</li><li>验收：千级结果滚动、筛选与预览保持流畅</li></ul></article>
+          </div>
+        </section>
+
+        <section class="section" id="method">
+          <div class="section-head">
+            <div><span class="section-index">07 / 方法与边界</span><h2>证据来自代码，<br>也来自真实运行。</h2></div>
+            <p class="section-intro">审查覆盖主界面、三个工作区、关键弹层和窗口缩放；未接入真实 RAW 素材执行完整导出，因此文件错误态、批量任务耗时和真实资源压力不在本次结论范围内。</p>
+          </div>
+          <div class="method-grid">
+            <div class="panel">
+              <h3>审查方法</h3>
+              <p>代码静态审查、1180×820 和 980×680 运行态巡检、键盘焦点验证、无障碍语义检查、关键颜色对比度计算，以及基于 Apple Human Interface Guidelines 的平台一致性评估。</p>
+              <p><strong>概念稿说明：</strong>通过图像生成模型在当前截图上进行 UI 重设计，仅作为视觉方向；所有交互仍需以代码原型验证。</p>
+            </div>
+            <div class="panel">
+              <h3>主要参考</h3>
+              <ul class="source-list">
+                <li><a href="https://developer.apple.com/design/human-interface-guidelines/designing-for-macos/">Apple · Designing for macOS</a></li>
+                <li><a href="https://developer.apple.com/design/human-interface-guidelines/accessibility/">Apple · Accessibility</a></li>
+                <li><a href="https://developer.apple.com/design/human-interface-guidelines/dark-mode">Apple · Dark Mode</a> 与 <a href="https://developer.apple.com/design/human-interface-guidelines/color">Color</a></li>
+                <li><a href="https://developer.apple.com/design/human-interface-guidelines/focus-and-selection/">Apple · Focus and selection</a></li>
+                <li><a href="https://developer.apple.com/design/human-interface-guidelines/modality">Apple · Modality</a>、<a href="https://developer.apple.com/design/human-interface-guidelines/menus">Menus</a> 与 <a href="https://developer.apple.com/design/human-interface-guidelines/windows">Windows</a></li>
+              </ul>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="report-footer"><span>RAW 与 JPEG 匹配工具 · Apple Design UI 审查</span><span>版本 0.1.38 · 2026-07-17 · 仅供产品与工程决策使用</span></footer>
+    </article>
+  </div>
+
+  <dialog id="lightbox" aria-labelledby="lightboxTitle">
+    <div class="dialog-bar"><span id="lightboxTitle">界面截图</span><button class="dialog-close" type="button" aria-label="关闭大图">关闭</button></div>
+    <img id="lightboxImage" alt="">
+  </dialog>
+
+  <script>
+    const reportData = {
+      kpis: [
+        { label: "高优先级", value: "4", detail: "窗口、主题、焦点与菜单", tone: "danger" },
+        { label: "中优先级", value: "6", detail: "对比度、键盘、遮挡与性能", tone: "warning" },
+        { label: "工作区覆盖", value: "3 / 3", detail: "匹配、分离、水印均完成巡检", tone: "good" },
+        { label: "结构坍塌", value: "0", detail: "两档窗口尺寸均无横向溢出", tone: "good" }
+      ],
+      scores: [
+        { label: "信息架构", value: 8.2 },
+        { label: "视觉一致性", value: 7.8 },
+        { label: "响应式稳定", value: 7.6 },
+        { label: "无障碍", value: 6.1 },
+        { label: "大规模性能", value: 5.9 },
+        { label: "macOS 原生感", value: 5.1 }
+      ],
+      roadmap: [
+        { label: "当前", value: 6.8 },
+        { label: "平台壳层", value: 7.5 },
+        { label: "无障碍 / 外观", value: 8.3 },
+        { label: "扩展性 / 性能", value: 8.8 }
+      ],
+      issues: [
+        { level: "high", label: "高", issue: "自绘窗口控件目标仅 12×12，绿色按钮行为为最大化切换；未覆盖窗口失焦后的灰显状态。", evidence: "src-tauri/tauri.conf.json:21 · src/App.tsx:321,349", impact: "精确点击困难，且行为与 macOS 交通灯约定不一致。", action: "优先恢复系统 decorations；如必须自绘，至少扩大目标并同步系统状态与语义。" },
+        { level: "high", label: "高", issue: "全局固定 color-scheme: light 与硬编码色板，未适配深色、增强对比度和降低透明度。", evidence: "src/styles.css:42,53–77", impact: "系统外观切换时体验割裂，弱视和环境光场景可读性下降。", action: "建立语义 token，接入 prefers-color-scheme / prefers-contrast / prefers-reduced-transparency。" },
+        { level: "high", label: "高", issue: "分步引导虽然声明 role=dialog 与 aria-modal，但没有焦点转移、焦点循环和背景 inert。", evidence: "src/components/RawJpegMatcherView.tsx:1300", impact: "键盘与读屏用户可能继续操作被遮挡的背景内容。", action: "使用成熟 Dialog primitive 或完整实现 WAI-ARIA 模态焦点模型。" },
+        { level: "high", label: "高", issue: "Tauri Builder 未配置应用级原生菜单，核心命令只存在于 WebView 的 keydown 逻辑。", evidence: "src-tauri/src/lib.rs:41", impact: "命令不可发现，标准 File / View / Window 菜单与系统快捷键缺位。", action: "接入 Tauri 原生菜单并将快捷键收敛为单一 command 层。" },
+        { level: "medium", label: "中", issue: "成功、警告、破坏性文本色与灰色正文在当前背景上约为 3.40–4.22:1，且多处字号仅 10–12px。", evidence: "src/styles.css:68–76", impact: "小字号状态文本在普通显示器和低视力场景中难读。", action: "将正文和状态文本提升至至少 4.5:1；颜色不作为唯一状态信号。" },
+        { level: "medium", label: "中", issue: "主工作区和比例 tabs 全部 tabIndex=0；比例 tabs 未提供 aria-controls，方向键也不切换。", evidence: "src/App.tsx:275 · src/components/WatermarkWorkspace.tsx:846", impact: "键盘导航冗长，控件行为不符合 tablist 预期。", action: "采用 roving tabindex，仅活动项为 0，并统一 Arrow / Home / End 与面板关联。" },
+        { level: "medium", label: "中", issue: "右下角统计采用 absolute 浮层，日志也作为 bottom sheet 覆盖内容。", evidence: "src/App.tsx:422,471", impact: "低高度、长列表或放大字体时可能遮挡结果与操作。", action: "统计进入状态栏或布局流；抽屉补 Escape、焦点管理和尺寸约束。" },
+        { level: "medium", label: "中", issue: "更新按钮直接进入安装 / 重启流程，另有 UpdateDialog 组件却未被使用；版本提示存在 8px 文本。", evidence: "src/App.tsx:673,699,735", impact: "高影响操作的确认层级不足，辅助文字过小。", action: "复用确认对话框，明确下载、安装和重启阶段，最低文字尺寸回到可读范围。" },
+        { level: "medium", label: "中", issue: "匹配结果直接 results.map 并为每行挂载缩略图；分离列表上限 160 行但未虚拟化。", evidence: "src/components/RawJpegMatcherView.tsx:1103 · FileSeparatorWorkspace.tsx:604", impact: "数百到上千文件时，解码、布局和滚动可能明显抖动。", action: "结果列表虚拟化，缩略图延迟加载并固定尺寸，必要时分批处理。" },
+        { level: "medium", label: "中", issue: "日志面板按 Escape 后仍保持打开，未发现返回触发器的焦点管理。", evidence: "src/App.tsx:471", impact: "键盘用户无法用系统化方式快速退出临时界面。", action: "按非模态抽屉模型实现 Escape 关闭、焦点回退与明确的可访问名称。" },
+        { level: "low", label: "低", issue: "部分输入框使用 outline-none，焦点主要依赖细边框；省略号仍使用三个句点。", evidence: "src/components/WatermarkWorkspace.tsx:790 · RawJpegMatcherView.tsx:480", impact: "键盘焦点辨识度和文案精致度略受影响。", action: "统一 focus-visible ring；将 ... 替换为排版省略号 …。" }
+      ]
+    };
+
+    const kpiGrid = document.querySelector("#kpiGrid");
+    kpiGrid.innerHTML = reportData.kpis.map(item => `
+      <article class="kpi" data-tone="${item.tone}">
+        <div class="kpi-label">${item.label}</div>
+        <div class="kpi-value">${item.value}</div>
+        <p class="kpi-detail">${item.detail}</p>
+      </article>`).join("");
+
+    const scoreBars = document.querySelector("#scoreBars");
+    scoreBars.innerHTML = reportData.scores.map(item => `
+      <div>
+        <div class="bar-label"><span>${item.label}</span><span>${item.value.toFixed(1)}</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:${item.value * 10}%"></div></div>
+      </div>`).join("");
+
+    const svg = document.querySelector("#roadmapChart");
+    const chartLeft = 36, chartRight = 494, chartTop = 28, chartBottom = 188;
+    const x = index => chartLeft + (chartRight - chartLeft) * index / (reportData.roadmap.length - 1);
+    const y = value => chartBottom - (value - 6) / 3 * (chartBottom - chartTop);
+    const points = reportData.roadmap.map((item, index) => `${x(index)},${y(item.value)}`).join(" ");
+    const area = `M ${x(0)} ${chartBottom} L ${points.replaceAll(" ", " L ")} L ${x(reportData.roadmap.length - 1)} ${chartBottom} Z`;
+    svg.insertAdjacentHTML("beforeend", `
+      <g aria-hidden="true">
+        <line class="grid" x1="${chartLeft}" y1="${chartBottom}" x2="${chartRight}" y2="${chartBottom}" />
+        <line class="grid" x1="${chartLeft}" y1="${y(8)}" x2="${chartRight}" y2="${y(8)}" />
+        <line class="grid" x1="${chartLeft}" y1="${y(9)}" x2="${chartRight}" y2="${y(9)}" />
+        <path class="area" d="${area}" />
+        <polyline class="line" points="${points}" />
+        ${reportData.roadmap.map((item, index) => `
+          <circle class="dot" cx="${x(index)}" cy="${y(item.value)}" r="6" />
+          <text class="value" x="${x(index)}" y="${y(item.value) - 15}" text-anchor="middle">${item.value.toFixed(1)}</text>
+          <text x="${x(index)}" y="${chartBottom + 26}" text-anchor="middle">${item.label}</text>`).join("")}
+      </g>`);
+
+    document.querySelector("#issueRows").innerHTML = reportData.issues.map(item => `
+      <tr>
+        <td><span class="severity ${item.level}">${item.label}</span></td>
+        <td>${item.issue}</td>
+        <td><code>${item.evidence}</code></td>
+        <td>${item.impact}</td>
+        <td>${item.action}</td>
+      </tr>`).join("");
+
+    const lightbox = document.querySelector("#lightbox");
+    const lightboxImage = document.querySelector("#lightboxImage");
+    const lightboxTitle = document.querySelector("#lightboxTitle");
+    document.querySelectorAll(".shot-button").forEach(button => {
+      button.addEventListener("click", () => {
+        lightboxImage.src = button.dataset.full;
+        lightboxImage.alt = button.querySelector("img")?.alt || "界面截图";
+        lightboxTitle.textContent = button.dataset.title || "界面截图";
+        lightbox.showModal();
+      });
+    });
+    document.querySelector(".dialog-close").addEventListener("click", () => lightbox.close());
+    lightbox.addEventListener("click", event => { if (event.target === lightbox) lightbox.close(); });
+  </script>
+</body>
+</html>

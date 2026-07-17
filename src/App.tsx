@@ -1,15 +1,20 @@
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check, type DownloadEvent, type Update } from "@tauri-apps/plugin-updater";
+import { getVersion } from "@tauri-apps/api/app";
+import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   AlertTriangle,
   CheckCircle2,
   Download,
+  Images,
   Loader2,
   Maximize2,
   Minus,
   PanelBottom,
   RotateCcw,
+  Split,
+  Stamp,
   X,
 } from "lucide-react";
 import {
@@ -111,6 +116,7 @@ function App() {
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace>("matcher");
   const [exportToast, setExportToast] = useState<ExportToastState | null>(null);
   const nextExportToastIdRef = useRef(0);
+  const closeLogPanel = useCallback(() => setLogPanelOpen(false), []);
 
   const reportExportFeedback = useCallback(
     (workspace: Workspace, feedback: ExportFeedback) => {
@@ -152,6 +158,9 @@ function App() {
       } else if (event.key === "3") {
         event.preventDefault();
         activateWorkspace("watermark");
+      } else if (event.key.toLowerCase() === "l" && event.shiftKey) {
+        event.preventDefault();
+        setLogPanelOpen((open) => !open);
       }
     }
 
@@ -159,11 +168,81 @@ function App() {
     return () => window.removeEventListener("keydown", handleWorkspaceShortcut);
   }, []);
 
+  useEffect(() => {
+    if (!isTauriRuntime()) {
+      return;
+    }
+
+    let disposed = false;
+    let unlisten: (() => void) | undefined;
+    void listen<string>("workspace-command", (event) => {
+      if (event.payload === "toggle-log") {
+        setLogPanelOpen((open) => !open);
+        return;
+      }
+
+      const shortcut =
+        event.payload === "choose-source"
+          ? { key: "o", shiftKey: false }
+          : event.payload === "choose-auxiliary"
+            ? { key: "o", shiftKey: true }
+            : event.payload === "export"
+              ? { key: "e", shiftKey: false }
+              : null;
+      if (shortcut) {
+        window.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key: shortcut.key,
+            metaKey: true,
+            shiftKey: shortcut.shiftKey,
+          }),
+        );
+      }
+    }).then((dispose) => {
+      if (disposed) {
+        dispose();
+      } else {
+        unlisten = dispose;
+      }
+    });
+
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isTauriRuntime()) {
+      return;
+    }
+
+    let disposed = false;
+    let unlisten: (() => void) | undefined;
+    void listen<Workspace>("workspace-menu-select", (event) => {
+      if (!workspaceOrder.includes(event.payload)) {
+        return;
+      }
+      setActiveWorkspace(event.payload);
+      setLogPanelOpen(false);
+    }).then((dispose) => {
+      if (disposed) {
+        dispose();
+      } else {
+        unlisten = dispose;
+      }
+    });
+
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, []);
+
   return (
     <TooltipProvider>
-      <main className="desk-grid relative grid h-screen grid-rows-[42px_44px_minmax(0,1fr)] overflow-hidden text-foreground">
-        <WindowTitlebar />
-        <WorkspaceTabBar activeWorkspace={activeWorkspace} onChange={activateWorkspace} />
+      <main className="desk-grid relative grid h-screen grid-rows-[54px_minmax(0,1fr)_30px] overflow-hidden text-foreground">
+        <WindowTitlebar activeWorkspace={activeWorkspace} onChange={activateWorkspace} />
         <section className="codex-main min-h-0 overflow-hidden">
           <div
             aria-labelledby="workspace-tab-matcher"
@@ -224,7 +303,7 @@ function App() {
                 ? separatorStatus.logs
                 : watermarkStatus.logs
           }
-          onClose={() => setLogPanelOpen(false)}
+          onClose={closeLogPanel}
         />
         <ExportResultToast onDismiss={dismissExportToast} toast={exportToast} />
       </main>
@@ -232,7 +311,7 @@ function App() {
   );
 }
 
-function WorkspaceTabBar({
+function WorkspaceSwitcher({
   activeWorkspace,
   onChange,
 }: {
@@ -269,17 +348,17 @@ function WorkspaceTabBar({
   }
 
   return (
-    <nav aria-label="功能工作区" className="flex h-11 items-stretch border-b border-border bg-card px-5">
-      <div className="flex h-full items-stretch gap-2" role="tablist">
+    <nav aria-label="功能工作区" className="pointer-events-auto" data-tauri-drag-region="false">
+      <div className="mac-segmented-control flex h-8 items-center gap-0.5 rounded-[8px] p-[3px]" role="tablist">
         {workspaceOrder.map((workspace) => (
           <button
             aria-controls={`workspace-panel-${workspace}`}
             aria-selected={activeWorkspace === workspace}
             className={cn(
-              "relative inline-flex h-full items-center rounded-[5px] px-3.5 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card after:absolute after:bottom-0 after:left-3.5 after:right-3.5 after:h-0.5 after:rounded-full",
+              "inline-flex h-[26px] min-w-[126px] items-center justify-center gap-1.5 rounded-[6px] px-3 text-[12px] font-medium transition-[background,color,box-shadow] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               activeWorkspace === workspace
-                ? "text-foreground after:bg-accent"
-                : "text-secondary-foreground/75 hover:bg-secondary/72 hover:text-foreground",
+                ? "bg-card text-foreground shadow-[0_1px_2px_rgba(0,0,0,0.14),0_0_0_0.5px_rgba(0,0,0,0.08)]"
+                : "text-muted-foreground hover:text-foreground",
             )}
             data-workspace-tab={workspace}
             id={`workspace-tab-${workspace}`}
@@ -287,8 +366,16 @@ function WorkspaceTabBar({
             onClick={() => onChange(workspace)}
             onKeyDown={handleKeyDown}
             role="tab"
+            tabIndex={activeWorkspace === workspace ? 0 : -1}
             type="button"
           >
+            {workspace === "matcher" ? (
+              <Images className="size-3.5" />
+            ) : workspace === "separator" ? (
+              <Split className="size-3.5" />
+            ) : (
+              <Stamp className="size-3.5" />
+            )}
             {workspaceLabels[workspace]}
           </button>
         ))}
@@ -297,37 +384,59 @@ function WorkspaceTabBar({
   );
 }
 
-function WindowTitlebar() {
+function WindowTitlebar({
+  activeWorkspace,
+  onChange,
+}: {
+  activeWorkspace: Workspace;
+  onChange: (workspace: Workspace) => void;
+}) {
   return (
-    <header className="relative h-[42px] bg-card">
+    <header className="mac-titlebar relative grid h-[54px] grid-cols-[1fr_auto_1fr] items-center border-b border-border/70 px-3">
       <div className="absolute inset-0" data-tauri-drag-region />
-      <div className="absolute left-4 top-[15px] z-10 flex items-center gap-2">
-        <WindowControl
-          ariaLabel="关闭窗口"
-          className="bg-[#ff5f57]"
-          icon={<X />}
-          onClick={() => getCurrentWindow().close()}
-        />
-        <WindowControl
-          ariaLabel="最小化窗口"
-          className="bg-[#ffbd2e]"
-          icon={<Minus />}
-          onClick={() => getCurrentWindow().minimize()}
-        />
-        <WindowControl
-          ariaLabel="缩放窗口"
-          className="bg-[#28c840]"
-          icon={<Maximize2 />}
-          onClick={() => getCurrentWindow().toggleMaximize()}
-        />
+      {!isTauriRuntime() ? <BrowserWindowControls /> : null}
+      <div className="pointer-events-none relative z-10 col-start-1 flex min-w-0 items-center pl-[84px]">
+        <div className="min-w-0">
+          <h1 className="truncate text-[12px] font-semibold leading-none tracking-[-0.01em] text-foreground/90">
+            照片配对助手
+          </h1>
+          <p className="mt-1 truncate text-[10px] leading-none text-muted-foreground">
+            本地摄影工作流
+          </p>
+        </div>
       </div>
-      <h1 className="pointer-events-none absolute inset-0 z-10 grid place-items-center text-[13px] font-semibold tracking-[-0.01em] text-foreground/90">
-        照片配对助手
-      </h1>
-      <div className="absolute inset-y-0 left-[5.25rem] z-10 flex items-center">
+      <div className="relative z-20 col-start-2">
+        <WorkspaceSwitcher activeWorkspace={activeWorkspace} onChange={onChange} />
+      </div>
+      <div className="relative z-20 col-start-3 flex justify-end" data-tauri-drag-region="false">
         <UpdateButton />
       </div>
     </header>
+  );
+}
+
+function BrowserWindowControls() {
+  return (
+    <div className="absolute left-4 top-[17px] z-10 flex items-center gap-2">
+      <WindowControl
+        ariaLabel="关闭窗口"
+        className="after:bg-[#ff5f57]"
+        icon={<X />}
+        onClick={() => getCurrentWindow().close()}
+      />
+      <WindowControl
+        ariaLabel="最小化窗口"
+        className="after:bg-[#ffbd2e]"
+        icon={<Minus />}
+        onClick={() => getCurrentWindow().minimize()}
+      />
+      <WindowControl
+        ariaLabel="缩放窗口"
+        className="after:bg-[#28c840]"
+        icon={<Maximize2 />}
+        onClick={() => getCurrentWindow().toggleMaximize()}
+      />
+    </div>
   );
 }
 
@@ -346,7 +455,7 @@ function WindowControl({
     <button
       aria-label={ariaLabel}
       className={cn(
-        "group grid size-3 place-items-center rounded-full text-black/60 transition-transform hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        "group relative grid size-5 place-items-center rounded-full text-black/60 transition-transform after:absolute after:size-3 after:rounded-full after:content-[''] hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         className,
       )}
       onClick={() => {
@@ -357,7 +466,7 @@ function WindowControl({
       type="button"
     >
       <span className="sr-only">{ariaLabel}</span>
-      <span className="opacity-0 transition-opacity group-hover:opacity-100 [&_svg]:size-2 [&_svg]:stroke-[2.5]">
+      <span className="relative z-10 opacity-0 transition-opacity group-hover:opacity-100 [&_svg]:size-2 [&_svg]:stroke-[2.5]">
         {icon}
       </span>
     </button>
@@ -374,7 +483,6 @@ function MatcherStatusOverlay({
   return (
     <WorkspaceStatusOverlay
       ariaLabel="当前配对统计"
-      className="bottom-5"
       metrics={[
         { label: config.inputNoun, value: status.inputCount },
         {
@@ -393,7 +501,6 @@ function SeparatorStatusOverlay({ status }: { status: SeparatorWorkspaceStatus }
   return (
     <WorkspaceStatusOverlay
       ariaLabel="当前分离统计"
-      className={status.hasExportReport ? "bottom-[76px]" : "bottom-5"}
       metrics={separatorWorkspaceStatusMetrics(status)}
     />
   );
@@ -403,7 +510,6 @@ function WatermarkStatusOverlay({ status }: { status: WatermarkWorkspaceStatus }
   return (
     <WorkspaceStatusOverlay
       ariaLabel="当前水印统计"
-      className={status.hasExportReport ? "bottom-[168px]" : "bottom-[112px]"}
       metrics={watermarkWorkspaceStatusMetrics(status)}
     />
   );
@@ -411,27 +517,22 @@ function WatermarkStatusOverlay({ status }: { status: WatermarkWorkspaceStatus }
 
 function WorkspaceStatusOverlay({
   ariaLabel,
-  className,
   metrics,
 }: {
   ariaLabel: string;
-  className: string;
   metrics: WorkspaceStatusMetric[];
 }) {
   return (
-    <aside
+    <footer
       aria-label={ariaLabel}
-      className={cn(
-        "desktop-status-dock absolute right-5 z-20 flex items-center gap-3 rounded-[8px] border border-border px-3.5 py-2 text-xs backdrop-blur-sm",
-        className,
-      )}
+      className="mac-statusbar flex min-w-0 items-center justify-end border-t border-border px-5 text-xs"
     >
       <div className="flex items-center gap-4">
         {metrics.map((metric) => (
           <HeaderMetric key={metric.label} {...metric} />
         ))}
       </div>
-    </aside>
+    </footer>
   );
 }
 
@@ -478,6 +579,8 @@ function LogBottomSheet({
   onClose: () => void;
 }) {
   const viewportRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
   const latestLogMessage = logs.at(-1)?.message ?? "";
 
   useEffect(() => {
@@ -493,6 +596,28 @@ function LogBottomSheet({
     return () => window.cancelAnimationFrame(frameId);
   }, [latestLogMessage, logs.length, open]);
 
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+    const frameId = window.requestAnimationFrame(() => closeButtonRef.current?.focus());
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener("keydown", handleKeyDown);
+      previousFocusRef.current?.focus();
+      previousFocusRef.current = null;
+    };
+  }, [onClose, open]);
+
   if (!open) {
     return null;
   }
@@ -501,7 +626,7 @@ function LogBottomSheet({
     <section
       aria-label="运行日志"
       aria-live="polite"
-      className="absolute bottom-5 left-4 right-4 z-30 h-[280px] max-h-[46vh] animate-in fade-in slide-in-from-bottom-3 duration-150 min-[960px]:left-[328px]"
+      className="absolute bottom-[42px] left-4 right-4 z-30 h-[280px] max-h-[46vh] animate-in fade-in slide-in-from-bottom-3 duration-150 min-[960px]:left-[312px]"
     >
       <div className="grid h-full grid-rows-[48px_minmax(0,1fr)] overflow-hidden rounded-[8px] border border-border bg-card shadow-[0_14px_42px_rgba(32,33,36,0.16)]">
         <header className="flex items-center justify-between gap-3 border-b border-border px-4">
@@ -514,7 +639,7 @@ function LogBottomSheet({
               <p className="mt-1 truncate text-[11px] text-muted-foreground">{logs.length} 条记录</p>
             </div>
           </div>
-          <Button aria-label="关闭日志" variant="ghost" size="icon-sm" onClick={onClose} type="button">
+          <Button ref={closeButtonRef} aria-label="关闭日志" variant="ghost" size="icon-sm" onClick={onClose} type="button">
             <X />
           </Button>
         </header>
@@ -555,6 +680,8 @@ function LogBottomSheet({
 function UpdateButton() {
   const [status, setStatus] = useState<UpdateStatus>("idle");
   const [pendingUpdate, setPendingUpdate] = useState<Update | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [currentVersion, setCurrentVersion] = useState("");
   const [message, setMessage] = useState("");
   const [progress, setProgress] = useState<UpdateProgress>({
     downloadedBytes: 0,
@@ -564,12 +691,16 @@ function UpdateButton() {
   const installInFlightRef = useRef(false);
   const pendingUpdateRef = useRef<Update | null>(null);
 
-  const isBusy =
-    status === "checking" || status === "downloading" || status === "installing";
-
   useEffect(() => {
     pendingUpdateRef.current = pendingUpdate;
   }, [pendingUpdate]);
+
+  useEffect(() => {
+    if (!isTauriRuntime()) {
+      return;
+    }
+    void getVersion().then(setCurrentVersion).catch(() => setCurrentVersion(""));
+  }, []);
 
   useEffect(() => {
     if (!isTauriRuntime()) {
@@ -671,10 +802,7 @@ function UpdateButton() {
   }
 
   function handleButtonClick() {
-    if (isBusy || status === "installed") {
-      return;
-    }
-    void installPendingUpdate();
+    setDialogOpen(true);
   }
 
   const label = getUpdateButtonLabel(status, pendingUpdate, progress);
@@ -691,28 +819,41 @@ function UpdateButton() {
   }
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          aria-label={label}
-          className={cn(
-      "h-5 max-w-[4rem] overflow-hidden rounded-[5px] border-accent bg-accent px-2.5 text-[8px] font-semibold leading-none tracking-[0.01em] text-accent-foreground shadow-none hover:bg-accent/90 disabled:opacity-100",
-            status === "error" &&
-              "border-destructive bg-destructive text-destructive-foreground hover:bg-destructive/90",
-          )}
-          disabled={status === "downloading" || status === "installing" || status === "installed"}
-          onClick={handleButtonClick}
-          type="button"
-          variant="utility"
-        >
-          {status === "available" ? null : <UpdateButtonIcon status={status} />}
-          <span className="min-w-0 truncate">{visibleLabel}</span>
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>
-        {message || `发现 ${pendingUpdate?.version ?? "新版本"}，点击自动更新并重启`}
-      </TooltipContent>
-    </Tooltip>
+    <>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            aria-label={label}
+            className={cn(
+              "h-6 max-w-[7rem] overflow-hidden rounded-[6px] border-accent bg-accent px-2.5 text-[11px] font-semibold leading-none text-accent-foreground shadow-none hover:bg-accent/90 disabled:opacity-100",
+              status === "error" &&
+                "border-destructive bg-destructive text-destructive-foreground hover:bg-destructive/90",
+            )}
+            disabled={status === "installed"}
+            onClick={handleButtonClick}
+            type="button"
+            variant="utility"
+          >
+            <UpdateButtonIcon status={status} />
+            <span className="min-w-0 truncate">{visibleLabel}</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          {message || `发现 ${pendingUpdate?.version ?? "新版本"}，打开更新详情`}
+        </TooltipContent>
+      </Tooltip>
+      <UpdateDialog
+        currentVersion={currentVersion}
+        message={message}
+        onCheck={() => void checkForUpdates()}
+        onInstall={() => void installPendingUpdate()}
+        onOpenChange={setDialogOpen}
+        open={dialogOpen}
+        pendingUpdate={pendingUpdate}
+        progress={progress}
+        status={status}
+      />
+    </>
   );
 }
 

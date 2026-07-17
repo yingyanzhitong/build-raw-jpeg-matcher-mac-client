@@ -27,6 +27,7 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from "react";
 
@@ -127,6 +128,7 @@ const aspectLabels: Record<AspectKind, string> = {
   portrait: "竖图",
   square: "方图",
 };
+const aspectOrder: AspectKind[] = ["landscape", "portrait", "square"];
 
 const anchorLabels: Record<WatermarkAnchor, string> = {
   topLeft: "左上",
@@ -369,6 +371,9 @@ export function WatermarkWorkspace({
     return () => window.clearTimeout(timer);
   }, [fontId, text]);
 
+  const shortcutsRef = useRef({ chooseInputDirectory, chooseWatermarkAsset, startExport });
+  shortcutsRef.current = { chooseInputDirectory, chooseWatermarkAsset, startExport };
+
   useEffect(() => {
     if (!active) {
       return;
@@ -382,14 +387,20 @@ export function WatermarkWorkspace({
       if (isTextEditing || event.defaultPrevented || (!event.metaKey && !event.ctrlKey)) {
         return;
       }
-      if (event.key.toLowerCase() === "o" && !event.shiftKey) {
+      if (event.key.toLowerCase() === "o" && event.shiftKey) {
         event.preventDefault();
-        void chooseInputDirectory();
+        void shortcutsRef.current.chooseWatermarkAsset();
+      } else if (event.key.toLowerCase() === "o") {
+        event.preventDefault();
+        void shortcutsRef.current.chooseInputDirectory();
+      } else if (event.key.toLowerCase() === "e") {
+        event.preventDefault();
+        void shortcutsRef.current.startExport();
       }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [active, busy, progress.running]);
+  }, [active]);
 
   const requestPreview = useCallback(
     (image: WatermarkImageInput, maxEdge: number) => {
@@ -553,6 +564,35 @@ export function WatermarkWorkspace({
     setSelectedIndex(images.findIndex((image) => image.aspect === aspect));
   }
 
+  function selectAspectWithFocus(aspect: AspectKind) {
+    selectAspect(aspect);
+    window.requestAnimationFrame(() => {
+      document.querySelector<HTMLButtonElement>(`[data-aspect-tab="${aspect}"]`)?.focus();
+    });
+  }
+
+  function handleAspectKeyDown(event: ReactKeyboardEvent<HTMLButtonElement>) {
+    if (
+      event.key !== "ArrowLeft" &&
+      event.key !== "ArrowRight" &&
+      event.key !== "Home" &&
+      event.key !== "End"
+    ) {
+      return;
+    }
+    event.preventDefault();
+    const currentIndex = aspectOrder.indexOf(activeAspect);
+    const nextIndex =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? aspectOrder.length - 1
+          : event.key === "ArrowLeft"
+            ? (currentIndex - 1 + aspectOrder.length) % aspectOrder.length
+            : (currentIndex + 1) % aspectOrder.length;
+    selectAspectWithFocus(aspectOrder[nextIndex]);
+  }
+
   function updateProfile(update: Partial<WatermarkProfile>) {
     setProfilesBySource((current) => ({
       ...current,
@@ -704,13 +744,13 @@ export function WatermarkWorkspace({
     <section
       aria-label="图片水印工作区"
       className={cn(
-        "grid h-full min-h-0 grid-cols-1 overflow-auto bg-panel min-[960px]:grid-cols-[312px_minmax(0,1fr)] min-[960px]:overflow-hidden",
+        "grid h-full min-h-0 grid-cols-1 overflow-auto bg-panel min-[960px]:grid-cols-[296px_minmax(0,1fr)] min-[960px]:overflow-hidden",
         !active && "hidden",
       )}
     >
-      <aside className="min-h-[520px] border-r border-border bg-background/82 min-[960px]:min-h-0">
+      <aside className="mac-sidebar mac-inspector min-h-[520px] border-r border-border min-[960px]:min-h-0">
         <ScrollArea className="h-full min-h-0">
-          <div className="grid min-h-[720px] content-start p-4 pb-6 min-[960px]:min-h-0">
+          <div className="grid min-h-[720px] content-start px-3 pb-6 pt-3 min-[960px]:min-h-0">
             <WatermarkWorkflowSection
               icon={<FolderInput className="size-4" />}
               state={workflowSteps[0]}
@@ -787,7 +827,7 @@ export function WatermarkWorkspace({
                     文字内容
                     <input
                       aria-label="文字水印内容"
-                      className="h-9 w-full rounded-[7px] border border-border bg-card px-2.5 text-xs font-normal outline-none transition-colors placeholder:text-muted-foreground focus:border-accent"
+                      className="h-9 w-full rounded-[7px] border border-border bg-card px-2.5 text-xs font-normal outline-none transition-colors placeholder:text-muted-foreground focus:border-accent focus-visible:ring-2 focus-visible:ring-ring"
                       disabled={progress.running}
                       maxLength={maxTextWatermarkCharacters}
                       onChange={(event) => {
@@ -803,7 +843,7 @@ export function WatermarkWorkspace({
                     字体
                     <select
                       aria-label="文字水印字体"
-                      className="h-9 w-full rounded-[7px] border border-border bg-card px-2 text-xs font-normal outline-none transition-colors focus:border-accent disabled:opacity-50"
+                      className="h-9 w-full rounded-[7px] border border-border bg-card px-2 text-xs font-normal outline-none transition-colors focus:border-accent focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
                       disabled={fonts.length === 0 || progress.running}
                       onChange={(event) => {
                         setFontId(event.target.value);
@@ -844,13 +884,17 @@ export function WatermarkWorkspace({
               subtitle={`${aspectLabels[activeAspect]}独立参数`}
             >
               <div aria-label="水印画幅配置" className="grid grid-cols-3 gap-1.5" role="tablist">
-                {(["landscape", "portrait", "square"] as AspectKind[]).map((aspect) => (
+                {aspectOrder.map((aspect) => (
                   <Button
+                    aria-controls="watermark-aspect-settings"
                     aria-selected={activeAspect === aspect}
+                    data-aspect-tab={aspect}
                     key={aspect}
                     onClick={() => selectAspect(aspect)}
+                    onKeyDown={handleAspectKeyDown}
                     role="tab"
                     size="sm"
+                    tabIndex={activeAspect === aspect ? 0 : -1}
                     type="button"
                     variant={activeAspect === aspect ? "accent" : "utility"}
                   >
@@ -859,6 +903,12 @@ export function WatermarkWorkspace({
                 ))}
               </div>
 
+              <div
+                aria-label={`${aspectLabels[activeAspect]}水印参数`}
+                className="grid gap-2.5"
+                id="watermark-aspect-settings"
+                role="tabpanel"
+              >
               <div>
                 <span className="mb-2 block text-xs font-medium">布局</span>
                 <div aria-label="水印布局" className="grid grid-cols-2 gap-1.5" role="group">
@@ -976,14 +1026,15 @@ export function WatermarkWorkspace({
               <p className="text-xs leading-5 text-muted-foreground">
                 JPEG 按质量 {jpegQuality} 编码，PNG 无损；源文件不会改写，已有同名目标会跳过。
               </p>
+              </div>
             </WatermarkWorkflowSection>
           </div>
         </ScrollArea>
       </aside>
 
       <section className="flex min-h-[620px] min-w-0 flex-col bg-card min-[960px]:min-h-0">
-        <header className="shrink-0 border-b border-border bg-card px-6">
-          <div className="grid h-16 min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+        <header className="mac-workbench-toolbar shrink-0 border-b border-border px-5">
+          <div className="grid h-14 min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
             <div className="flex min-w-0 items-center gap-2.5">
               <h2 className="shrink-0 text-[15px] font-semibold leading-none tracking-[-0.01em]">
                 水印预览
@@ -1067,11 +1118,16 @@ export function WatermarkWorkspace({
                 <p className="text-sm">正在准备方向校正预览…</p>
               </div>
             ) : (
-              <EmptyWatermarkPreview aspect={activeAspect} hasImages={images.length > 0} />
+              <EmptyWatermarkPreview
+                aspect={activeAspect}
+                disabled={busy !== null || progress.running}
+                hasImages={images.length > 0}
+                onChoose={chooseInputDirectory}
+              />
             )}
           </section>
 
-          <div className="flex min-h-[92px] shrink-0 items-center gap-3 border-t border-border bg-card px-5 py-2">
+          <div className="flex min-h-[82px] shrink-0 items-center gap-3 border-t border-border bg-card px-4 py-2">
             <Button
               aria-label="上一张预览图片"
               disabled={selectedIndex <= 0}
@@ -1205,31 +1261,29 @@ function WatermarkWorkflowSection({
 
   return (
     <section
-      className={cn(
-        "border-b border-border py-5 first:pt-0 last:border-b-0 last:pb-0",
-        current && "bg-accent/[0.015]",
-      )}
+      className="mac-inspector-section py-4 first:pt-1 last:pb-0"
     >
-      <header className="mb-3.5 flex items-center gap-2">
+      <header className="mb-3 flex items-center gap-2.5 px-1">
         <span
           aria-label={`第 ${step} 步，${stepLabel}`}
+          aria-current={current ? "step" : undefined}
           className={cn(
-            "grid size-8 shrink-0 place-items-center rounded-[7px] border text-xs font-semibold",
+            "grid size-6 shrink-0 place-items-center rounded-full border border-transparent text-[11px] font-semibold",
             complete
-              ? "border-success/30 bg-success/10 text-success"
+              ? "bg-success text-white"
               : current
-                ? "border-accent/30 bg-accent/10 text-accent"
-                : "border-border bg-secondary text-muted-foreground",
+                ? "bg-accent text-accent-foreground"
+                : "border-border bg-card/55 text-muted-foreground",
           )}
         >
           {complete ? <Check className="size-4" /> : step}
         </span>
-        <span className="grid size-8 shrink-0 place-items-center rounded-[7px] border border-border bg-secondary text-muted-foreground [&_svg]:size-4">
+        <span className="grid size-5 shrink-0 place-items-center text-muted-foreground [&_svg]:size-4">
           {icon}
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center justify-between gap-2">
-            <h2 className="truncate text-sm font-semibold leading-none">{title}</h2>
+            <h2 className="truncate text-[13px] font-semibold leading-none">{title}</h2>
             <span
               className={cn(
                 "shrink-0 text-[10px] font-medium",
@@ -1239,7 +1293,7 @@ function WatermarkWorkflowSection({
               {stepLabel}
             </span>
           </div>
-          <p className="mt-1 truncate text-xs text-muted-foreground">{subtitle}</p>
+          <p className="mt-1 truncate text-[11px] text-muted-foreground">{subtitle}</p>
         </div>
       </header>
       <div className="grid gap-2.5">{children}</div>
@@ -1254,6 +1308,39 @@ function AnchorGrid({
   value: WatermarkAnchor;
   onChange: (anchor: WatermarkAnchor) => void;
 }) {
+  function handleKeyDown(event: ReactKeyboardEvent<HTMLButtonElement>) {
+    if (
+      event.key !== "ArrowLeft" &&
+      event.key !== "ArrowRight" &&
+      event.key !== "ArrowUp" &&
+      event.key !== "ArrowDown" &&
+      event.key !== "Home" &&
+      event.key !== "End"
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    const currentIndex = anchors.indexOf(value);
+    const nextIndex =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? anchors.length - 1
+          : event.key === "ArrowLeft"
+            ? (currentIndex - 1 + anchors.length) % anchors.length
+            : event.key === "ArrowRight"
+              ? (currentIndex + 1) % anchors.length
+              : event.key === "ArrowUp"
+                ? (currentIndex - 3 + anchors.length) % anchors.length
+                : (currentIndex + 3) % anchors.length;
+    const nextAnchor = anchors[nextIndex];
+    onChange(nextAnchor);
+    window.requestAnimationFrame(() => {
+      document.querySelector<HTMLButtonElement>(`[data-anchor="${nextAnchor}"]`)?.focus();
+    });
+  }
+
   return (
     <div aria-label="水印九宫格位置" className="grid grid-cols-3 gap-1.5" role="group">
       {anchors.map((anchor) => (
@@ -1266,8 +1353,11 @@ function AnchorGrid({
               ? "border-accent/45 bg-accent/10 text-accent"
               : "border-border text-muted-foreground hover:bg-secondary hover:text-foreground",
           )}
+          data-anchor={anchor}
           key={anchor}
           onClick={() => onChange(anchor)}
+          onKeyDown={handleKeyDown}
+          tabIndex={value === anchor ? 0 : -1}
           title={anchorLabels[anchor]}
           type="button"
         >
@@ -1280,7 +1370,7 @@ function AnchorGrid({
 
 function WatermarkAssetCard({ asset }: { asset: WatermarkAssetInfo }) {
   return (
-    <div className="flex items-center gap-2 rounded-[7px] border border-border bg-card p-2">
+    <div className="flex items-center gap-2 rounded-[7px] bg-secondary/60 p-2">
       <div className="watermark-checkerboard grid size-12 shrink-0 place-items-center overflow-hidden rounded-[5px] border border-border">
         <img
           alt={asset.sourceKind === "text" ? "当前文字水印" : "当前图片水印"}
@@ -1318,7 +1408,7 @@ function RangeControl({
   }
 
   return (
-    <label className="grid gap-1.5 rounded-[7px] border border-border bg-card px-2.5 py-2">
+    <label className="grid gap-1.5 px-1 py-1">
       <span className="flex items-center justify-between gap-3 text-xs">
         <span className="font-medium">{label}</span>
         <output className="font-mono tabular-nums text-muted-foreground">
@@ -1491,10 +1581,20 @@ const ThumbnailButton = memo(function ThumbnailButton({
   );
 });
 
-function EmptyWatermarkPreview({ aspect, hasImages }: { aspect: AspectKind; hasImages: boolean }) {
+function EmptyWatermarkPreview({
+  aspect,
+  disabled,
+  hasImages,
+  onChoose,
+}: {
+  aspect: AspectKind;
+  disabled: boolean;
+  hasImages: boolean;
+  onChoose: () => void;
+}) {
   return (
     <section className="grid max-w-md justify-items-center gap-4 text-center">
-      <span className="grid size-14 place-items-center rounded-[10px] border border-accent/20 bg-card text-accent shadow-[0_8px_20px_rgba(26,115,232,0.1)]">
+      <span className="grid size-12 place-items-center rounded-[12px] bg-accent/10 text-accent">
         <Stamp className="size-6" />
       </span>
       <div>
@@ -1507,6 +1607,12 @@ function EmptyWatermarkPreview({ aspect, hasImages }: { aspect: AspectKind; hasI
             : "选择图片目录并准备图片或文字水印后，可实时检查三种画幅的玻璃效果。"}
         </p>
       </div>
+      {!hasImages ? (
+        <Button disabled={disabled} onClick={onChoose} type="button">
+          <FolderInput />
+          选择图片目录
+        </Button>
+      ) : null}
     </section>
   );
 }

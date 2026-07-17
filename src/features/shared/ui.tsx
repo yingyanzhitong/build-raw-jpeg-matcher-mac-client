@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, CircleX } from "lucide-react";
+import { AlertTriangle, Check, CheckCircle2, CircleX } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -52,7 +52,7 @@ export function ExportResultToast({
       aria-atomic="true"
       aria-live={toast.tone === "error" ? "assertive" : "polite"}
       className={cn(
-        "pointer-events-none fixed right-5 top-[104px] z-[80] grid max-w-[min(440px,calc(100vw-2rem))] grid-cols-[auto_minmax(0,1fr)] gap-2.5 rounded-[9px] border bg-card px-4 py-3.5 text-card-foreground shadow-[0_18px_54px_rgba(32,33,36,0.2)] animate-in fade-in-0 slide-in-from-top-2 duration-200 motion-reduce:animate-none",
+        "pointer-events-none fixed right-5 top-[70px] z-[80] grid max-w-[min(440px,calc(100vw-2rem))] grid-cols-[auto_minmax(0,1fr)] gap-2.5 rounded-[9px] border bg-card px-4 py-3.5 text-card-foreground shadow-[0_18px_54px_rgba(32,33,36,0.2)] animate-in fade-in-0 slide-in-from-top-2 duration-200 motion-reduce:animate-none",
         toast.tone === "success" && "border-success/30",
         toast.tone === "warning" && "border-warning/30",
         toast.tone === "error" && "border-destructive/35",
@@ -85,21 +85,61 @@ export function Pane({
   title,
   subtitle,
   children,
+  complete = false,
+  current = false,
+  step,
 }: {
   icon: ReactNode;
   title: string;
   subtitle: string;
   children: ReactNode;
+  complete?: boolean;
+  current?: boolean;
+  step?: number;
 }) {
+  const stepLabel = complete ? "已完成" : current ? "当前步骤" : "待完成";
+
   return (
-    <section className="border-b border-border/85 py-4 first:pt-0 last:border-b-0 last:pb-0">
-      <div className="mb-3 flex items-center gap-2.5">
-        <span className="grid size-8 place-items-center rounded-[7px] border border-border bg-card text-muted-foreground">
+    <section className="mac-inspector-section py-4 first:pt-1 last:pb-0">
+      <div className="mb-3 flex items-center gap-2.5 px-1">
+        {step !== undefined ? (
+          <span
+            aria-current={current ? "step" : undefined}
+            aria-label={`第 ${step} 步，${stepLabel}`}
+            className={cn(
+              "grid size-6 shrink-0 place-items-center rounded-full border border-transparent text-[11px] font-semibold",
+              complete
+                ? "bg-success text-white"
+                : current
+                  ? "bg-accent text-accent-foreground"
+                  : "border-border bg-card/55 text-muted-foreground",
+            )}
+          >
+            {complete ? <Check className="size-4" /> : step}
+          </span>
+        ) : null}
+        <span className="grid size-5 place-items-center text-muted-foreground [&_svg]:size-4">
           {icon}
         </span>
-        <div className="min-w-0">
-          <h2 className="truncate text-[13px] font-semibold leading-none">{title}</h2>
-          <p className="mt-1 truncate text-xs text-muted-foreground">{subtitle}</p>
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 items-center justify-between gap-2">
+            <h2 className="truncate text-[13px] font-semibold leading-none">{title}</h2>
+            {step !== undefined ? (
+              <span
+                className={cn(
+                  "shrink-0 text-[10px] font-medium",
+                  complete
+                    ? "text-success"
+                    : current
+                      ? "text-accent"
+                      : "text-muted-foreground",
+                )}
+              >
+                {stepLabel}
+              </span>
+            ) : null}
+          </div>
+          <p className="mt-1 truncate text-[11px] text-muted-foreground">{subtitle}</p>
         </div>
       </div>
       <div className="grid gap-2.5">{children}</div>
@@ -117,11 +157,11 @@ export function StatTile({
   tone?: "neutral" | "success" | "danger";
 }) {
   return (
-    <div className="rounded-[7px] border border-border bg-card px-3 py-2.5">
+    <div className="rounded-[6px] bg-secondary/60 px-3 py-2">
       <span className="text-[11px] font-medium text-muted-foreground">{label}</span>
       <strong
         className={cn(
-          "mt-1 block font-mono text-2xl leading-none tabular-nums",
+          "mt-1 block font-mono text-xl leading-none tabular-nums",
           tone === "success" && "text-success",
           tone === "danger" && "text-destructive",
         )}

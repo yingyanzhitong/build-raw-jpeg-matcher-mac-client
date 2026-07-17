@@ -4,6 +4,7 @@ import {
   ArrowLeftRight,
   Check,
   CheckCircle2,
+  ChevronRight,
   CircleHelp,
   ClipboardList,
   Download,
@@ -16,7 +17,7 @@ import {
   Search,
   XCircle,
 } from "lucide-react";
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -302,14 +303,14 @@ export function RawJpegMatcherView({
     <>
       <section
         className={cn(
-          "grid h-full min-h-0 grid-cols-1 overflow-auto bg-panel min-[960px]:grid-cols-[312px_minmax(0,1fr)] min-[960px]:overflow-hidden",
+          "grid h-full min-h-0 grid-cols-1 overflow-auto bg-panel min-[960px]:grid-cols-[296px_minmax(0,1fr)] min-[960px]:overflow-hidden",
           !active && "hidden",
         )}
       >
-        <aside className="min-h-[520px] border-r border-border bg-background/82 min-[960px]:min-h-0">
+        <aside className="mac-sidebar mac-inspector min-h-[520px] border-r border-border min-[960px]:min-h-0">
           <ScrollArea className="h-full min-h-0">
             <div className="grid min-h-[720px] content-start min-[960px]:min-h-0">
-              <div className="border-b border-border bg-card/76 px-4 py-3">
+              <div className="px-3 pb-1 pt-2.5">
                 <DirectionConnector
                   busy={busy}
                   config={config}
@@ -319,7 +320,7 @@ export function RawJpegMatcherView({
                   onToggleDirection={onToggleDirection}
                 />
               </div>
-              <div className="p-4 pb-6">
+              <div className="px-3 pb-6 pt-2">
                 <InputPane
                   busy={busy}
                   capabilitiesReady={capabilitiesReady}
@@ -367,8 +368,11 @@ export function RawJpegMatcherView({
           <ResultTable
             config={config}
             direction={direction}
+            hasInput={inputs.length > 0}
             interactionsLocked={interactionsLocked}
             results={results}
+            onChooseInput={onChooseInputFiles}
+            onChooseSearchDirectory={onChooseSearchDirectory}
             onConflictClick={onResultConflictClick}
             onOpenPath={onOpenPath}
             onStartGuide={startGuide}
@@ -477,9 +481,9 @@ function InputPane({
             </span>
             <strong className="text-sm font-semibold">
               {!capabilitiesReady
-                ? "正在读取支持格式..."
+                ? "正在读取支持格式…"
                 : busy === "collect"
-                  ? "正在扫描输入..."
+                  ? "正在扫描输入…"
                   : config.dropLabel}
             </strong>
             <span className="text-xs text-muted-foreground">
@@ -596,32 +600,32 @@ function WorkflowCard({
   return (
     <section
       className={cn(
-        "border-b border-border py-5 first:pt-0 last:border-b-0 last:pb-0",
-        current && "bg-accent/[0.015]",
+        "mac-inspector-section py-4 first:pt-1 last:pb-0",
         motion && `matcher-direction-card-${motion}`,
       )}
       data-guide-target={guideTarget}
     >
-      <header className="mb-3.5 flex items-center gap-2">
+      <header className="mb-3 flex items-center gap-2.5 px-1">
         <span
+          aria-current={current ? "step" : undefined}
           className={cn(
-            "grid size-8 shrink-0 place-items-center rounded-[7px] border text-xs font-semibold",
+            "grid size-6 shrink-0 place-items-center rounded-full border border-transparent text-[11px] font-semibold",
             complete
-              ? "border-success/30 bg-success/10 text-success"
+              ? "bg-success text-white"
               : current
-                ? "border-accent/30 bg-accent/10 text-accent"
-                : "border-border bg-secondary text-muted-foreground",
+                ? "bg-accent text-accent-foreground"
+                : "border-border bg-card/55 text-muted-foreground",
           )}
           aria-label={`第 ${step} 步，${stepLabel}`}
         >
           {complete ? <Check className="size-4" /> : step}
         </span>
-        <span className="grid size-8 shrink-0 place-items-center rounded-[7px] border border-border bg-secondary text-muted-foreground [&_svg]:size-4">
+        <span className="grid size-5 shrink-0 place-items-center text-muted-foreground [&_svg]:size-4">
           {icon}
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center justify-between gap-2">
-            <h2 className="truncate text-sm font-semibold leading-none">{title}</h2>
+            <h2 className="truncate text-[13px] font-semibold leading-none">{title}</h2>
             <span
               className={cn(
                 "shrink-0 text-[10px] font-medium",
@@ -631,7 +635,7 @@ function WorkflowCard({
               {stepLabel}
             </span>
           </div>
-          <p className="mt-1 truncate text-xs text-muted-foreground">{subtitle}</p>
+          <p className="mt-1 truncate text-[11px] text-muted-foreground">{subtitle}</p>
         </div>
       </header>
       <div className="grid gap-2.5">{children}</div>
@@ -680,22 +684,27 @@ function DirectionConnector({
   return (
     <section
       className={cn(
-        "matcher-direction-switcher grid h-10 grid-cols-[minmax(0,1fr)_auto] items-center gap-2.5",
+        "matcher-direction-switcher grid min-h-10 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 px-2 pb-2",
         transitionClass,
       )}
       data-guide-target="direction-connector"
       role="group"
       aria-label="配对方向"
     >
-      <span className="min-w-0 truncate text-xs font-medium tracking-[0.01em] text-foreground/85">
-        {config.directionLabel}
+      <span className="grid min-w-0 cursor-default select-none justify-items-end leading-none">
+        <span className="text-[9px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+          输入
+        </span>
+        <strong className="mt-1 truncate text-[12px] font-semibold text-foreground">
+          {config.inputNoun}
+        </strong>
       </span>
       <Tooltip>
         <TooltipTrigger asChild>
           <button
             data-direction-toggle
             aria-label={switchLabel}
-            className="inline-flex size-7 items-center justify-center rounded-[6px] border border-accent bg-accent text-accent-foreground shadow-[0_1px_3px_color-mix(in_oklch,var(--accent)_20%,transparent)] transition-[background-color,box-shadow,transform] duration-150 motion-reduce:transition-none hover:bg-accent/90 hover:shadow-[0_2px_5px_color-mix(in_oklch,var(--accent)_24%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45"
+            className="inline-flex size-7 items-center justify-center rounded-[6px] bg-accent text-accent-foreground shadow-[0_1px_2px_color-mix(in_oklch,var(--accent)_22%,transparent)] transition-[background-color,transform] duration-150 motion-reduce:transition-none hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-45"
             disabled={disabled}
             onClick={onToggleDirection}
             type="button"
@@ -718,6 +727,14 @@ function DirectionConnector({
               : `切换为 ${config.switchTargetLabel}`}
         </TooltipContent>
       </Tooltip>
+      <span className="grid min-w-0 cursor-default select-none justify-items-start leading-none">
+        <span className="text-[9px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+          查找
+        </span>
+        <strong className="mt-1 truncate text-[12px] font-semibold text-foreground">
+          {config.candidateNoun}
+        </strong>
+      </span>
       <span className="sr-only" aria-live="polite" role="status">
         {directionAnnouncement}
       </span>
@@ -744,11 +761,17 @@ function RawFormatSelector({
     supportedRawFormats.length > 0 && selectedRawFormats.length === supportedRawFormats.length;
 
   return (
-    <section aria-label="RAW 格式筛选" className="grid gap-2">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs text-muted-foreground">
-          RAW 格式 · 已选 {selectedRawFormats.length}/{supportedRawFormats.length}
+    <details className="mac-disclosure-group rounded-[7px] bg-secondary/60">
+      <summary className="flex h-8 cursor-pointer list-none items-center gap-2 px-2.5 text-xs font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <ChevronRight className="disclosure-chevron size-3.5 text-muted-foreground transition-transform" />
+        <span>RAW 格式</span>
+        <span className="ml-auto font-normal text-muted-foreground">
+          {selectedRawFormats.length}/{supportedRawFormats.length}
         </span>
+      </summary>
+      <div className="grid gap-2 border-t border-border/70 px-2.5 pb-2.5 pt-2">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[11px] text-muted-foreground">用于扫描与输入筛选</span>
         <Button
           variant={allSelected ? "accent" : "ghost"}
           size="sm"
@@ -760,8 +783,8 @@ function RawFormatSelector({
           {allSelected ? <Check /> : null}
           全选
         </Button>
-      </div>
-      <div className="grid grid-cols-4 gap-1.5">
+        </div>
+        <div className="grid grid-cols-4 gap-1.5">
         {supportedRawFormats.map((format) => {
           const selected = selectedRawFormats.includes(format);
           return (
@@ -782,8 +805,9 @@ function RawFormatSelector({
             </button>
           );
         })}
+        </div>
       </div>
-    </section>
+    </details>
   );
 }
 
@@ -883,8 +907,8 @@ function WorkbenchToolbar({
   onToggleLogPanel: () => void;
 }) {
   return (
-    <div className="border-b border-border bg-card px-6">
-      <div className="grid h-16 min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+    <div className="mac-workbench-toolbar border-b border-border px-5">
+      <div className="grid h-14 min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
           <h2 className="shrink-0 text-[15px] font-semibold leading-none tracking-[-0.01em]">匹配结果</h2>
           <Badge variant="muted" className="shrink-0">{resultCount} 条</Badge>
@@ -1040,7 +1064,7 @@ function ActionToast({ toast }: { toast: ActionToastState | null }) {
   return (
     <div
       aria-live="polite"
-      className="pointer-events-none fixed right-5 top-[150px] z-50 flex max-w-[min(420px,calc(100vw-2rem))] items-start gap-2 rounded-[8px] border border-warning/25 bg-card px-3.5 py-3 text-sm text-card-foreground shadow-[0_16px_48px_rgba(32,33,36,0.18)] animate-in fade-in-0 slide-in-from-top-2 duration-200 motion-reduce:animate-none"
+      className="pointer-events-none fixed right-5 top-[70px] z-50 flex max-w-[min(420px,calc(100vw-2rem))] items-start gap-2 rounded-[8px] border border-warning/25 bg-card px-3.5 py-3 text-sm text-card-foreground shadow-[0_16px_48px_rgba(32,33,36,0.18)] animate-in fade-in-0 slide-in-from-top-2 duration-200 motion-reduce:animate-none"
       key={toast.id}
       role="status"
     >
@@ -1055,16 +1079,22 @@ function ActionToast({ toast }: { toast: ActionToastState | null }) {
 function ResultTable({
   config,
   direction,
+  hasInput,
   interactionsLocked,
   results,
+  onChooseInput,
+  onChooseSearchDirectory,
   onConflictClick,
   onOpenPath,
   onStartGuide,
 }: {
   config: DirectionConfig;
   direction: MatchDirection;
+  hasInput: boolean;
   interactionsLocked: boolean;
   results: MatchResult[];
+  onChooseInput: () => void;
+  onChooseSearchDirectory: () => void;
   onConflictClick: (index: number) => void;
   onOpenPath: (path: string) => void;
   onStartGuide: () => void;
@@ -1072,7 +1102,13 @@ function ResultTable({
   if (results.length === 0) {
     return (
       <div className="empty-workbench grid min-h-0 flex-1 place-items-center bg-card p-8">
-        <EmptyResultState config={config} onStartGuide={onStartGuide} />
+        <EmptyResultState
+          config={config}
+          hasInput={hasInput}
+          onChooseInput={onChooseInput}
+          onChooseSearchDirectory={onChooseSearchDirectory}
+          onStartGuide={onStartGuide}
+        />
       </div>
     );
   }
@@ -1165,24 +1201,42 @@ function ResultTable({
 
 function EmptyResultState({
   config,
+  hasInput,
+  onChooseInput,
+  onChooseSearchDirectory,
   onStartGuide,
 }: {
   config: DirectionConfig;
+  hasInput: boolean;
+  onChooseInput: () => void;
+  onChooseSearchDirectory: () => void;
   onStartGuide: () => void;
 }) {
   return (
     <section className="grid max-w-md justify-items-center gap-4 text-center">
-      <span className="grid size-14 place-items-center rounded-[10px] border border-accent/20 bg-card text-accent shadow-[0_8px_20px_rgba(26,115,232,0.1)]">
+      <span className="grid size-12 place-items-center rounded-[12px] bg-accent/10 text-accent">
         <Search className="size-6" />
       </span>
       <div>
         <h2 className="text-lg font-semibold tracking-[-0.015em]">暂无{config.candidateNoun}匹配结果</h2>
         <p className="mt-1.5 text-sm leading-6 text-muted-foreground">{config.emptyDescription}</p>
       </div>
-      <Button variant="utility" onClick={onStartGuide} type="button">
-        <CircleHelp />
-        查看分步引导
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button onClick={hasInput ? onChooseSearchDirectory : onChooseInput} type="button">
+          {hasInput ? (
+            <FolderOpen />
+          ) : config.inputKind === "image" ? (
+            <FileImage />
+          ) : (
+            <FileArchive />
+          )}
+          {hasInput ? config.searchButton : `添加${config.inputNoun}`}
+        </Button>
+        <Button variant="utility" onClick={onStartGuide} type="button">
+          <CircleHelp />
+          分步引导
+        </Button>
+      </div>
     </section>
   );
 }
@@ -1212,6 +1266,8 @@ function GuidedTourOverlay({
   onNext: () => void;
 }) {
   const [highlight, setHighlight] = useState<HighlightRect | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
   const step = steps[stepIndex];
 
   useEffect(() => {
@@ -1253,12 +1309,47 @@ function GuidedTourOverlay({
 
   useEffect(() => {
     if (!open) return;
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+    const frameId = window.requestAnimationFrame(() => {
+      cardRef.current?.querySelector<HTMLButtonElement>("button:not([disabled])")?.focus();
+    });
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab" || !cardRef.current) {
+        return;
+      }
+      const focusable = Array.from(
+        cardRef.current.querySelectorAll<HTMLElement>(
+          "button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])",
+        ),
+      );
+      if (focusable.length === 0) {
+        event.preventDefault();
+        cardRef.current.focus();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     }
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, onClose]);
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener("keydown", handleKeyDown, true);
+      previousFocusRef.current?.focus();
+      previousFocusRef.current = null;
+    };
+  }, [open]);
 
   if (!open || !step) return null;
 
@@ -1297,7 +1388,7 @@ function GuidedTourOverlay({
   const isLastStep = stepIndex === steps.length - 1;
 
   return (
-    <div className="fixed inset-0 z-50" role="dialog" aria-label="配对分步引导" aria-modal="true">
+    <div className="fixed inset-0 z-50" role="dialog" aria-labelledby="guided-tour-title" aria-modal="true">
       <div className={cn("absolute left-0 right-0 top-0 bg-foreground/55 transition-[height]", movingSurfaceClass)} style={topOverlayStyle} />
       <div className={cn("absolute left-0 bg-foreground/55 transition-[top,width,height]", movingSurfaceClass)} style={leftOverlayStyle} />
       <div className={cn("absolute right-0 bg-foreground/55 transition-[top,left,height]", movingSurfaceClass)} style={rightOverlayStyle} />
@@ -1310,11 +1401,13 @@ function GuidedTourOverlay({
         style={highlightStyle}
       />
       <div
+        ref={cardRef}
         className={cn(
           "absolute grid gap-3 rounded-[10px] border border-border bg-card p-4 text-card-foreground shadow-[0_18px_60px_rgba(32,33,36,0.22)] transition-[top,left,transform]",
           movingSurfaceClass,
         )}
         style={cardStyle}
+        tabIndex={-1}
       >
         <div className="flex items-start justify-between gap-3">
           <Badge variant="accent">{stepIndex + 1}/{steps.length}</Badge>
@@ -1327,7 +1420,7 @@ function GuidedTourOverlay({
             stepDirection === "next" ? "guide-step-copy-next" : "guide-step-copy-back",
           )}
         >
-          <h2 className="text-base font-semibold leading-6">{step.title}</h2>
+          <h2 className="text-base font-semibold leading-6" id="guided-tour-title">{step.title}</h2>
           <p className="mt-1 text-sm leading-6 text-muted-foreground">{step.body}</p>
         </div>
         <div className="flex items-center justify-end gap-2">

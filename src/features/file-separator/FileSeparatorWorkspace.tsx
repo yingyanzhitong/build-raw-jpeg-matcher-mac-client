@@ -11,7 +11,7 @@ import {
   RotateCcw,
   Split,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -108,6 +108,11 @@ export function FileSeparatorWorkspace({
   const exportDirectory = exportMode === "moveInPlace" ? inputRoot : outputRoot;
   const canExport = inputRoot.length > 0 && exportDirectory.length > 0 && fileCount > 0 && busy === null;
   const actionHint = getExportHint({ inputRoot, outputRoot, exportMode, fileCount, busy });
+  const inputStepComplete = inputRoot.length > 0;
+  const outputStepComplete =
+    inputStepComplete && (exportMode === "moveInPlace" || outputRoot.length > 0);
+  const shortcutsRef = useRef({ chooseInputDirectory, chooseOutputDirectory, startExport });
+  shortcutsRef.current = { chooseInputDirectory, chooseOutputDirectory, startExport };
 
   useEffect(() => {
     if (!active) {
@@ -127,16 +132,19 @@ export function FileSeparatorWorkspace({
       if (event.key.toLowerCase() === "o") {
         event.preventDefault();
         if (event.shiftKey) {
-          void chooseOutputDirectory();
+          void shortcutsRef.current.chooseOutputDirectory();
         } else {
-          void chooseInputDirectory();
+          void shortcutsRef.current.chooseInputDirectory();
         }
+      } else if (event.key.toLowerCase() === "e") {
+        event.preventDefault();
+        shortcutsRef.current.startExport();
       }
     }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [active, busy, inputRoot]);
+  }, [active]);
 
   useEffect(() => {
     onStatusChange({
@@ -295,15 +303,18 @@ export function FileSeparatorWorkspace({
     <section
       aria-label="一键分离工作区"
       className={cn(
-        "grid h-full min-h-0 grid-cols-1 overflow-auto bg-panel min-[960px]:grid-cols-[312px_minmax(0,1fr)] min-[960px]:overflow-hidden",
+    "grid h-full min-h-0 grid-cols-1 overflow-auto bg-panel min-[960px]:grid-cols-[296px_minmax(0,1fr)] min-[960px]:overflow-hidden",
         !active && "hidden",
       )}
     >
-      <aside className="min-h-[520px] border-r border-border bg-background/82 min-[960px]:min-h-0">
+      <aside className="mac-sidebar mac-inspector min-h-[520px] border-r border-border min-[960px]:min-h-0">
         <ScrollArea className="h-full min-h-0">
-          <div className="grid min-h-[600px] content-start gap-0 p-4 pb-6 min-[960px]:min-h-0">
+          <div className="grid min-h-[600px] content-start gap-0 px-3 pb-6 pt-3 min-[960px]:min-h-0">
             <Pane
+              complete={inputStepComplete}
+              current={!inputStepComplete}
               icon={<FolderInput className="size-4" />}
+              step={1}
               title="混合文件夹"
               subtitle={fileCount > 0 ? `已识别 ${fileCount} 个文件` : "包含图片与 RAW"}
             >
@@ -318,7 +329,10 @@ export function FileSeparatorWorkspace({
             </Pane>
 
             <Pane
+              complete={outputStepComplete}
+              current={inputStepComplete && !outputStepComplete}
               icon={<FolderOutput className="size-4" />}
+              step={2}
               title="处理方式"
               subtitle={exportMode === "copy" ? "复制到新文件夹" : "当前文件夹内移动"}
             >
@@ -379,7 +393,7 @@ export function FileSeparatorWorkspace({
       </aside>
 
       <section className="flex min-h-[620px] min-w-0 flex-col bg-card min-[960px]:min-h-0">
-        <header className="flex min-h-16 shrink-0 items-center justify-between gap-4 border-b border-border px-6">
+        <header className="mac-workbench-toolbar flex min-h-14 shrink-0 items-center justify-between gap-4 border-b border-border px-5">
           <div className="min-w-0">
             <h2 className="truncate text-[15px] font-semibold tracking-[-0.01em]">一键分离</h2>
             <p className="mt-1 truncate text-xs text-muted-foreground">{actionHint}</p>
@@ -427,10 +441,15 @@ export function FileSeparatorWorkspace({
           </div>
         </header>
 
-        <div className="flex min-h-0 flex-1 overflow-auto p-6">
-          <section className="flex min-h-[420px] min-w-0 flex-1 flex-col overflow-hidden rounded-[10px] border border-border bg-card">
+        <div className="flex min-h-0 flex-1 overflow-auto p-5">
+          <section
+            className={cn(
+              "flex min-h-[420px] min-w-0 flex-1 flex-col overflow-hidden bg-card",
+              inputRoot.length > 0 && "rounded-[10px] border border-border",
+            )}
+          >
             {inputRoot.length === 0 ? (
-              <SeparatorEmptyState />
+              <SeparatorEmptyState disabled={busy !== null} onChoose={chooseInputDirectory} />
             ) : (
               <>
                 <div className="grid grid-cols-3 gap-2 border-b border-border bg-card p-3">
@@ -481,11 +500,17 @@ export function FileSeparatorWorkspace({
   );
 }
 
-function SeparatorEmptyState() {
+function SeparatorEmptyState({
+  disabled,
+  onChoose,
+}: {
+  disabled: boolean;
+  onChoose: () => void;
+}) {
   return (
     <div className="empty-workbench grid flex-1 place-items-center p-8 text-center">
       <div className="grid max-w-md justify-items-center gap-4">
-        <span className="grid size-14 place-items-center rounded-[10px] border border-accent/20 bg-card text-accent shadow-[0_8px_20px_rgba(26,115,232,0.1)]">
+        <span className="grid size-12 place-items-center rounded-[12px] bg-accent/10 text-accent">
           <Files className="size-6" />
         </span>
         <div>
@@ -494,6 +519,10 @@ function SeparatorEmptyState() {
             选择目录后会预览可分离的图片和 RAW；可复制到新目录，或在当前目录内移动整理。
           </p>
         </div>
+        <Button disabled={disabled} onClick={onChoose} type="button">
+          <FolderInput />
+          选择混合文件夹
+        </Button>
       </div>
     </div>
   );

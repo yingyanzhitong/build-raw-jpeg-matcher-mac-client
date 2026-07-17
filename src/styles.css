@@ -40,7 +40,7 @@
 }
 
 :root {
-  color-scheme: light;
+  color-scheme: light dark;
   color: var(--foreground);
   background: transparent;
   font-family: var(--font-sans);
@@ -50,31 +50,61 @@
   -moz-osx-font-smoothing: grayscale;
 
   --radius: 0.5rem;
-  --background: #f5f7fa;
-  --foreground: #202124;
+  --background: #eceef2;
+  --foreground: #1d1d1f;
   --card: #ffffff;
-  --card-foreground: #202124;
+  --card-foreground: #1d1d1f;
   --popover: #ffffff;
-  --popover-foreground: #202124;
-  --primary: #202124;
+  --popover-foreground: #1d1d1f;
+  --primary: #1d1d1f;
   --primary-foreground: #ffffff;
-  --secondary: #eef2f6;
-  --secondary-foreground: #39424e;
-  --muted: #e9eef4;
-  --muted-foreground: #6f7782;
-  --accent: #1a73e8;
+  --secondary: #f0f1f4;
+  --secondary-foreground: #36383d;
+  --muted: #e5e7eb;
+  --muted-foreground: #62666d;
+  --accent: #0066cc;
   --accent-foreground: #ffffff;
-  --destructive: #e5484d;
+  --destructive: #c62828;
   --destructive-foreground: #ffffff;
-  --success: #2f9e60;
-  --warning: #b7791f;
-  --border: rgba(32, 33, 36, 0.12);
-  --input: rgba(32, 33, 36, 0.15);
-  --ring: #1a73e8;
-  --panel: #f8fafc;
-  --panel-foreground: #202124;
-  --sidebar: #f3f6f9;
-  --sidebar-foreground: #303946;
+  --success: #207a3c;
+  --warning: #855600;
+  --border: rgba(60, 60, 67, 0.16);
+  --input: rgba(60, 60, 67, 0.22);
+  --ring: #007aff;
+  --panel: #f5f5f7;
+  --panel-foreground: #1d1d1f;
+  --sidebar: #eef0f4;
+  --sidebar-foreground: #2c2d31;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #1c1c1e;
+    --foreground: #f5f5f7;
+    --card: #2c2c2e;
+    --card-foreground: #f5f5f7;
+    --popover: #2c2c2e;
+    --popover-foreground: #f5f5f7;
+    --primary: #f5f5f7;
+    --primary-foreground: #1c1c1e;
+    --secondary: #3a3a3c;
+    --secondary-foreground: #f2f2f7;
+    --muted: #3a3a3c;
+    --muted-foreground: #b8b8bf;
+    --accent: #1475d3;
+    --accent-foreground: #ffffff;
+    --destructive: #ff6961;
+    --destructive-foreground: #1c1c1e;
+    --success: #55c978;
+    --warning: #f5c564;
+    --border: rgba(235, 235, 245, 0.16);
+    --input: rgba(235, 235, 245, 0.24);
+    --ring: #64a8ff;
+    --panel: #232326;
+    --panel-foreground: #f5f5f7;
+    --sidebar: #29292c;
+    --sidebar-foreground: #f2f2f7;
+  }
 }
 
 * {
@@ -121,11 +151,54 @@ button:disabled {
 .desk-grid {
   border-radius: 12px;
   isolation: isolate;
-  background: linear-gradient(180deg, #fbfcfd 0, var(--background) 100%);
+  background: var(--background);
 }
 
 .codex-main {
   background: var(--panel);
+}
+
+.mac-titlebar,
+.mac-workspace-bar,
+.mac-statusbar {
+  background: color-mix(in srgb, var(--card) 86%, transparent);
+  -webkit-backdrop-filter: saturate(145%) blur(22px);
+  backdrop-filter: saturate(145%) blur(22px);
+}
+
+.mac-titlebar {
+  box-shadow: inset 0 1px color-mix(in srgb, white 38%, transparent);
+}
+
+.mac-segmented-control {
+  background: color-mix(in srgb, var(--foreground) 7%, transparent);
+  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--foreground) 10%, transparent);
+}
+
+.mac-sidebar {
+  background: color-mix(in srgb, var(--sidebar) 92%, transparent);
+  -webkit-backdrop-filter: saturate(135%) blur(18px);
+  backdrop-filter: saturate(135%) blur(18px);
+}
+
+.mac-workbench-toolbar {
+  background: var(--card);
+}
+
+.mac-inspector-section + .mac-inspector-section {
+  border-top: 1px solid var(--border);
+}
+
+.mac-disclosure-group[open] .disclosure-chevron {
+  transform: rotate(90deg);
+}
+
+.mac-disclosure-group summary::-webkit-details-marker {
+  display: none;
+}
+
+.mac-statusbar {
+  box-shadow: 0 -1px 0 color-mix(in srgb, var(--card) 72%, transparent);
 }
 
 .codex-scrollbar {
@@ -134,9 +207,7 @@ button:disabled {
 }
 
 .drop-raster {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.6)),
-    var(--secondary);
+  background: color-mix(in srgb, var(--card) 76%, var(--secondary));
 }
 
 .log-surface {
@@ -148,18 +219,16 @@ button:disabled {
 }
 
 .empty-workbench {
-  background:
-    radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 36%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(248, 250, 252, 0.46));
+  background: var(--card);
 }
 
 .watermark-checkerboard {
-  background-color: #f8fafc;
+  background-color: var(--panel);
   background-image:
-    linear-gradient(45deg, rgba(32, 33, 36, 0.045) 25%, transparent 25%),
-    linear-gradient(-45deg, rgba(32, 33, 36, 0.045) 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, rgba(32, 33, 36, 0.045) 75%),
-    linear-gradient(-45deg, transparent 75%, rgba(32, 33, 36, 0.045) 75%);
+    linear-gradient(45deg, color-mix(in srgb, var(--foreground) 5%, transparent) 25%, transparent 25%),
+    linear-gradient(-45deg, color-mix(in srgb, var(--foreground) 5%, transparent) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, color-mix(in srgb, var(--foreground) 5%, transparent) 75%),
+    linear-gradient(-45deg, transparent 75%, color-mix(in srgb, var(--foreground) 5%, transparent) 75%);
   background-position: 0 0, 0 6px, 6px -6px, -6px 0;
   background-size: 12px 12px;
 }
@@ -172,11 +241,6 @@ button:disabled {
 .watermark-range {
   height: 18px;
   cursor: pointer;
-}
-
-.desktop-status-dock {
-  background: color-mix(in srgb, var(--card) 94%, transparent);
-  box-shadow: 0 6px 22px rgba(32, 33, 36, 0.08);
 }
 
 .guide-step-copy {
@@ -301,6 +365,32 @@ button:disabled {
 @media (max-width: 1099px) {
   body {
     overflow: auto;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --border: color-mix(in srgb, var(--foreground) 38%, transparent);
+    --input: color-mix(in srgb, var(--foreground) 48%, transparent);
+  }
+
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .mac-titlebar,
+  .mac-workspace-bar,
+  .mac-statusbar,
+  .mac-sidebar {
+    background: var(--card);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 }
 
