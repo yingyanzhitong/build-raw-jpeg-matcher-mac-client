@@ -1,0 +1,46 @@
+src/components/ui/button.tsx
+  s_e5002961b964c4::t_bf87e1121f1fe6 8,13,25
+src/features/file-separator/FileSeparatorWorkspace.tsx
+  s_f8b011cb3e32ba::t_78ec680bd14214 14,111-115,135,137,139-141,147,306,310,312,314-315,317,332-333,335,396,444-450,452,503-509,513,522-525
+src/features/raw-matcher/RawJpegMatcherView.tsx
+  s_f8b011cb3e32ba::t_f8dc000a2888dc 7,20,306,310,313,323,371,374-375,484,486,603,608,610,612,614,616-617,623,628,638,687,694-700,707,730-737,764-769,771-774,786-787,808,810,910-911,1067,1082,1085-1086,1093,1096-1097,1105-1111,1204-1206,1210-1212,1217,1223-1238,1269-1270,1312-1315,1317-1343,1345-1352,1391,1404,1410,1423
+src/features/shared/ui.tsx
+  s_f8b011cb3e32ba::t_1be1e8950f5bf5 1,55,88-90,96-98,100-101,103-121,124-142,160,164
+src/features/watermark/WatermarkWorkspace.tsx
+  s_f8b011cb3e32ba::t_77166733078b96 30,131,374-376,390-396,398,403,565-571,574-595,747,751,753,830,846,887,889,891,894,897,906-911,1029,1036-1037,1121-1126,1130,1264,1266,1269,1271,1273,1275-1276,1281,1286,1296,1311-1343,1356,1359-1360,1373,1411,1584-1594,1597,1610-1615
+reports/apple-ui-audit-report-2026-07-17.html
+  s_f8b011cb3e32ba::t_6a429826248bfe 1-697
+src-tauri/src/lib.rs
+  s_f8b011cb3e32ba::t_e5aadb46ce442b 9-14,47,51-152
+src-tauri/tauri.conf.json
+  s_f8b011cb3e32ba::t_b90e2ef9357b45 21-24
+src/App.tsx
+  s_f8b011cb3e32ba::t_a516c2d150ef7a 3-4,10,16-17,119,161-163,169-239,244-245,306,314,351-352,358,360-361,369,372-378,387-393,395,397-409,411,415-439,458,469,526,528,535,582-583,598-602,604-620,629,642,683-684,697-703,805,822-856
+src/styles.css
+  s_f8b011cb3e32ba::t_80e9d7fc9b3cd2 43,53-54,56,58-59,61-65,67,69-107,154,159-197,200-203,210,222,226,228-231,368-393
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "192759abd064f5136bded760eae54c99d3b893ba",
+  "prompts": {},
+  "logical_commit_id": "192759abd064f5136bded760eae54c99d3b893ba",
+  "sessions": {
+    "s_e5002961b964c4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f6f35-d45f-7862-b4c9-994bca45b7a4",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    },
+    "s_f8b011cb3e32ba": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f6ede-f74c-7a11-bc0c-47854485fbf3",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
