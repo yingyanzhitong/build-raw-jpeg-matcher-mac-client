@@ -1,5 +1,10 @@
 # 变更日志
 
+## 0.1.43 - 2026-07-21
+
+- 恢复将 `latest.json` 作为 GitHub Release 附件上传，便于在 Release 页面直接获取更新清单。
+- Gitee 保持现有策略：Release 附件仅包含三平台安装包、更新载荷和签名，`release/latest.json` 同步到 `main` 分支供应用自动更新读取。
+
 ## 0.1.42 - 2026-07-21
 
 - GitHub Release 不再上传 `latest.json`，下载列表仅保留三平台安装包、更新载荷和签名文件。
