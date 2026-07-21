@@ -18,58 +18,69 @@ const pubDate = new Date().toISOString();
 
 await mkdir(outputDir, { recursive: true });
 
-const macUpdater = findRequired(
-  allFiles,
-  (file) => file.endsWith(".app.tar.gz"),
-  "macOS updater bundle (*.app.tar.gz)",
-);
-const macUpdaterSig = findRequired(
-  allFiles,
-  (file) => file === `${macUpdater}.sig` || file.endsWith(".app.tar.gz.sig"),
-  "macOS updater signature (*.app.tar.gz.sig)",
-);
-const macDmg = findRequired(allFiles, (file) => file.endsWith(".dmg"), "macOS DMG");
-const macArch = inferMacArch(macDmg);
-const macArchLabel = macArch === "darwin-aarch64" ? "aarch64" : "x64";
-const macDmgName = `${appName}_${version}_macOS_${macArchLabel}.dmg`;
-const macUpdaterName = `${appName}_${version}_macOS_${macArchLabel}-updater.app.tar.gz`;
-const macUpdaterSigName = `${macUpdaterName}.sig`;
-const macDmgUrl = releaseUrl(options.owner, options.repo, tag, macDmgName);
-const macUpdaterUrl = releaseUrl(options.owner, options.repo, tag, macUpdaterName);
+const macTargets = [
+  { platform: "darwin-aarch64", assetLabel: "aarch64" },
+  { platform: "darwin-x86_64", assetLabel: "x64" },
+];
 
-await copyAsset(macDmg, macDmgName);
-await copyAsset(macUpdater, macUpdaterName);
-await copyAsset(macUpdaterSig, macUpdaterSigName);
-platforms[macArch] = {
-  signature: (await readFile(macUpdaterSig, "utf8")).trim(),
-  url: macUpdaterUrl,
-};
-installers[macArch] = {
-  kind: "dmg",
-  url: macDmgUrl,
-};
-
-const windowsExe = allFiles.find((file) => file.endsWith(".exe"));
-if (windowsExe) {
-  const windowsSig = findRequired(
+for (const { platform, assetLabel } of macTargets) {
+  const macDmg = findUniqueRequired(
     allFiles,
-    (file) => file === `${windowsExe}.sig` || file.endsWith(".exe.sig"),
-    "Windows updater signature (*.exe.sig)",
+    (file) => file.endsWith(".dmg") && tryInferMacArch(file) === platform,
+    `macOS ${assetLabel} DMG`,
   );
-  const windowsExeName = `${appName}_${version}_Windows_x64-setup.exe`;
-  const windowsSigName = `${windowsExeName}.sig`;
-  await copyAsset(windowsExe, windowsExeName);
-  await copyAsset(windowsSig, windowsSigName);
-  const windowsUrl = releaseUrl(options.owner, options.repo, tag, windowsExeName);
-  platforms["windows-x86_64"] = {
-    signature: (await readFile(windowsSig, "utf8")).trim(),
-    url: windowsUrl,
+  const macUpdater = findUniqueRequired(
+    allFiles,
+    (file) => file.endsWith(".app.tar.gz") && tryInferMacArch(file) === platform,
+    `macOS ${assetLabel} updater bundle (*.app.tar.gz)`,
+  );
+  const macUpdaterSig = findUniqueRequired(
+    allFiles,
+    (file) => file === `${macUpdater}.sig`,
+    `macOS ${assetLabel} updater signature (*.app.tar.gz.sig)`,
+  );
+  const macDmgName = `${appName}_${version}_macOS_${assetLabel}.dmg`;
+  const macUpdaterName = `${appName}_${version}_macOS_${assetLabel}-updater.app.tar.gz`;
+  const macUpdaterSigName = `${macUpdaterName}.sig`;
+  const macDmgUrl = releaseUrl(options.owner, options.repo, tag, macDmgName);
+  const macUpdaterUrl = releaseUrl(options.owner, options.repo, tag, macUpdaterName);
+
+  await copyAsset(macDmg, macDmgName);
+  await copyAsset(macUpdater, macUpdaterName);
+  await copyAsset(macUpdaterSig, macUpdaterSigName);
+  platforms[platform] = {
+    signature: (await readFile(macUpdaterSig, "utf8")).trim(),
+    url: macUpdaterUrl,
   };
-  installers["windows-x86_64"] = {
-    kind: "nsis",
-    url: windowsUrl,
+  installers[platform] = {
+    kind: "dmg",
+    url: macDmgUrl,
   };
 }
+
+const windowsExe = findUniqueRequired(
+  allFiles,
+  (file) => file.endsWith(".exe"),
+  "Windows x64 installer (*.exe)",
+);
+const windowsSig = findUniqueRequired(
+  allFiles,
+  (file) => file === `${windowsExe}.sig`,
+  "Windows x64 updater signature (*.exe.sig)",
+);
+const windowsExeName = `${appName}_${version}_Windows_x64-setup.exe`;
+const windowsSigName = `${windowsExeName}.sig`;
+await copyAsset(windowsExe, windowsExeName);
+await copyAsset(windowsSig, windowsSigName);
+const windowsUrl = releaseUrl(options.owner, options.repo, tag, windowsExeName);
+platforms["windows-x86_64"] = {
+  signature: (await readFile(windowsSig, "utf8")).trim(),
+  url: windowsUrl,
+};
+installers["windows-x86_64"] = {
+  kind: "nsis",
+  url: windowsUrl,
+};
 
 const manifest = {
   version,
@@ -107,23 +118,23 @@ function walk(root) {
   return result;
 }
 
-function findRequired(files, predicate, label) {
-  const match = files.find(predicate);
-  if (!match) {
-    throw new Error(`Missing ${label} under ${options.input}`);
+function findUniqueRequired(files, predicate, label) {
+  const matches = files.filter(predicate);
+  if (matches.length !== 1) {
+    throw new Error(`Expected exactly one ${label} under ${options.input}, found ${matches.length}`);
   }
-  return match;
+  return matches[0];
 }
 
-function inferMacArch(file) {
-  const name = path.basename(file).toLowerCase();
+function tryInferMacArch(file) {
+  const name = file.toLowerCase();
   if (name.includes("aarch64") || name.includes("arm64")) {
     return "darwin-aarch64";
   }
   if (name.includes("x64") || name.includes("x86_64")) {
     return "darwin-x86_64";
   }
-  throw new Error(`Unable to infer macOS arch from ${path.basename(file)}`);
+  return null;
 }
 
 async function readChangelogNotes(targetVersion) {

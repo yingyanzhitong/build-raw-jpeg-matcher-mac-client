@@ -1,5 +1,11 @@
 # 变更日志
 
+## 0.1.40 - 2026-07-21
+
+- 将安装包工作流扩展为 macOS Apple Silicon、macOS Intel 和 Windows x64 三个独立构建任务，并固定使用对应架构的 GitHub runner。
+- 为双架构 macOS 构建隔离 Cargo 缓存和上传 Artifact，增加 runner 架构校验，避免 ARM64 与 x64 产物互相污染。
+- 更新发布资源整理脚本，强制校验并同时发布两种 macOS DMG、两种 macOS 更新包和 Windows x64 EXE，同时在 `latest.json` 写入三个平台入口。
+
 ## 0.1.39 - 2026-07-17
 
 - 按 `macos-app-design` 全面重构 macOS 应用壳层：将双层顶部导航收敛为统一工具栏，统一三个工作区的检查器、工具栏、状态栏与内容层级。
