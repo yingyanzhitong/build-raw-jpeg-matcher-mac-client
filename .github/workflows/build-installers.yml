@@ -150,7 +150,7 @@ jobs:
               --notes "Automated installer build for 照片配对助手."
           fi
 
-          mapfile -d '' upload_files < <(find normalized-release-assets -type f -print0)
+          mapfile -d '' upload_files < <(find normalized-release-assets -type f ! -name latest.json -print0)
           gh release upload "$TAG" "${upload_files[@]}" --clobber
 
       - name: Sync release assets to Gitee

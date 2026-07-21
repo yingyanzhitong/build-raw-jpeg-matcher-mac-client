@@ -3032,7 +3032,7 @@ dependencies = [
 
 [[package]]
 name = "raw-jpeg-matcher"
-version = "0.1.41"
+version = "0.1.42"
 dependencies = [
  "ab_glyph",
  "fontdb",
