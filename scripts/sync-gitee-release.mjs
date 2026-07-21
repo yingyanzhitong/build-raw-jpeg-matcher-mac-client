@@ -228,16 +228,20 @@ async function uploadReleaseAssets(releaseId) {
     .filter((fileName) => fileName !== "latest.json")
     .map((fileName) => path.join(config.assetDir, fileName))
     .sort();
+  const expectedNames = new Set(files.map((file) => path.basename(file)));
   const existingAssets = await listAssets(releaseId);
 
   for (const file of files) {
     const fileName = path.basename(file);
-    const existing = existingAssets.find((asset) => asset.name === fileName);
-    if (existing) {
-      await deleteAsset(releaseId, existing.id);
+    const existing = existingAssets.filter((asset) => asset.name === fileName);
+    for (const asset of existing) {
+      await deleteAsset(releaseId, asset.id);
     }
     await uploadAsset(releaseId, file);
+    await assertAssetUploaded(releaseId, fileName);
   }
+
+  await assertExpectedAssetsUploaded(releaseId, expectedNames);
 }
 
 async function listAssets(releaseId) {
@@ -266,28 +270,55 @@ async function uploadAsset(releaseId, filePath) {
   const url = `${apiBase}/repos/${config.owner}/${config.repo}/releases/${releaseId}/attach_files?access_token=${encodeURIComponent(
     config.token,
   )}`;
-  console.log(`Uploading ${fileName} to Gitee release ${config.tag}.`);
-  await runCurl(fileName, [
-    "--fail-with-body",
-    "--silent",
-    "--show-error",
-    "--retry",
-    "2",
-    "--retry-delay",
-    "10",
-    "--connect-timeout",
-    "60",
-    "--max-time",
-    "1800",
-    "--request",
-    "POST",
-    "--header",
-    "Expect:",
-    "--form",
-    `file=@${filePath};filename=${fileName};type=application/octet-stream`,
-    url,
-  ]);
-  console.log(`Uploaded ${fileName} to Gitee release ${config.tag}.`);
+  const maxAttempts = 3;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    console.log(`Uploading ${fileName} to Gitee release ${config.tag} (${attempt}/${maxAttempts}).`);
+    try {
+      await runCurl(fileName, [
+        "--fail-with-body",
+        "--silent",
+        "--show-error",
+        "--http1.1",
+        "--connect-timeout",
+        "30",
+        "--max-time",
+        "180",
+        "--request",
+        "POST",
+        "--header",
+        "Expect:",
+        "--form",
+        `file=@${filePath};filename=${fileName};type=application/octet-stream`,
+        url,
+      ]);
+      console.log(`Uploaded ${fileName} to Gitee release ${config.tag}.`);
+      return;
+    } catch (error) {
+      if (attempt === maxAttempts) {
+        throw error;
+      }
+      console.log(
+        `Gitee asset upload failed (${attempt}/${maxAttempts}) for ${fileName}; retrying: ${error.message}`,
+      );
+      await sleep(attempt * 5000);
+    }
+  }
+}
+
+async function assertAssetUploaded(releaseId, fileName) {
+  const matches = (await listAssets(releaseId)).filter((asset) => asset.name === fileName);
+  if (matches.length !== 1) {
+    throw new Error(`Expected exactly one uploaded Gitee asset named ${fileName}, found ${matches.length}`);
+  }
+}
+
+async function assertExpectedAssetsUploaded(releaseId, expectedNames) {
+  const actualNames = new Set((await listAssets(releaseId)).map((asset) => asset.name));
+  const missing = [...expectedNames].filter((fileName) => !actualNames.has(fileName));
+  if (missing.length > 0) {
+    throw new Error(`Gitee release is missing expected assets: ${missing.join(", ")}`);
+  }
 }
 
 async function upsertLatestJson() {
@@ -297,7 +328,7 @@ async function upsertLatestJson() {
 async function runCurl(label, args) {
   const heartbeat = setInterval(() => {
     console.log(`Still uploading ${label} to Gitee release ${config.tag}...`);
-  }, 60_000);
+  }, 30_000);
   try {
     await execFileAsync("curl", args, {
       maxBuffer: 1024 * 1024 * 10,
