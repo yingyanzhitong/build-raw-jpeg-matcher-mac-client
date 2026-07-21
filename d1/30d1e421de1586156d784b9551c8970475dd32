@@ -1,0 +1,32 @@
+.github/workflows/build-installers.yml
+  s_f8b011cb3e32ba::t_7b5a6455b9eb58 22-24,26,31-40,42,44,58-62,74,76
+CHANGELOG.md
+  s_f8b011cb3e32ba::t_e810b6010f30c4 3-8
+package-lock.json
+  s_f8b011cb3e32ba::t_f5c7ffc53630bb 3,9
+package.json
+  s_f8b011cb3e32ba::t_d5f2501fda543c 3
+scripts/prepare-release-assets.mjs
+  s_f8b011cb3e32ba::t_292824f6d99724 21-61,63-64,66,68-69,71-78,80-82,121-124,126,129-130,137
+src-tauri/Cargo.lock
+  s_f8b011cb3e32ba::t_e6f3afce8c9785 3035
+src-tauri/Cargo.toml
+  s_f8b011cb3e32ba::t_2ae89e1d4479ad 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "d130d1e421de1586156d784b9551c8970475dd32",
+  "prompts": {},
+  "logical_commit_id": "d130d1e421de1586156d784b9551c8970475dd32",
+  "sessions": {
+    "s_f8b011cb3e32ba": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f6ede-f74c-7a11-bc0c-47854485fbf3",
+        "model": "unknown"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
