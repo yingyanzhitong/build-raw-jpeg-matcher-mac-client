@@ -1,0 +1,32 @@
+.github/workflows/build-installers.yml
+  s_f8b011cb3e32ba::t_bac1d80efca480 13-16
+CHANGELOG.md
+  s_f8b011cb3e32ba::t_9434b43cf7cb98 3-9
+package-lock.json
+  s_f8b011cb3e32ba::t_cd69800ef1379b 3,9
+package.json
+  s_f8b011cb3e32ba::t_ff3ecdeb5c47e5 3
+scripts/sync-gitee-release.mjs
+  s_f8b011cb3e32ba::t_046304befb09e9 231,236-238,241,243-244,273-321,331
+src-tauri/Cargo.lock
+  s_f8b011cb3e32ba::t_abc2c176731396 3035
+src-tauri/Cargo.toml
+  s_f8b011cb3e32ba::t_4e7f609890e39f 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "6659e81c57d35982bd598d671f6ac10107223f53",
+  "prompts": {},
+  "logical_commit_id": "6659e81c57d35982bd598d671f6ac10107223f53",
+  "sessions": {
+    "s_f8b011cb3e32ba": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f6ede-f74c-7a11-bc0c-47854485fbf3",
+        "model": "unknown"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
