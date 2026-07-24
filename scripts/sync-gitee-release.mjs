@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -234,6 +234,10 @@ async function uploadReleaseAssets(releaseId) {
   for (const file of files) {
     const fileName = path.basename(file);
     const existing = existingAssets.filter((asset) => asset.name === fileName);
+    if (existing.length === 1 && (await assetMatchesFile(existing[0], file))) {
+      console.log(`Gitee release asset ${fileName} is already complete; skipping upload.`);
+      continue;
+    }
     for (const asset of existing) {
       await deleteAsset(releaseId, asset.id);
     }
@@ -283,7 +287,7 @@ async function uploadAsset(releaseId, filePath) {
         "--connect-timeout",
         "30",
         "--max-time",
-        "180",
+        "900",
         "--request",
         "POST",
         "--header",
@@ -295,6 +299,13 @@ async function uploadAsset(releaseId, filePath) {
       console.log(`Uploaded ${fileName} to Gitee release ${config.tag}.`);
       return;
     } catch (error) {
+      const uploaded = (await listAssets(releaseId)).filter((asset) => asset.name === fileName);
+      if (uploaded.length === 1 && (await assetMatchesFile(uploaded[0], filePath))) {
+        console.log(
+          `Gitee timed out after accepting ${fileName}; verified the complete remote asset.`,
+        );
+        return;
+      }
       if (attempt === maxAttempts) {
         throw error;
       }
@@ -304,6 +315,11 @@ async function uploadAsset(releaseId, filePath) {
       await sleep(attempt * 5000);
     }
   }
+}
+
+async function assetMatchesFile(asset, filePath) {
+  const fileStats = await stat(filePath);
+  return Number(asset.size) === fileStats.size;
 }
 
 async function assertAssetUploaded(releaseId, fileName) {
