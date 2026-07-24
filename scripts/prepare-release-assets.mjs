@@ -4,9 +4,10 @@ import { cp, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { readdirSync, statSync } from "node:fs";
 
+const packageVersion = JSON.parse(await readFile("package.json", "utf8")).version;
 const options = parseArgs(process.argv.slice(2));
-const version = JSON.parse(await readFile("package.json", "utf8")).version;
-const tag = `v${version}`;
+const version = options.version || packageVersion;
+const tag = options.tag || `v${version}`;
 const appName = options.appName;
 const outputDir = options.output;
 const allFiles = walk(options.input);
@@ -173,6 +174,8 @@ function parseArgs(args) {
     owner: "masongzhi1",
     repo: "raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client",
     appName: "photo-pairing-assistant",
+    version: "",
+    tag: "",
   };
 
   for (let index = 0; index < args.length; index += 1) {
@@ -198,9 +201,22 @@ function parseArgs(args) {
       case "--app-name":
         parsed.appName = value;
         break;
+      case "--version":
+        parsed.version = value;
+        break;
+      case "--tag":
+        parsed.tag = value;
+        break;
       default:
         throw new Error(`Unknown argument: ${key}`);
     }
+  }
+
+  if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(parsed.version || packageVersion)) {
+    throw new Error(`Invalid release version: ${parsed.version || packageVersion}`);
+  }
+  if (parsed.tag && !/^[0-9A-Za-z][0-9A-Za-z._-]*$/.test(parsed.tag)) {
+    throw new Error(`Invalid release tag: ${parsed.tag}`);
   }
 
   return parsed;

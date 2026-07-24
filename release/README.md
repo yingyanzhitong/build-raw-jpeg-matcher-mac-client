@@ -47,7 +47,7 @@ macOS 的 `.app.tar.gz` 是 Tauri updater 专用更新包，给应用内自动�
 
 ## 3. GitHub Actions 自动发布
 
-`main` 分支收到提交后，`.github/workflows/build-installers.yml` 会自动：
+推送与 `package.json` 版本一致的 `vX.Y.Z` tag 后，`.github/workflows/build-installers.yml` 会先确认该提交可从 `main` 到达，再自动：
 
 1. 在 macOS 构建 `.dmg`、`.app.tar.gz` 和 `.app.tar.gz.sig`。
 2. 在 Windows 构建 NSIS `.exe` 和 `.exe.sig`。

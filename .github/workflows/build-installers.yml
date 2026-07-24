@@ -2,8 +2,8 @@ name: Build Installers
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - "v*.*.*"
   workflow_dispatch:
 
 permissions:
@@ -15,8 +15,47 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  validate:
+    name: Validate legacy release ref
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+      version: ${{ steps.release.outputs.version }}
+
+    steps:
+      - name: Checkout complete history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate tag, version, and main ancestry
+        id: release
+        shell: bash
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          EXPECTED_TAG="v${VERSION}"
+
+          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            if [ "${GITHUB_REF_NAME}" != "${EXPECTED_TAG}" ]; then
+              echo "::error::Tag ${GITHUB_REF_NAME} does not match package version ${EXPECTED_TAG}"
+              exit 1
+            fi
+            git fetch origin main:refs/remotes/origin/main
+            if ! git merge-base --is-ancestor "${GITHUB_SHA}" refs/remotes/origin/main; then
+              echo "::error::Release commit is not reachable from main"
+              exit 1
+            fi
+          elif [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            echo "::error::Manual legacy builds must run from main"
+            exit 1
+          fi
+
+          echo "tag=${EXPECTED_TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
   build:
     name: Build ${{ matrix.name }} installer
+    needs: validate
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -102,11 +141,13 @@ jobs:
   release:
     name: Publish latest release
     runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs:
+      - validate
+      - build
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     timeout-minutes: 90
     outputs:
-      release_tag: ${{ steps.version.outputs.tag }}
+      release_tag: ${{ needs.validate.outputs.tag }}
 
     steps:
       - name: Checkout
@@ -122,13 +163,10 @@ jobs:
         with:
           path: release-assets
 
-      - name: Resolve release version
-        id: version
-        run: |
-          VERSION="$(node -p "require('./package.json').version")"
-          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
-
       - name: Prepare release assets and updater manifest
+        env:
+          RELEASE_TAG: ${{ needs.validate.outputs.tag }}
+          RELEASE_VERSION: ${{ needs.validate.outputs.version }}
         run: |
           rm -rf normalized-release-assets
           node scripts/prepare-release-assets.mjs \
@@ -136,12 +174,14 @@ jobs:
             --output normalized-release-assets \
             --owner masongzhi1 \
             --repo raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client \
-            --app-name photo-pairing-assistant
+            --app-name photo-pairing-assistant \
+            --version "$RELEASE_VERSION" \
+            --tag "$RELEASE_TAG"
 
       - name: Publish release assets
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.version.outputs.tag }}
+          TAG: ${{ needs.validate.outputs.tag }}
         run: |
           if ! gh release view "$TAG" >/dev/null 2>&1; then
             gh release create "$TAG" \
@@ -159,8 +199,8 @@ jobs:
           GITEE_OWNER: masongzhi1
           GITEE_REPO: raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client
           GITEE_BRANCH: main
-          RELEASE_TAG: ${{ steps.version.outputs.tag }}
-          RELEASE_NAME: ${{ steps.version.outputs.tag }}
+          RELEASE_TAG: ${{ needs.validate.outputs.tag }}
+          RELEASE_NAME: ${{ needs.validate.outputs.tag }}
           RELEASE_BODY: Automated installer build for 照片配对助手.
           RELEASE_ASSET_DIR: normalized-release-assets
           LATEST_JSON_PATH: normalized-release-assets/latest.json
