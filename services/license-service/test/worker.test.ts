@@ -77,7 +77,8 @@ describe("公开激活与续签接口", () => {
     expect(renewed.response.status).toBe(200);
 
     const tampered = structuredClone(activated.body.lease) as SignedLease;
-    tampered.signature = `${tampered.signature.slice(0, -1)}A`;
+    const replacement = tampered.signature.startsWith("A") ? "B" : "A";
+    tampered.signature = `${replacement}${tampered.signature.slice(1)}`;
     const rejected = await renew(tampered, DEVICE_A);
     expect(rejected.response.status).toBe(403);
     expect(rejected.body.error.code).toBe("LICENSE_EXPIRED");
