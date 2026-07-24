@@ -1,0 +1,24 @@
+services/license-service/package-lock.json
+  s_f1d92f0c20eff5::t_02c32dadf49416 3,9,13,1457-1468,1585-1595,2499-2505
+CHANGELOG.licensed.md
+  s_f1d92f0c20eff5::t_4278926669eccd 18-21
+services/license-service/package.json
+  s_f1d92f0c20eff5::t_698789f5d0080d 3,16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "1d29288680878b577435719079d5cd389815736e",
+  "prompts": {},
+  "logical_commit_id": "1d29288680878b577435719079d5cd389815736e",
+  "sessions": {
+    "s_f1d92f0c20eff5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f92eb-8cb0-77a3-b4ff-3d87c30c046e",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
