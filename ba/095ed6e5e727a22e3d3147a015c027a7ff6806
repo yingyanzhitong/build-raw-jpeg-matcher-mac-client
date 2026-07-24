@@ -1,0 +1,30 @@
+.github/workflows/prevent-licensed-merge.yml
+  s_f1d92f0c20eff5::t_6ba5539014c429 1-54
+CHANGELOG.md
+  s_f1d92f0c20eff5::t_8368e1d0fc38f1 3-7
+package-lock.json
+  s_f1d92f0c20eff5::t_8e418f59d19c7d 3,9
+package.json
+  s_f1d92f0c20eff5::t_661c4b9c687f77 3
+src-tauri/Cargo.lock
+  s_f1d92f0c20eff5::t_dd3494fb516d3f 3237
+src-tauri/Cargo.toml
+  s_f1d92f0c20eff5::t_3eda9c46c9e3a8 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "ba095ed6e5e727a22e3d3147a015c027a7ff6806",
+  "prompts": {},
+  "logical_commit_id": "9c9cc769d51236f97c06574ec46f5db1219c6271",
+  "sessions": {
+    "s_f1d92f0c20eff5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f92eb-8cb0-77a3-b4ff-3d87c30c046e",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
