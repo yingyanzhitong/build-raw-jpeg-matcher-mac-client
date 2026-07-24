@@ -15,3 +15,7 @@
 - 将所有文件扫描、匹配、导出、水印和打开文件命令统一置于 Rust 许可证门禁之后。
 - 设备标识仅以产品域隔离后的 SHA-256 哈希上传；激活 token 不写入本地凭据或服务端数据库。
 - Tauri updater、许可证租约和无激活版 updater 使用互不复用的签名密钥。
+
+### 修复
+
+- 补齐 Worker 独立 CI 所需的 Node.js 类型依赖，确保 GitHub Actions 的 TypeScript 检查与本地结果一致。
