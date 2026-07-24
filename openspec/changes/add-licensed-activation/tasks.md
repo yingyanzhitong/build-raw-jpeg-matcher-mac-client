@@ -47,12 +47,12 @@
 - [x] 7.2 使用独立 updater Secret 构建 macOS 双架构和 Windows x64，并生成 `raw-jpeg-matcher-licensed_*` 资产
 - [x] 7.3 新建并同步 `masongzhi1/raw-jpeg-matcher-licensed-release` 的 Release 和 `release/latest.json`
 - [x] 7.4 新增 `licensed` 服务目录变更触发的 Worker 测试、D1 migration、部署和健康检查工作流
-- [ ] 7.5 配置 GitHub Secrets、分支保护和禁止 `licensed → main` 的仓库规则
+- [x] 7.5 配置 GitHub Secrets、分支保护和禁止 `licensed → main` 的仓库规则
 
 ## 8. 验证、部署与发布
 
-- [ ] 8.1 运行前端、Rust、Worker、OpenSpec 和发行脚本全量自动测试
+- [x] 8.1 运行前端、Rust、Worker、OpenSpec 和发行脚本全量自动测试
 - [ ] 8.2 验证两个应用可并存、tag/分支错误会失败、两套清单/签名/产物不会串线
-- [ ] 8.3 创建 Cloudflare D1、KV、Secrets 和 Custom Domain，初始化管理员账号并部署服务
-- [ ] 8.4 用测试 token 完成首机激活、第二机拒绝、后台重置、第二机激活和旧租约失效验收
-- [ ] 8.5 提交并推送两条分支，创建并推送对应 tag，确认 GitHub/Gitee Release 和 updater 清单
+- [x] 8.3 创建 Cloudflare D1、KV、Secrets 和 Custom Domain，初始化管理员账号并部署服务
+- [x] 8.4 用测试 token 完成首机激活、第二机拒绝、后台重置、第二机激活和旧租约失效验收
+- [x] 8.5 提交并推送两条分支，创建并推送对应 tag，确认 GitHub/Gitee Release 和 updater 清单
