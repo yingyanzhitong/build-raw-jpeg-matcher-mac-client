@@ -1,0 +1,24 @@
+CHANGELOG.licensed.md
+  s_f1d92f0c20eff5::t_73613a4d463ac1 22
+services/license-service/package-lock.json
+  s_f1d92f0c20eff5::t_1fd453113afcf1 3,9,13-14,170-192,2497
+services/license-service/package.json
+  s_f1d92f0c20eff5::t_b52e56aaafea1f 3,16-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "b09a491442cbf7ece9ecf23e4ceb6c31fdd67713",
+  "prompts": {},
+  "logical_commit_id": "b09a491442cbf7ece9ecf23e4ceb6c31fdd67713",
+  "sessions": {
+    "s_f1d92f0c20eff5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f92eb-8cb0-77a3-b4ff-3d87c30c046e",
+        "model": "unknown"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
