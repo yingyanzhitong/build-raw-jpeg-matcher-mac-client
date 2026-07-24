@@ -1,0 +1,48 @@
+openspec/changes/add-licensed-activation/.openspec.yaml
+  s_f1d92f0c20eff5::t_b0aa7451c15d29 1-2
+.github/workflows/build-installers.yml
+  s_f1d92f0c20eff5::t_5e53ef47517be9 5-6,18-55,58,144-147,150,167-169,177-179,184,202-203
+CHANGELOG.md
+  s_f1d92f0c20eff5::t_6aef606870f028 3-8
+openspec/changes/add-licensed-activation/design.md
+  s_f1d92f0c20eff5::t_4d39a2c629272e 1-105
+openspec/changes/add-licensed-activation/proposal.md
+  s_f1d92f0c20eff5::t_944257c4c996e8 1-31
+openspec/changes/add-licensed-activation/specs/license-administration/spec.md
+  s_f1d92f0c20eff5::t_3766f7b708340a 1-63
+openspec/changes/add-licensed-activation/specs/licensed-device-activation/spec.md
+  s_f1d92f0c20eff5::t_ce0f80e9b8b3b9 1-86
+openspec/changes/add-licensed-activation/specs/licensed-release-distribution/spec.md
+  s_f1d92f0c20eff5::t_0f0244bd8ed7b8 1-74
+openspec/changes/add-licensed-activation/tasks.md
+  s_f1d92f0c20eff5::t_942993c6437965 1-58
+package-lock.json
+  s_f1d92f0c20eff5::t_dc81617a99a54c 3,9
+package.json
+  s_f1d92f0c20eff5::t_903bff529705d5 3
+release/README.md
+  s_f1d92f0c20eff5::t_cecb608c7da79f 50
+scripts/prepare-release-assets.mjs
+  s_f1d92f0c20eff5::t_10a06ba854d004 7,9-10,177-178,204-209,213-219
+src-tauri/Cargo.lock
+  s_f1d92f0c20eff5::t_33301b5077eb77 3035
+src-tauri/Cargo.toml
+  s_f1d92f0c20eff5::t_35d900bc1cf6f5 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "c395dc6a3f0db77b3b31e94cea8b3ace05fd98e5",
+  "prompts": {},
+  "logical_commit_id": "c395dc6a3f0db77b3b31e94cea8b3ace05fd98e5",
+  "sessions": {
+    "s_f1d92f0c20eff5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f92eb-8cb0-77a3-b4ff-3d87c30c046e",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
