@@ -56,3 +56,12 @@
 - [x] 8.3 创建 Cloudflare D1、KV、Secrets 和 Custom Domain，初始化管理员账号并部署服务
 - [x] 8.4 用测试 token 完成首机激活、第二机拒绝、后台重置、第二机激活和旧租约失效验收
 - [x] 8.5 提交并推送两条分支，创建并推送对应 tag，确认 GitHub/Gitee Release 和 updater 清单
+
+## 9. EdgeOne 服务迁移
+
+- [x] 9.1 从 `licensed` 创建独立迁移分支，确认 EdgeOne Node.js 云函数、Blob 强一致读取和 `onlyIfNew` 条件写能力，并记录 Blob 不具备事务级原子保证的限制
+- [x] 9.2 将激活、续签、账号密码后台、会话、审计和限流从 Cloudflare D1/KV 迁移到 EdgeOne Blob，并增加内存存储测试
+- [x] 9.3 增加 D1 到 Blob 的幂等数据迁移脚本、EdgeOne 管理员初始化脚本和 EdgeOne GitHub Actions
+- [x] 9.4 创建 EdgeOne 海外项目、配置环境变量、迁移线上数据并在默认域名完成双设备协议验收
+- [x] 9.5 将 `licensed.xyyamsz.cn` 切换到 EdgeOne，验证管理后台和客户端接口后保留 Cloudflare 回滚窗口
+- [x] 9.6 更新版本与中文变更日志，提交、推送迁移分支并创建服务标签

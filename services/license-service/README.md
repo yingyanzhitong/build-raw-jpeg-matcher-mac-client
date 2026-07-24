@@ -1,14 +1,16 @@
 # 许可证服务
 
-本目录是“摄影修图师助手”激活版的 Cloudflare Worker。D1 保存许可证、审计事件和管理员账号密码哈希；KV 保存 12 小时管理员登录会话。
+本目录是“摄影修图师助手”激活版的 EdgeOne Node.js 云函数服务。EdgeOne Blob 使用强一致读取保存许可证、设备绑定、审计事件、管理员密码哈希和 12 小时登录会话。
 
 ## 安全边界
 
-- `POST /api/v1/activate` 与 `POST /api/v1/renew` 是客户端公开接口，使用独立 Rate Limiting binding。
-- `/admin/*` 使用管理员账号密码登录，不依赖邮箱或 Cloudflare Zero Trust。
-- 管理员密码使用 PBKDF2-SHA-256、随机盐和 Cloudflare Web Crypto 支持上限 100,000 次迭代后写入 D1，不保存明文。
-- 浏览器只接收 `HttpOnly`、`Secure`、`SameSite=Strict` 会话 Cookie，KV key 只包含会话 token 的 SHA-256 摘要。
-- `TOKEN_PEPPER` 与 `LICENSE_PRIVATE_KEY_PEM` 必须使用 Worker Secrets，不得写入配置或仓库。
+- `POST /api/v1/activate` 与 `POST /api/v1/renew` 是客户端公开接口。
+- `/admin/*` 使用管理员账号密码登录，不依赖邮箱或 Zero Trust。
+- 管理员密码使用 PBKDF2-SHA-256、随机盐和 100,000 次迭代后写入 Blob，不保存明文。
+- 浏览器只接收 `HttpOnly`、`Secure`、`SameSite=Strict` 会话 Cookie，Blob key 只包含会话 token 的 SHA-256 摘要。
+- token 仅以 HMAC 摘要和末四位保存；`TOKEN_PEPPER` 与 `LICENSE_PRIVATE_KEY_PEM` 必须使用 EdgeOne 环境变量，不得写入配置或仓库。
+- 设备绑定先执行强一致读取，再通过 Blob `onlyIfNew` 写入，并在 750 毫秒竞争稳定窗口后强一致回读获胜 nonce；已覆盖双设备并发测试。
+- EdgeOne Blob 当前不提供数据库事务，且线上验证发现 SDK 的 `onlyIfNew` 未稳定拒绝覆盖，因此这套竞争收敛不是数据库级原子保证。若业务要求在任意网络延迟下严格线性化的一机一码，仍需接入支持事务或 CAS 的存储。
 
 ## 验证与部署
 
@@ -16,17 +18,36 @@
 npm ci
 npm run typecheck
 npm test
-npx wrangler deploy --dry-run
-npx wrangler d1 migrations apply LICENSE_DB --remote
-npx wrangler deploy
+EDGEONE_API_TOKEN=... npm run deploy
 ```
 
-首次部署后，通过标准输入初始化管理员，避免密码出现在命令参数和 shell 历史中：
+部署脚本只打包 `cloud-functions`、`src` 和生产依赖，并固定部署到不要求 ICP 备案的海外区域；不会上传本地 `node_modules`、测试或运维文件。
+
+首次创建项目后，通过 `edgeone makers link` 和 `edgeone makers env set` 配置以下环境变量：
+
+- `PRODUCT_ID`
+- `LICENSE_PUBLIC_KEY_BASE64`
+- `TOKEN_PEPPER`
+- `LICENSE_PRIVATE_KEY_PEM`
+
+现有 Cloudflare D1 数据只在首次切换时迁移一次：
+
+```bash
+CLOUDFLARE_API_TOKEN=... \
+CLOUDFLARE_ACCOUNT_ID=... \
+EDGEONE_PROJECT_ID=... \
+EDGEONE_API_TOKEN=... \
+npm run data:migrate
+```
+
+迁移脚本只读取 D1 的许可证摘要、设备绑定、审计和管理员密码哈希，不读取 KV 旧会话，切换后管理员需要重新登录。
+
+日后更新管理员密码时，通过标准输入提供密码：
 
 ```bash
 read -r -s -p "管理员密码: " license_admin_password
-printf '%s' "$license_admin_password" | npm run admin:create -- --username admin
+printf '%s' "$license_admin_password" | \
+  EDGEONE_PROJECT_ID=... EDGEONE_API_TOKEN=... \
+  npm run admin:create -- --username admin
 unset license_admin_password
 ```
-
-该命令从标准输入读取密码。日后用相同命令和账号可以更新密码，现有 KV 会话会按最长 12 小时自动到期。

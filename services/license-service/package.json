@@ -1,23 +1,23 @@
 {
   "name": "raw-jpeg-matcher-license-service",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
-    "admin:create": "node scripts/create-admin.mjs"
+    "dev": "edgeone makers dev",
+    "deploy": "node scripts/deploy.mjs",
+    "admin:create": "node scripts/create-admin.mjs",
+    "data:migrate": "node scripts/migrate-from-cloudflare.mjs"
+  },
+  "dependencies": {
+    "@edgeone/pages-blob": "0.0.14"
   },
   "devDependencies": {
-    "@cloudflare/vitest-pool-workers": "^0.18.8",
-    "@cloudflare/workers-types": "^5.20260724.1",
-    "@emnapi/core": "^1.11.2",
-    "@emnapi/runtime": "^1.11.2",
     "@types/node": "^26.1.1",
+    "edgeone": "1.6.17",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.10",
-    "wrangler": "^4.114.0"
+    "vitest": "^4.1.10"
   }
 }

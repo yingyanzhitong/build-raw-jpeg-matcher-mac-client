@@ -63,7 +63,7 @@
 - **THEN** 其 endpoint、Gitee 仓库和清单保持原样
 
 ### Requirement: Licensed service deployment
-Cloudflare 服务 MUST 只从 `licensed` 分支的服务目录变更部署，并 MUST 在客户端发布前完成测试、D1 migration、部署和健康检查。
+EdgeOne 服务 MUST 只从激活版相关分支的服务目录变更部署，并 MUST 在客户端发布前完成测试、部署和健康检查。
 
 #### Scenario: Service change is pushed to licensed
 - **WHEN** `licensed` 的服务目录或 migration 发生变化
@@ -71,4 +71,4 @@ Cloudflare 服务 MUST 只从 `licensed` 分支的服务目录变更部署，并
 
 #### Scenario: Service change appears on main
 - **WHEN** `main` 不包含激活服务目录
-- **THEN** 无激活版工作流不执行任何 Cloudflare 部署
+- **THEN** 无激活版工作流不执行任何 EdgeOne 部署

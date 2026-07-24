@@ -23,7 +23,7 @@
 - **THEN** 应用进入业务工作区并在需要时后台续签
 
 ### Requirement: Signed device lease
-Cloudflare 服务 MUST 使用独立 Ed25519 私钥签署包含许可证、产品、设备、代次和时间边界的租约，客户端 MUST 在解析和使用前验证签名。
+EdgeOne 服务 MUST 使用独立 Ed25519 私钥签署包含许可证、产品、设备、代次和时间边界的租约，客户端 MUST 在解析和使用前验证签名。
 
 #### Scenario: Tampered lease is rejected
 - **WHEN** 租约内容或签名任意一处被修改
@@ -34,19 +34,27 @@ Cloudflare 服务 MUST 使用独立 Ed25519 私钥签署包含许可证、产品
 - **THEN** 客户端拒绝该租约
 
 ### Requirement: One-device activation
-服务 MUST 将每个有效 token 原子绑定到最多一个设备哈希，并 MUST 允许同一设备幂等地重新激活。
+服务 MUST 将每个有效 token 绑定到最多一个设备哈希，并 MUST 允许同一设备幂等地重新激活。当前 EdgeOne Blob 实现 MUST 使用强一致读取、条件写、竞争稳定窗口和 nonce 回读降低并发覆盖风险，并 MUST 明确其不等同于数据库事务或 CAS。
 
 #### Scenario: First device wins
 - **WHEN** 未绑定 token 收到合法的首次激活请求
-- **THEN** 服务原子保存设备绑定并返回签名租约
+- **THEN** 服务保存设备绑定、强一致回读确认当前设备获胜后返回签名租约
 
 #### Scenario: Second device is rejected
 - **WHEN** 已绑定 token 被不同设备提交
 - **THEN** 服务返回 `ALREADY_BOUND` 且不修改原绑定
 
-#### Scenario: Concurrent devices cannot both activate
+#### Scenario: Concurrent devices are settled
 - **WHEN** 两个不同设备并发提交同一个未绑定 token
-- **THEN** 最多一个请求成功，另一个返回 `ALREADY_BOUND`
+- **THEN** 服务在竞争稳定窗口后回读获胜 nonce，验收测试 MUST 观察到最多一个请求成功，另一个返回 `ALREADY_BOUND`
+
+#### Scenario: Eventually consistent storage is available
+- **WHEN** EdgeOne KV 与 Blob 均可供服务选择
+- **THEN** 服务 MUST 使用 Blob `onlyIfNew` 条件写和强一致回读保存设备绑定，不得使用最终一致 KV 作为授权真相源
+
+#### Scenario: Transactional guarantee is required
+- **WHEN** 业务要求任意网络暂停和跨区域调度下严格线性化的一机一码
+- **THEN** 服务 MUST 改用支持事务或 CAS 的存储，不得把当前 Blob 竞争收敛描述为数据库级原子保证
 
 ### Requirement: Rolling offline lease
 客户端 MUST 支持 30 天有效租约和额外 7 天离线宽限，并 MUST 在上次在线检查超过 24 小时后尝试后台续签。
