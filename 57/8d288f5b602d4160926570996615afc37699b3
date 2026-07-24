@@ -1,0 +1,26 @@
+CHANGELOG.md
+  s_f1d92f0c20eff5::t_be7e2f019e9336 3-7
+package-lock.json
+  s_f1d92f0c20eff5::t_741750102b5a11 3,9
+package.json
+  s_f1d92f0c20eff5::t_03f2e690e6f6cc 3
+scripts/sync-gitee-release.mjs
+  s_f1d92f0c20eff5::t_9ee2a953894ae9 4,237-240,290,302-308,318-322
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "578d288f5b602d4160926570996615afc37699b3",
+  "prompts": {},
+  "logical_commit_id": "578d288f5b602d4160926570996615afc37699b3",
+  "sessions": {
+    "s_f1d92f0c20eff5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f92eb-8cb0-77a3-b4ff-3d87c30c046e",
+        "model": "unknown"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
