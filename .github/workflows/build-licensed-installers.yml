@@ -1,0 +1,243 @@
+name: Build Licensed Installers
+
+on:
+  push:
+    tags:
+      - "licensed-v*.*.*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: build-licensed-installers-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate licensed release ref
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+      version: ${{ steps.release.outputs.version }}
+
+    steps:
+      - name: Checkout complete history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install and validate licensed source
+        run: |
+          npm ci
+          npm run check:licensed
+          npm run test:state
+          npm run build
+
+      - name: Test license service
+        working-directory: services/license-service
+        run: |
+          npm ci
+          npm run typecheck
+          npm test
+
+      - name: Validate tag, version, and licensed ancestry
+        id: release
+        shell: bash
+        run: |
+          VERSION="$(node -e "const fs=require('fs'); const c=JSON.parse(fs.readFileSync('src-tauri/tauri.licensed.conf.json')); process.stdout.write(c.version)")"
+          EXPECTED_TAG="licensed-v${VERSION}"
+
+          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            if [ "${GITHUB_REF_NAME}" != "${EXPECTED_TAG}" ]; then
+              echo "::error::Tag ${GITHUB_REF_NAME} does not match licensed version ${EXPECTED_TAG}"
+              exit 1
+            fi
+            git fetch origin licensed:refs/remotes/origin/licensed
+            if ! git merge-base --is-ancestor "${GITHUB_SHA}" refs/remotes/origin/licensed; then
+              echo "::error::Release commit is not reachable from licensed"
+              exit 1
+            fi
+          elif [ "${GITHUB_REF}" != "refs/heads/licensed" ]; then
+            echo "::error::Manual licensed builds must run from licensed"
+            exit 1
+          fi
+
+          echo "tag=${EXPECTED_TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Verify deployed license service
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          HEALTH="$(curl --silent --show-error --fail --retry 5 --retry-all-errors --max-time 20 \
+            https://licensed.xyyamsz.cn/healthz)"
+          test "$(jq -r '.ok' <<<"$HEALTH")" = "true"
+
+          HTTP_CODE="$(curl --silent --show-error --output /tmp/activation-response.json \
+            --write-out '%{http_code}' --max-time 20 \
+            https://licensed.xyyamsz.cn/api/v1/activate \
+            -H 'Content-Type: application/json' \
+            --data '{"token":"RJM-00000-00000-00000-00000-00000","deviceHash":"0000000000000000000000000000000000000000000000000000000000000000","platform":"macos","version":"1.0.0"}')"
+          test "$HTTP_CODE" = "400"
+          test "$(jq -r '.error.code' /tmp/activation-response.json)" = "INVALID_TOKEN"
+
+  build:
+    name: Build licensed ${{ matrix.name }}
+    needs: validate
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS Apple Silicon
+            os: macos-15
+            arch: arm64
+            bundles: app,dmg
+            artifact: macos-aarch64-installer
+            artifact_path: |
+              src-tauri/target/release/bundle/dmg/*.dmg
+              src-tauri/target/release/bundle/macos/*.app.tar.gz
+              src-tauri/target/release/bundle/macos/*.app.tar.gz.sig
+          - name: macOS Intel
+            os: macos-15-intel
+            arch: x64
+            bundles: app,dmg
+            artifact: macos-x64-installer
+            artifact_path: |
+              src-tauri/target/release/bundle/dmg/*.dmg
+              src-tauri/target/release/bundle/macos/*.app.tar.gz
+              src-tauri/target/release/bundle/macos/*.app.tar.gz.sig
+          - name: Windows x64
+            os: windows-latest
+            arch: x64
+            bundles: nsis
+            artifact: windows-x64-installer
+            artifact_path: |
+              src-tauri/target/release/bundle/nsis/*.exe
+              src-tauri/target/release/bundle/nsis/*.exe.sig
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Verify runner architecture
+        shell: bash
+        run: |
+          node -e 'if (process.arch !== process.argv[1]) { throw new Error(`Expected ${process.argv[1]}, got ${process.arch}`) }' "${{ matrix.arch }}"
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: licensed-${{ runner.os }}-${{ matrix.arch }}-cargo-${{ hashFiles('src-tauri/Cargo.lock') }}
+          restore-keys: |
+            licensed-${{ runner.os }}-${{ matrix.arch }}-cargo-
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Clean previous bundles
+        shell: bash
+        run: rm -rf src-tauri/target/release/bundle
+
+      - name: Build licensed Tauri bundle
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_LICENSED_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_LICENSED_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: npm run tauri -- build --config src-tauri/tauri.licensed.conf.json --bundles ${{ matrix.bundles }}
+
+      - name: Upload licensed installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: raw-jpeg-matcher-licensed-${{ matrix.artifact }}
+          if-no-files-found: error
+          path: ${{ matrix.artifact_path }}
+
+  release:
+    name: Publish licensed release
+    runs-on: ubuntu-latest
+    needs:
+      - validate
+      - build
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/licensed-v')
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Download installers
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Prepare licensed assets and updater manifest
+        env:
+          RELEASE_TAG: ${{ needs.validate.outputs.tag }}
+          RELEASE_VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          rm -rf normalized-release-assets
+          node scripts/prepare-release-assets.mjs \
+            --input release-assets \
+            --output normalized-release-assets \
+            --owner masongzhi1 \
+            --repo raw-jpeg-matcher-licensed-release \
+            --app-name raw-jpeg-matcher-licensed \
+            --version "$RELEASE_VERSION" \
+            --tag "$RELEASE_TAG" \
+            --changelog CHANGELOG.licensed.md
+
+      - name: Publish licensed GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.validate.outputs.tag }}
+        run: |
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" \
+              --target "$GITHUB_SHA" \
+              --title "$TAG" \
+              --notes-file CHANGELOG.licensed.md
+          fi
+
+          mapfile -d '' upload_files < <(find normalized-release-assets -type f -print0)
+          gh release upload "$TAG" "${upload_files[@]}" --clobber
+
+      - name: Sync licensed release to Gitee
+        env:
+          GITEE_ACCESS_TOKEN: ${{ secrets.GITEE_ACCESS_TOKEN }}
+          GITEE_OWNER: masongzhi1
+          GITEE_REPO: raw-jpeg-matcher-licensed-release
+          GITEE_BRANCH: main
+          RELEASE_TAG: ${{ needs.validate.outputs.tag }}
+          RELEASE_NAME: ${{ needs.validate.outputs.tag }}
+          RELEASE_BODY: 摄影修图师助手激活版自动发行。
+          RELEASE_ASSET_DIR: normalized-release-assets
+          LATEST_JSON_PATH: normalized-release-assets/latest.json
+        run: node scripts/sync-gitee-release.mjs
+

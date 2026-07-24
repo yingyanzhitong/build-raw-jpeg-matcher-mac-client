@@ -1,0 +1,66 @@
+name: Licensed Invariants
+
+on:
+  push:
+    branches:
+      - licensed
+  pull_request:
+    branches:
+      - licensed
+
+permissions:
+  contents: read
+
+concurrency:
+  group: licensed-invariants-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Licensed invariants
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Validate licensed client and release isolation
+        run: |
+          npm run check:licensed
+          npm run test:state
+          npm run build
+
+      - name: Install Linux Tauri dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            libappindicator3-dev \
+            librsvg2-dev \
+            libwebkit2gtk-4.1-dev \
+            patchelf
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Test Rust license boundary
+        run: cargo test --manifest-path src-tauri/Cargo.toml
+
+      - name: Install license service dependencies
+        working-directory: services/license-service
+        run: npm ci
+
+      - name: Validate license service
+        working-directory: services/license-service
+        run: |
+          npm run typecheck
+          npm test
+          npx wrangler deploy --dry-run

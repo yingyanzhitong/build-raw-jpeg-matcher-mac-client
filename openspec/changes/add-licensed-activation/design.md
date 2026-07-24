@@ -10,7 +10,7 @@
 
 - 一个随机 token 在服务端最多绑定一个稳定设备哈希，同设备重装可重新获取租约。
 - 客户端离线校验服务端 Ed25519 签名租约，业务能力在 Rust 命令层统一拒绝无效许可证。
-- 管理员可通过受 Cloudflare Access 保护的网页生成、查询、撤销和重置授权。
+- 管理员可通过账号密码登录的网页生成、查询、撤销和重置授权。
 - 无激活版与激活版拥有独立分支、版本、应用身份、tag、产物、updater 密钥和 Gitee 清单。
 - 通过自动测试和分支不变量检查降低合并 `main` 时破坏鉴权配置的风险。
 
@@ -65,7 +65,7 @@ Worker 使用 D1 的 `licenses` 和 `license_events` 表。token 为 `RJM-` 前�
 
 公共 API 为 `POST /api/v1/activate`、`POST /api/v1/renew` 和 `GET /healthz`。请求体执行严格大小、类型和格式校验，并用 Rate Limiting binding 抑制滥用。
 
-管理页面和管理 API 统一放在 `/admin/*`。Cloudflare Access 只允许当前 Cloudflare 账户管理员邮箱使用 OTP 登录；Worker 必须使用 Access JWKS 验证 `Cf-Access-Jwt-Assertion` 的签名、issuer 和 audience 后才访问 D1。
+管理页面和管理 API 统一放在 `/admin/*`。管理员账号和使用 PBKDF2-SHA-256 加盐派生的密码哈希保存在 D1，禁止保存明文密码；登录成功后生成高熵随机会话 token，仅把 token 摘要作为 KV key，并通过 `HttpOnly`、`Secure`、`SameSite=Strict` Cookie 交付浏览器。会话 12 小时自动过期，登录和所有管理写操作执行同源校验，登录接口使用独立 Rate Limiting binding。
 
 ### 发行通道
 
@@ -86,14 +86,14 @@ Worker 使用 D1 的 `licenses` 和 `license_events` 表。token 为 `RJM-` 前�
 - [设备 UUID 在克隆系统或虚拟机中可能重复] → 服务端保留审计与人工重置能力，不宣称硬件不可伪造。
 - [离线设备不能立即撤销] → 每 24 小时尝试在线续签，并把最大离线使用窗口固定为 37 天。
 - [合并 `main` 可能覆盖激活版文件] → 采用分支专属配置、独立 workflow、必需 CI 不变量测试和禁止反向合并规则。
-- [Cloudflare Access 配置错误可能暴露管理接口] → 边缘 Access 与 Worker 内 JWT 验证双重校验，任何缺失或失败均返回 403。
+- [管理员密码被猜测或会话被盗用] → 密码使用高迭代 PBKDF2 哈希、登录独立限流、会话仅保存摘要并使用安全 Cookie，登出立即删除 KV 会话。
 - [密钥丢失会导致无法续签或更新] → 私钥仅存 Cloudflare/GitHub Secrets，并在部署前保存离线备份；公钥提交仓库。
 
 ## Migration Plan
 
 1. 在 `main` 参数化发布脚本、切换无激活版 tag 触发、更新版本和变更日志，并验证产物行为不变。
 2. 从已验证的 `main` 创建 `licensed`，添加 OpenSpec、客户端鉴权、服务端、管理后台和独立发行配置。
-3. 创建 D1、应用 migration、配置 Worker Secrets、Custom Domain 和 Cloudflare Access。
+3. 创建 D1 与 KV、应用 migration、配置 Worker Secrets 和 Custom Domain，并通过标准输入初始化管理员账号。
 4. 创建公开 Gitee 激活版发行仓库，配置 GitHub Secrets 和分支保护。
 5. 使用测试 token 完成双设备激活、拒绝、重置、续签和离线宽限验收。
 6. 推送 `licensed-v1.0.0` 后校验 GitHub/Gitee 产物和 `latest.json`，再对外发放 token。
@@ -102,4 +102,4 @@ Worker 使用 D1 的 `licenses` 和 `license_events` 表。token 为 `RJM-` 前�
 
 ## Open Questions
 
-无。管理员邮箱从 Cloudflare 当前账户身份读取并作为唯一 Access allowlist。
+无。首发只初始化一个管理员账号，不包含邮箱登录、找回密码或多因素认证。

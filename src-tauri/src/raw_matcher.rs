@@ -8,11 +8,15 @@ use std::{
     path::{Path, PathBuf},
     process::{Command, Stdio},
 };
+use tauri::State;
 use walkdir::WalkDir;
 
-use crate::shared::{
-    base_name, canonical_path_string, extension_lower, file_name, files_have_same_contents,
-    is_macos_metadata_dir, modified_seconds,
+use crate::{
+    license::LicenseManager,
+    shared::{
+        base_name, canonical_path_string, extension_lower, file_name, files_have_same_contents,
+        is_macos_metadata_dir, modified_seconds,
+    },
 };
 
 pub(crate) const IMAGE_EXTENSIONS: &[&str] = &["jpg", "jpeg", "png"];
@@ -152,7 +156,14 @@ pub struct ExportResponse {
 }
 
 #[tauri::command]
-pub(crate) fn matcher_capabilities() -> MatcherCapabilities {
+pub(crate) fn matcher_capabilities(
+    license: State<'_, LicenseManager>,
+) -> Result<MatcherCapabilities, String> {
+    license.require_active()?;
+    Ok(matcher_capabilities_impl())
+}
+
+fn matcher_capabilities_impl() -> MatcherCapabilities {
     MatcherCapabilities {
         image_extensions: IMAGE_EXTENSIONS
             .iter()
@@ -170,6 +181,16 @@ pub(crate) fn collect_match_inputs(
     direction: MatchDirection,
     paths: Vec<String>,
     selected_raw_formats: Option<Vec<String>>,
+    license: State<'_, LicenseManager>,
+) -> Result<InputCollection, String> {
+    license.require_active()?;
+    collect_match_inputs_impl(direction, paths, selected_raw_formats)
+}
+
+fn collect_match_inputs_impl(
+    direction: MatchDirection,
+    paths: Vec<String>,
+    selected_raw_formats: Option<Vec<String>>,
 ) -> Result<InputCollection, String> {
     let allowed_raw_extensions = match direction {
         MatchDirection::ImageToRaw => default_raw_extension_set(),
@@ -182,6 +203,24 @@ pub(crate) fn collect_match_inputs(
 
 #[tauri::command]
 pub(crate) fn match_counterpart_files(
+    direction: MatchDirection,
+    inputs: Vec<MatchFile>,
+    manual_refs: Option<Vec<String>>,
+    search_root: String,
+    selected_raw_formats: Option<Vec<String>>,
+    license: State<'_, LicenseManager>,
+) -> Result<MatchResponse, String> {
+    license.require_active()?;
+    match_counterpart_files_impl(
+        direction,
+        inputs,
+        manual_refs,
+        search_root,
+        selected_raw_formats,
+    )
+}
+
+fn match_counterpart_files_impl(
     direction: MatchDirection,
     inputs: Vec<MatchFile>,
     manual_refs: Option<Vec<String>>,
@@ -218,7 +257,9 @@ pub(crate) fn export_matched_files(
     export_dir: String,
     search_root: String,
     selected_raw_formats: Option<Vec<String>>,
+    license: State<'_, LicenseManager>,
 ) -> Result<ExportResponse, String> {
+    license.require_active()?;
     let allowed_raw_extensions =
         normalize_raw_extensions(selected_raw_formats).map_err(|error| error.to_string())?;
     export_files(
@@ -232,7 +273,11 @@ pub(crate) fn export_matched_files(
 }
 
 #[tauri::command]
-pub(crate) fn file_thumbnail_path(path: String) -> Result<String, String> {
+pub(crate) fn file_thumbnail_path(
+    path: String,
+    license: State<'_, LicenseManager>,
+) -> Result<String, String> {
+    license.require_active()?;
     generate_file_thumbnail(Path::new(&path)).map_err(|error| error.to_string())
 }
 
@@ -1166,7 +1211,7 @@ mod tests {
 
     #[test]
     fn capabilities_and_direction_neutral_contract_use_camel_case() {
-        let capabilities = matcher_capabilities();
+        let capabilities = matcher_capabilities_impl();
         assert_eq!(capabilities.image_extensions, vec!["jpg", "jpeg", "png"]);
         assert_eq!(
             capabilities.raw_extensions,
@@ -1290,7 +1335,7 @@ mod tests {
         let image_path = temp.path().join("IMG_0001.PNG");
         write_bytes(&image_path, b"png");
 
-        let image_collection = collect_match_inputs(
+        let image_collection = collect_match_inputs_impl(
             MatchDirection::ImageToRaw,
             vec![image_path.to_string_lossy().to_string()],
             Some(Vec::new()),
@@ -1299,7 +1344,7 @@ mod tests {
         assert_eq!(image_collection.files.len(), 1);
 
         let raw_error =
-            collect_match_inputs(MatchDirection::RawToImage, Vec::new(), Some(Vec::new()))
+            collect_match_inputs_impl(MatchDirection::RawToImage, Vec::new(), Some(Vec::new()))
                 .unwrap_err();
         assert!(raw_error.contains("至少选择一种"));
     }
@@ -1626,7 +1671,7 @@ mod tests {
         .unwrap();
         assert_eq!(first.results[0].status, MatchStatus::Conflict);
 
-        let second = match_counterpart_files(
+        let second = match_counterpart_files_impl(
             MatchDirection::ImageToRaw,
             first.inputs,
             None,

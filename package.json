@@ -9,7 +9,8 @@
     "build:mac": "npm run tauri -- build && ./scripts/finalize-macos-dmg.sh",
     "finalize:dmg": "./scripts/finalize-macos-dmg.sh",
     "preview": "vite preview",
-    "test:state": "node --test src/features/raw-matcher/state.test.mjs src/features/watermark/state.test.mjs src/features/shared/exportFeedback.test.mjs src/features/shared/workspaceStatus.test.mjs",
+    "check:licensed": "node scripts/check-licensed-invariants.mjs",
+    "test:state": "node --test src/features/raw-matcher/state.test.mjs src/features/watermark/state.test.mjs src/features/shared/exportFeedback.test.mjs src/features/shared/workspaceStatus.test.mjs src/features/license/state.test.ts",
     "tauri": "tauri"
   },
   "dependencies": {

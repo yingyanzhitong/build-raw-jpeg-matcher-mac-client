@@ -11,16 +11,20 @@
 - **WHEN** 管理员或审计程序读取 D1
 - **THEN** 数据库仅包含 token 的 HMAC 摘要、末四位和备注，不包含明文 token
 
-### Requirement: Cloudflare Access administrator authentication
-所有 `/admin/*` 页面和 API MUST 同时受 Cloudflare Access 策略和 Worker 内 Access JWT 验证保护。
+### Requirement: Administrator password authentication
+所有 `/admin/*` 页面和 API MUST 由 Worker 管理员会话保护。管理员密码 MUST 只以加盐 PBKDF2-SHA-256 哈希存入 D1，登录会话 MUST 使用不可预测 token、KV 到期时间和安全 Cookie。
 
-#### Scenario: Missing Access assertion
-- **WHEN** 请求没有 `Cf-Access-Jwt-Assertion`
-- **THEN** Worker 返回 403 且不查询或修改许可证数据
+#### Scenario: Missing or forged session
+- **WHEN** 请求没有有效的管理员会话 Cookie
+- **THEN** Worker 返回 401 且不查询或修改许可证数据
 
-#### Scenario: Forged or wrong-audience assertion
-- **WHEN** JWT 签名、issuer、audience 或管理员邮箱不匹配
-- **THEN** Worker 返回 403
+#### Scenario: Wrong password or brute-force login
+- **WHEN** 账号密码错误或登录请求超过限流阈值
+- **THEN** Worker 不创建会话并返回统一凭据错误或 `RATE_LIMITED`
+
+#### Scenario: Administrator logs out
+- **WHEN** 管理员主动退出登录
+- **THEN** Worker 立即删除 KV 会话并清除浏览器 Cookie
 
 ### Requirement: License search and audit
 管理后台 MUST 支持按状态、末四位和备注分页查询许可证，并 MUST 展示不泄露完整设备哈希的审计事件。
@@ -49,7 +53,7 @@
 
 #### Scenario: Administrator resets a binding
 - **WHEN** 管理员确认重置已绑定许可证
-- **THEN** 服务清空设备绑定、递增代次并记录管理员邮箱和审计事件
+- **THEN** 服务清空设备绑定、递增代次并记录管理员账号和审计事件
 
 #### Scenario: Old device renews after reset
 - **WHEN** 旧设备使用上一代租约请求续签

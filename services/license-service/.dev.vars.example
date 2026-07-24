@@ -1,0 +1,2 @@
+TOKEN_PEPPER=use-a-random-secret-at-least-32-bytes
+LICENSE_PRIVATE_KEY_PEM=-----BEGIN PRIVATE KEY-----\nREPLACE_ME\n-----END PRIVATE KEY-----

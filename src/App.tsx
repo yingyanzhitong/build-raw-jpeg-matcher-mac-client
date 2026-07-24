@@ -1,20 +1,26 @@
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check, type DownloadEvent, type Update } from "@tauri-apps/plugin-updater";
 import { getVersion } from "@tauri-apps/api/app";
+import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   AlertTriangle,
   CheckCircle2,
+  Copy,
   Download,
+  Fingerprint,
   Images,
+  KeyRound,
   Loader2,
   Maximize2,
   Minus,
   PanelBottom,
   RotateCcw,
+  ShieldCheck,
   Split,
   Stamp,
+  WifiOff,
   X,
 } from "lucide-react";
 import {
@@ -22,6 +28,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type FormEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from "react";
@@ -73,6 +80,13 @@ import {
   type LogEntry,
   type LogLevel,
 } from "@/features/shared/ui";
+import {
+  canMountWorkspace,
+  formatDeviceCode,
+  licenseErrorCode,
+  licenseErrorMessage,
+  type LicenseStatus,
+} from "@/features/license/state";
 
 type Workspace = "matcher" | "separator" | "watermark";
 
@@ -102,9 +116,94 @@ const updateCheckTimeoutMs = 30_000;
 const updateCheckIntervalMs = 60 * 60 * 1000;
 const updateSourceLabel = "Gitee Release";
 const updateManifestUrl =
-  "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/raw/main/release/latest.json";
+  "https://gitee.com/masongzhi1/raw-jpeg-matcher-licensed-release/raw/main/release/latest.json";
 
 function App() {
+  const [licenseStatus, setLicenseStatus] = useState<LicenseStatus | null>(null);
+
+  useEffect(() => {
+    let disposed = false;
+    if (!isTauriRuntime()) {
+      setLicenseStatus({
+        state: "needsActivation",
+        deviceCode: "0f1e2d3c4b5a69788796a5b4c3d2e1f00f1e2d3c4b5a69788796a5b4c3d2e1f0",
+        leaseExpiresAt: null,
+        graceUntil: null,
+        lastOnlineCheckAt: null,
+        message: "浏览器预览不会连接本机许可证服务。",
+      });
+      return;
+    }
+    void invoke<LicenseStatus>("license_status")
+      .then((status) => {
+        if (!disposed) {
+          setLicenseStatus(status);
+        }
+      })
+      .catch((error) => {
+        if (!disposed) {
+          setLicenseStatus({
+            state: "needsActivation",
+            deviceCode: "",
+            leaseExpiresAt: null,
+            graceUntil: null,
+            lastOnlineCheckAt: null,
+            message: licenseErrorMessage(error),
+          });
+        }
+      });
+    return () => {
+      disposed = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isTauriRuntime() || !canMountWorkspace(licenseStatus)) {
+      return;
+    }
+    let disposed = false;
+    async function renew() {
+      try {
+        const status = await invoke<LicenseStatus>("renew_license");
+        if (!disposed) {
+          setLicenseStatus(status);
+        }
+      } catch (error) {
+        const code = licenseErrorCode(error);
+        if (!disposed && (code === "REVOKED" || code === "LICENSE_EXPIRED")) {
+          setLicenseStatus((current) => ({
+            state: "needsActivation",
+            deviceCode: current?.deviceCode ?? "",
+            leaseExpiresAt: null,
+            graceUntil: null,
+            lastOnlineCheckAt: current?.lastOnlineCheckAt ?? null,
+            message: licenseErrorMessage(error),
+          }));
+        }
+      }
+    }
+    void renew();
+    const interval = window.setInterval(() => void renew(), 60 * 60 * 1000);
+    return () => {
+      disposed = true;
+      window.clearInterval(interval);
+    };
+  }, [licenseStatus?.state]);
+
+  if (!licenseStatus) {
+    return <LicenseLoadingScreen />;
+  }
+  if (!canMountWorkspace(licenseStatus)) {
+    return (
+      <TooltipProvider>
+        <ActivationGate status={licenseStatus} onActivated={setLicenseStatus} />
+      </TooltipProvider>
+    );
+  }
+  return <LicensedWorkspace licenseStatus={licenseStatus} />;
+}
+
+function LicensedWorkspace({ licenseStatus }: { licenseStatus: LicenseStatus }) {
   const [rawStatus, setRawStatus] = useState(defaultRawWorkspaceStatus);
   const [separatorStatus, setSeparatorStatus] = useState<SeparatorWorkspaceStatus>(
     defaultSeparatorWorkspaceStatus,
@@ -242,7 +341,11 @@ function App() {
   return (
     <TooltipProvider>
       <main className="desk-grid relative grid h-screen grid-rows-[54px_minmax(0,1fr)_30px] overflow-hidden text-foreground">
-        <WindowTitlebar activeWorkspace={activeWorkspace} onChange={activateWorkspace} />
+        <WindowTitlebar
+          activeWorkspace={activeWorkspace}
+          licenseStatus={licenseStatus}
+          onChange={activateWorkspace}
+        />
         <section className="codex-main min-h-0 overflow-hidden">
           <div
             aria-labelledby="workspace-tab-matcher"
@@ -308,6 +411,217 @@ function App() {
         <ExportResultToast onDismiss={dismissExportToast} toast={exportToast} />
       </main>
     </TooltipProvider>
+  );
+}
+
+function LicenseLoadingScreen() {
+  return (
+    <main className="desk-grid grid h-screen place-items-center overflow-hidden text-foreground">
+      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+        <span className="grid size-9 place-items-center rounded-[9px] border border-border bg-card">
+          <Loader2 className="size-4 animate-spin" />
+        </span>
+        正在验证本机许可证…
+      </div>
+    </main>
+  );
+}
+
+function ActivationGate({
+  status,
+  onActivated,
+}: {
+  status: LicenseStatus;
+  onActivated: (status: LicenseStatus) => void;
+}) {
+  const [token, setToken] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [copyLabel, setCopyLabel] = useState("复制设备码");
+  const [errorMessage, setErrorMessage] = useState(
+    status.state === "needsActivation" ? "" : status.message,
+  );
+
+  useEffect(() => {
+    setErrorMessage(status.state === "needsActivation" ? "" : status.message);
+  }, [status.message, status.state]);
+
+  async function activate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!token.trim() || submitting) {
+      return;
+    }
+    if (!isTauriRuntime()) {
+      setErrorMessage("浏览器预览不能执行激活，请在安装后的桌面应用中输入 token。");
+      return;
+    }
+    setSubmitting(true);
+    setErrorMessage("");
+    try {
+      const activated = await invoke<LicenseStatus>("activate_license", { token });
+      onActivated(activated);
+    } catch (error) {
+      setErrorMessage(licenseErrorMessage(error));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function copyDeviceCode() {
+    if (!status.deviceCode) {
+      setCopyLabel("设备码不可用");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(status.deviceCode);
+      setCopyLabel("已复制");
+    } catch {
+      setCopyLabel("复制失败");
+    }
+    window.setTimeout(() => setCopyLabel("复制设备码"), 1_800);
+  }
+
+  const stateTitle =
+    status.state === "clockRollback"
+      ? "系统时间需要校准"
+      : status.state === "expired"
+        ? "设备租约已经过期"
+        : "激活这台设备";
+
+  return (
+    <main className="license-gate desk-grid grid h-screen grid-rows-[54px_minmax(0,1fr)] overflow-hidden text-foreground">
+      <header className="mac-titlebar relative flex items-center border-b border-border/70 px-4">
+        <div className="absolute inset-0" data-tauri-drag-region />
+        {!isTauriRuntime() ? <BrowserWindowControls /> : null}
+        <div className="pointer-events-none relative z-10 min-w-0 pl-[84px]">
+          <h1 className="truncate text-[12px] font-semibold leading-none">摄影修图师助手</h1>
+          <p className="mt-1 truncate text-[10px] leading-none text-muted-foreground">
+            设备许可证激活
+          </p>
+        </div>
+      </header>
+
+      <section className="license-gate-body grid min-h-0 place-items-center overflow-auto px-6 py-8">
+        <div className="grid w-full max-w-[940px] overflow-hidden rounded-[12px] border border-border bg-card shadow-[0_24px_70px_rgba(20,24,32,0.14)] min-[820px]:grid-cols-[0.82fr_1.18fr]">
+          <aside className="license-seal-panel relative flex min-h-[280px] flex-col justify-between overflow-hidden border-b border-border bg-[#18212b] p-7 text-white min-[820px]:min-h-[560px] min-[820px]:border-b-0 min-[820px]:border-r">
+            <div className="license-seal-grid absolute inset-0 opacity-30" aria-hidden />
+            <div className="relative">
+              <span className="inline-flex items-center gap-2 rounded-[6px] border border-white/16 bg-white/8 px-2.5 py-1 text-[11px] font-semibold tracking-[0.08em] text-white/74">
+                LICENSED EDITION
+              </span>
+              <div className="mt-8 grid size-24 place-items-center rounded-[24px] border border-white/18 bg-white/8 shadow-[inset_0_1px_rgba(255,255,255,0.12)]">
+                <div className="license-device-seal grid size-16 place-items-center rounded-full border border-[#75b7ff]/44 bg-[#75b7ff]/10">
+                  <Fingerprint className="size-8 text-[#8bc5ff]" />
+                </div>
+              </div>
+              <h2 className="mt-7 text-[26px] font-semibold leading-[1.16] tracking-[-0.035em]">
+                一份授权
+                <br />
+                绑定一台设备
+              </h2>
+              <p className="mt-3 max-w-[17rem] text-[13px] leading-6 text-white/58">
+                本机标识只会以产品隔离后的 SHA-256 哈希发送。激活 token 不会保存在电脑中。
+              </p>
+            </div>
+
+            <dl className="relative mt-8 grid gap-3 text-[11px]">
+              <div className="flex items-center justify-between border-t border-white/12 pt-3">
+                <dt className="text-white/48">购买资格</dt>
+                <dd className="font-medium text-white/82">永久</dd>
+              </div>
+              <div className="flex items-center justify-between border-t border-white/12 pt-3">
+                <dt className="text-white/48">在线租约</dt>
+                <dd className="font-medium text-white/82">30 天</dd>
+              </div>
+              <div className="flex items-center justify-between border-t border-white/12 pt-3">
+                <dt className="text-white/48">离线宽限</dt>
+                <dd className="font-medium text-white/82">7 天</dd>
+              </div>
+            </dl>
+          </aside>
+
+          <div className="flex min-w-0 flex-col justify-center p-7 min-[820px]:p-10">
+            <div className="flex items-start gap-3">
+              <span
+                className={cn(
+                  "mt-0.5 grid size-9 shrink-0 place-items-center rounded-[9px] border",
+                  status.state === "clockRollback" || status.state === "expired"
+                    ? "border-warning/35 bg-warning/10 text-warning"
+                    : "border-accent/30 bg-accent/10 text-accent",
+                )}
+              >
+                {status.state === "clockRollback" ? (
+                  <AlertTriangle className="size-4" />
+                ) : (
+                  <KeyRound className="size-4" />
+                )}
+              </span>
+              <div>
+                <h2 className="text-xl font-semibold tracking-[-0.025em]">{stateTitle}</h2>
+                <p className="mt-1 text-[13px] leading-5 text-muted-foreground">
+                  首次使用需要联网。激活成功后才会加载文件处理工作区。
+                </p>
+              </div>
+            </div>
+
+            <form className="mt-7 space-y-3" onSubmit={activate}>
+              <label className="block text-[12px] font-semibold" htmlFor="license-token">
+                激活 token
+              </label>
+              <input
+                autoCapitalize="characters"
+                autoComplete="off"
+                autoCorrect="off"
+                className="h-11 w-full rounded-[7px] border border-input bg-background/72 px-3.5 font-mono text-[13px] tracking-[0.04em] outline-none transition-[border-color,box-shadow] placeholder:tracking-normal placeholder:text-muted-foreground/65 focus:border-ring focus:ring-2 focus:ring-ring/20"
+                id="license-token"
+                onChange={(event) => setToken(event.target.value.toUpperCase())}
+                placeholder="RJM-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX"
+                spellCheck={false}
+                value={token}
+              />
+              <Button className="h-10 w-full" disabled={!token.trim() || submitting} type="submit">
+                {submitting ? <Loader2 className="animate-spin" /> : <ShieldCheck />}
+                {submitting ? "正在绑定设备…" : "激活并进入工作区"}
+              </Button>
+            </form>
+
+            <div className="mt-6">
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <span className="text-[11px] font-semibold text-muted-foreground">本机设备码</span>
+                <span className="text-[10px] text-muted-foreground">可发送给管理员排查</span>
+              </div>
+              <code className="block break-all rounded-[7px] border border-border bg-panel px-3 py-2.5 font-mono text-[11px] leading-5 text-foreground/76">
+                {formatDeviceCode(status.deviceCode) || "设备码读取失败"}
+              </code>
+            </div>
+
+            {errorMessage ? (
+              <div
+                aria-live="polite"
+                className="mt-4 flex items-start gap-2 rounded-[7px] border border-destructive/24 bg-destructive/7 px-3 py-2.5 text-[12px] leading-5 text-destructive"
+              >
+                <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+                {errorMessage}
+              </div>
+            ) : null}
+
+            <div className="mt-6 grid gap-2 sm:grid-cols-2">
+              <Button onClick={() => void copyDeviceCode()} type="button" variant="outline">
+                <Copy />
+                {copyLabel}
+              </Button>
+              <div className="[&>button]:h-9 [&>button]:w-full [&>button]:max-w-none [&>button]:rounded-[6px] [&>button]:border-border [&>button]:bg-card [&>button]:text-foreground">
+                <UpdateButton alwaysVisible />
+              </div>
+            </div>
+
+            <p className="mt-5 flex items-start gap-2 text-[11px] leading-5 text-muted-foreground">
+              <WifiOff className="mt-0.5 size-3.5 shrink-0" />
+              最长可能离线使用 37 天。撤销或换机重置会在下次联网检查时生效。
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }
 
@@ -386,9 +700,11 @@ function WorkspaceSwitcher({
 
 function WindowTitlebar({
   activeWorkspace,
+  licenseStatus,
   onChange,
 }: {
   activeWorkspace: Workspace;
+  licenseStatus: LicenseStatus;
   onChange: (workspace: Workspace) => void;
 }) {
   return (
@@ -398,7 +714,7 @@ function WindowTitlebar({
       <div className="pointer-events-none relative z-10 col-start-1 flex min-w-0 items-center pl-[84px]">
         <div className="min-w-0">
           <h1 className="truncate text-[12px] font-semibold leading-none tracking-[-0.01em] text-foreground/90">
-            照片配对助手
+            摄影修图师助手
           </h1>
           <p className="mt-1 truncate text-[10px] leading-none text-muted-foreground">
             本地摄影工作流
@@ -409,7 +725,25 @@ function WindowTitlebar({
         <WorkspaceSwitcher activeWorkspace={activeWorkspace} onChange={onChange} />
       </div>
       <div className="relative z-20 col-start-3 flex justify-end" data-tauri-drag-region="false">
-        <UpdateButton />
+        <div className="flex items-center gap-2">
+          <span
+            className={cn(
+              "inline-flex h-6 items-center gap-1.5 rounded-[6px] border px-2 text-[10px] font-semibold",
+              licenseStatus.state === "offlineGrace"
+                ? "border-warning/35 bg-warning/10 text-warning"
+                : "border-success/30 bg-success/10 text-success",
+            )}
+            title={licenseStatus.message}
+          >
+            {licenseStatus.state === "offlineGrace" ? (
+              <WifiOff className="size-3" />
+            ) : (
+              <ShieldCheck className="size-3" />
+            )}
+            {licenseStatus.state === "offlineGrace" ? "离线宽限" : "已激活"}
+          </span>
+          <UpdateButton />
+        </div>
       </div>
     </header>
   );
@@ -677,7 +1011,7 @@ function LogBottomSheet({
   );
 }
 
-function UpdateButton() {
+function UpdateButton({ alwaysVisible = false }: { alwaysVisible?: boolean }) {
   const [status, setStatus] = useState<UpdateStatus>("idle");
   const [pendingUpdate, setPendingUpdate] = useState<Update | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -809,6 +1143,7 @@ function UpdateButton() {
   const visibleLabel = status === "available" ? "更新" : label;
 
   if (
+    !alwaysVisible &&
     !pendingUpdate &&
     status !== "downloading" &&
     status !== "installing" &&

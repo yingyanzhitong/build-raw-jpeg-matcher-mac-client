@@ -1,4 +1,7 @@
-use crate::shared::{extension_lower, file_name, is_macos_metadata_dir, modified_seconds};
+use crate::{
+    license::LicenseManager,
+    shared::{extension_lower, file_name, is_macos_metadata_dir, modified_seconds},
+};
 use ab_glyph::{Font, FontVec, PxScale};
 use image::{
     codecs::{jpeg::JpegEncoder, png::PngEncoder},
@@ -368,7 +371,11 @@ impl WatermarkJobState {
 }
 
 #[tauri::command]
-pub(crate) async fn scan_watermark_source(root: String) -> Result<WatermarkScanResponse, String> {
+pub(crate) async fn scan_watermark_source(
+    root: String,
+    license: State<'_, LicenseManager>,
+) -> Result<WatermarkScanResponse, String> {
+    license.require_active()?;
     tauri::async_runtime::spawn_blocking(move || {
         scan_watermark_directory(Path::new(&root)).map_err(|error| error.to_string())
     })
@@ -377,7 +384,11 @@ pub(crate) async fn scan_watermark_source(root: String) -> Result<WatermarkScanR
 }
 
 #[tauri::command]
-pub(crate) async fn inspect_watermark_asset(path: String) -> Result<WatermarkAssetInfo, String> {
+pub(crate) async fn inspect_watermark_asset(
+    path: String,
+    license: State<'_, LicenseManager>,
+) -> Result<WatermarkAssetInfo, String> {
+    license.require_active()?;
     tauri::async_runtime::spawn_blocking(move || {
         inspect_watermark_file(Path::new(&path)).map_err(|error| error.to_string())
     })
@@ -386,7 +397,10 @@ pub(crate) async fn inspect_watermark_asset(path: String) -> Result<WatermarkAss
 }
 
 #[tauri::command]
-pub(crate) async fn list_watermark_fonts() -> Result<WatermarkFontCatalog, String> {
+pub(crate) async fn list_watermark_fonts(
+    license: State<'_, LicenseManager>,
+) -> Result<WatermarkFontCatalog, String> {
+    license.require_active()?;
     tauri::async_runtime::spawn_blocking(|| font_store().map(|store| store.catalog.clone()))
         .await
         .map_err(|error| format!("本机字体目录任务异常结束: {error}"))?
@@ -395,7 +409,9 @@ pub(crate) async fn list_watermark_fonts() -> Result<WatermarkFontCatalog, Strin
 #[tauri::command]
 pub(crate) async fn inspect_text_watermark(
     request: TextWatermarkRequest,
+    license: State<'_, LicenseManager>,
 ) -> Result<WatermarkAssetInfo, String> {
+    license.require_active()?;
     tauri::async_runtime::spawn_blocking(move || {
         inspect_text_watermark_request(&request).map_err(|error| error.to_string())
     })
@@ -408,7 +424,9 @@ pub(crate) async fn watermark_preview_asset(
     input_root: String,
     path: String,
     max_edge: Option<u32>,
+    license: State<'_, LicenseManager>,
 ) -> Result<WatermarkPreviewAsset, String> {
+    license.require_active()?;
     tauri::async_runtime::spawn_blocking(move || {
         prepare_photo_preview(
             Path::new(&input_root),
@@ -426,7 +444,9 @@ pub(crate) async fn export_watermarked_images(
     request: WatermarkExportRequest,
     on_event: Channel<WatermarkExportEvent>,
     state: State<'_, WatermarkJobState>,
+    license: State<'_, LicenseManager>,
 ) -> Result<WatermarkExportSummary, String> {
+    license.require_active()?;
     validate_job_id(&request.job_id)?;
     let job_id = request.job_id.clone();
     let cancelled = state.begin(&job_id)?;
@@ -446,7 +466,9 @@ pub(crate) async fn export_watermarked_images(
 pub(crate) fn cancel_watermark_export(
     job_id: String,
     state: State<'_, WatermarkJobState>,
+    license: State<'_, LicenseManager>,
 ) -> Result<bool, String> {
+    license.require_active()?;
     validate_job_id(&job_id)?;
     state.cancel(&job_id)
 }

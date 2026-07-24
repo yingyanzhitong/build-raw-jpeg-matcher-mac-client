@@ -1,0 +1,57 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "raw-jpeg-matcher-license",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-24",
+  "workers_dev": true,
+  "routes": [
+    {
+      "pattern": "licensed.xyyamsz.cn",
+      "custom_domain": true
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "d1_databases": [
+    {
+      "binding": "LICENSE_DB",
+      "database_name": "raw-jpeg-matcher-license",
+      "database_id": "0466cff1-9b55-4f5a-aa24-ecea637bac4d",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "ADMIN_SESSIONS",
+      "id": "9e4bb77903a94cdabe6e94b734098ae2"
+    }
+  ],
+  "unsafe": {
+    "bindings": [
+      {
+        "name": "LICENSE_RATE_LIMITER",
+        "type": "ratelimit",
+        "namespace_id": "1001",
+        "simple": {
+          "limit": 20,
+          "period": 60
+        }
+      },
+      {
+        "name": "ADMIN_LOGIN_RATE_LIMITER",
+        "type": "ratelimit",
+        "namespace_id": "1002",
+        "simple": {
+          "limit": 8,
+          "period": 60
+        }
+      }
+    ]
+  },
+  "vars": {
+    "PRODUCT_ID": "raw-jpeg-matcher-licensed",
+    "LICENSE_PUBLIC_KEY_BASE64": "m3taKybxr3VM88UWDhzYFyR5F+AtTH25OHxQNY5TvIE="
+  }
+}

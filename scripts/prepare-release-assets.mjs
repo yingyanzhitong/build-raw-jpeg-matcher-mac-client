@@ -14,7 +14,7 @@ const allFiles = walk(options.input);
 const normalizedAssets = [];
 const platforms = {};
 const installers = {};
-const notes = await readChangelogNotes(version);
+const notes = await readChangelogNotes(version, options.changelog);
 const pubDate = new Date().toISOString();
 
 await mkdir(outputDir, { recursive: true });
@@ -138,11 +138,11 @@ function tryInferMacArch(file) {
   return null;
 }
 
-async function readChangelogNotes(targetVersion) {
+async function readChangelogNotes(targetVersion, changelogPath) {
   try {
-    const changelog = await readFile("CHANGELOG.md", "utf8");
-    const heading = `## ${targetVersion}`;
-    const headingIndex = changelog.indexOf(heading);
+    const changelog = await readFile(changelogPath, "utf8");
+    const headings = [`## [${targetVersion}]`, `## ${targetVersion}`];
+    const headingIndex = Math.max(...headings.map((heading) => changelog.indexOf(heading)));
     if (headingIndex === -1) {
       return `Automated installer build for ${targetVersion}.`;
     }
@@ -174,6 +174,7 @@ function parseArgs(args) {
     owner: "masongzhi1",
     repo: "raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client",
     appName: "photo-pairing-assistant",
+    changelog: "CHANGELOG.md",
     version: "",
     tag: "",
   };
@@ -200,6 +201,9 @@ function parseArgs(args) {
         break;
       case "--app-name":
         parsed.appName = value;
+        break;
+      case "--changelog":
+        parsed.changelog = value;
         break;
       case "--version":
         parsed.version = value;

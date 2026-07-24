@@ -4,9 +4,11 @@ use std::{
     io,
     path::{Path, PathBuf},
 };
+use tauri::State;
 use walkdir::WalkDir;
 
 use crate::{
+    license::LicenseManager,
     raw_matcher::{IMAGE_EXTENSIONS, RAW_EXTENSIONS},
     shared::{
         canonical_path_string, extension_lower, file_name, files_have_same_contents,
@@ -100,7 +102,11 @@ pub(crate) struct SeparatorExportResponse {
 }
 
 #[tauri::command]
-pub(crate) fn scan_separator_source(root: String) -> Result<SeparatorScanResponse, String> {
+pub(crate) fn scan_separator_source(
+    root: String,
+    license: State<'_, LicenseManager>,
+) -> Result<SeparatorScanResponse, String> {
+    license.require_active()?;
     scan_source_directory(&root).map_err(|error| error.to_string())
 }
 
@@ -110,7 +116,9 @@ pub(crate) fn export_separated_files(
     files: Vec<SeparatedFile>,
     export_dir: String,
     mode: SeparatorExportMode,
+    license: State<'_, LicenseManager>,
 ) -> Result<SeparatorExportResponse, String> {
+    license.require_active()?;
     match mode {
         SeparatorExportMode::Copy => copy_separated_files(&input_root, &files, &export_dir)
             .map_err(|error| error.to_string()),
