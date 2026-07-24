@@ -142,4 +142,3 @@ function bytesToBase64(bytes: Uint8Array) {
 function bytesToHex(bytes: Uint8Array) {
   return [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
-

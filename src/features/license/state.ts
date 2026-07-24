@@ -58,4 +58,3 @@ function parseLicenseError(error: unknown): { code: string; message: string } {
     return { code: code ?? "SERVER_ERROR", message };
   }
 }
-

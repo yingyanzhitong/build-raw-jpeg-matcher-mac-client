@@ -36,4 +36,3 @@ cargo test --manifest-path src-tauri/Cargo.toml
 - 更新清单：`https://gitee.com/masongzhi1/raw-jpeg-matcher-licensed-release/raw/main/release/latest.json`
 - 产物前缀：`raw-jpeg-matcher-licensed_`
 - Tauri updater、许可证租约和原无激活版 updater 使用三套不同的签名密钥。
-

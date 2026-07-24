@@ -95,4 +95,3 @@ jobs:
             --data '{"token":"RJM-00000-00000-00000-00000-00000","deviceHash":"0000000000000000000000000000000000000000000000000000000000000000","platform":"macos","version":"1.0.0"}')"
           test "$HTTP_CODE" = "400"
           test "$(jq -r '.error.code' /tmp/activation-response.json)" = "INVALID_TOKEN"
-

@@ -240,4 +240,3 @@ jobs:
           RELEASE_ASSET_DIR: normalized-release-assets
           LATEST_JSON_PATH: normalized-release-assets/latest.json
         run: node scripts/sync-gitee-release.mjs
-
