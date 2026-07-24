@@ -1,0 +1,116 @@
+services/license-service/package-lock.json
+  s_f1d92f0c20eff5::t_7100ec0493aaf3 1-2815
+services/license-service/package.json
+  s_1f8bb950e0bc25::t_367291031168c0 1-20
+services/license-service/scripts/create-admin.mjs
+  s_1f8bb950e0bc25::t_fc6ab283e8c91e 1-52
+services/license-service/src/index.ts
+  s_1f8bb950e0bc25::t_e2d489a2a5dd99 1-579
+src-tauri/Cargo.lock
+  s_f1d92f0c20eff5::t_2dfefe68071c6d 263-268,501-506,516,549-554,564-573,599,612,715-741,786-795,981-1004,1121-1126,1435,1438,1463,1760,2175-2188,2283-2288,2944-2953,3111-3166,3198-3207,3224-3232,3240-3241,3245-3246,3249,3258,3341-3378,3514,3523,3533,3542,3570-3575,3660-3672,3681,3819-3830,3921-3929,4052-4061,4176,4267,4456,5224-5233
+src-tauri/src/file_separator.rs
+  s_f1d92f0c20eff5::t_4981a4f87528d4 7,11,105-109,119,121
+src-tauri/src/raw_matcher.rs
+  s_f1d92f0c20eff5::t_9709d11e2404a3 11,14-19,159-166,181-190,206-223,260,262,276-280,1214,1338,1347,1674
+src-tauri/src/watermark.rs
+  s_f8b011cb3e32ba::t_2d8f6b3fe1eb3d 1-4,374-378,387-391,400-403,412,414,427,429,447,449,469,471
+tsconfig.json
+  s_f1d92f0c20eff5::t_12949e26cf8028 10
+.github/workflows/build-licensed-installers.yml
+  s_f1d92f0c20eff5::t_707fcf40eab554 1-243
+.github/workflows/deploy-license-service.yml
+  s_f1d92f0c20eff5::t_400c152b9cb972 1-98
+.github/workflows/licensed-invariants.yml
+  s_f1d92f0c20eff5::t_72ebfbf5dbbd72 1-66
+CHANGELOG.licensed.md
+  s_f1d92f0c20eff5::t_0a31bbde42d5e2 1-17
+docs/LICENSED_BRANCH.md
+  s_f1d92f0c20eff5::t_8bc4f716b9e036 1-39
+openspec/changes/add-licensed-activation/design.md
+  s_f1d92f0c20eff5::t_c47111dc2ffe55 13,68,89,96,105
+openspec/changes/add-licensed-activation/proposal.md
+  s_f1d92f0c20eff5::t_ec76c1e10d09cb 9,29
+openspec/changes/add-licensed-activation/specs/license-administration/spec.md
+  s_f1d92f0c20eff5::t_dd6cf8b75dd9f5 14-15,17-19,21-23,25-28,56
+package.json
+  s_f1d92f0c20eff5::t_828361d0fceafc 12-13
+release/README.licensed.md
+  s_f1d92f0c20eff5::t_d2b19976cfd9cc 1-35
+scripts/check-licensed-invariants.mjs
+  s_f1d92f0c20eff5::t_2c3755c07dc9bf 1-85
+scripts/prepare-release-assets.mjs
+  s_f1d92f0c20eff5::t_7b2a9fa6e7d957 17,141,143-145,177,204-206
+services/license-service/.dev.vars.example
+  s_f1d92f0c20eff5::t_f8b1147bb2a911 1-2
+services/license-service/migrations/0001_initial.sql
+  s_f1d92f0c20eff5::t_2d60ce0741de14 1-37
+services/license-service/migrations/0002_admin_auth.sql
+  s_f1d92f0c20eff5::t_d223b12401401c 1-13
+services/license-service/src/auth.ts
+  s_f1d92f0c20eff5::t_ceada8a0a3a11e 1-237
+services/license-service/src/crypto.ts
+  s_f1d92f0c20eff5::t_9d40eaba9a4f25 1-145
+services/license-service/src/types.ts
+  s_f1d92f0c20eff5::t_d5c449ad2d8d9f 1-59
+services/license-service/test/env.d.ts
+  s_f1d92f0c20eff5::t_47b9aa22d5ce20 1-17
+services/license-service/test/fixtures/test-ed25519-private.pem
+  s_f1d92f0c20eff5::t_dd6e8461662f9c 1-3
+services/license-service/test/setup.ts
+  s_f1d92f0c20eff5::t_db70cb7111b95a 1-4
+services/license-service/tsconfig.json
+  s_f1d92f0c20eff5::t_e8ab00ea1f57e7 1-13
+services/license-service/vitest.config.ts
+  s_f1d92f0c20eff5::t_c417c19540d921 1-32
+services/license-service/wrangler.jsonc
+  s_f1d92f0c20eff5::t_6e2d6f7dee67a5 1-57
+src-tauri/Cargo.toml
+  s_f1d92f0c20eff5::t_b6f6bf02fe589f 22-26,37-39
+src-tauri/src/lib.rs
+  s_f1d92f0c20eff5::t_d7e83f4393c103 2,8,14,28-29,35-42,57-59,61,69,75,82,89,106,120,127,134,136-142,148-150,177-184,189-191,210-235
+src-tauri/src/license.rs
+  s_f1d92f0c20eff5::t_1eae4640301769 1-908
+src-tauri/tauri.licensed.conf.json
+  s_f1d92f0c20eff5::t_3bbf0448da767f 1-34
+src/App.tsx
+  s_f1d92f0c20eff5::t_313c89559feb41 4,10,12,14,20,23,31,83-89,119,122-206,344-348,414-624,703,707,717,728-746,1014,1146
+src/features/license/state.test.ts
+  s_f1d92f0c20eff5::t_99b7ecb14d7457 1-43
+src/features/license/state.ts
+  s_f1d92f0c20eff5::t_1058031387bb7e 1-61
+src/styles.css
+  s_f1d92f0c20eff5::t_10b4616fbf00b9 221-258
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "508d6c7b5b7ae8150c1e2c09f105573fcf97fdac",
+  "prompts": {},
+  "logical_commit_id": "508d6c7b5b7ae8150c1e2c09f105573fcf97fdac",
+  "sessions": {
+    "s_1f8bb950e0bc25": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f9329-5e0d-7623-8255-77dad86a5fe6",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    },
+    "s_f1d92f0c20eff5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f92eb-8cb0-77a3-b4ff-3d87c30c046e",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    },
+    "s_f8b011cb3e32ba": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f6ede-f74c-7a11-bc0c-47854485fbf3",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
