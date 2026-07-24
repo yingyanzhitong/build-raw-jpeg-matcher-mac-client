@@ -2,7 +2,7 @@ import { env } from "cloudflare:workers";
 import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { createPasswordRecord } from "../src/auth";
+import { createPasswordRecord, PASSWORD_ITERATIONS } from "../src/auth";
 import { adminLoginResponse, adminUiResponse } from "../src/admin-ui";
 import { tokenDigest } from "../src/crypto";
 import worker, { licenseServiceTesting } from "../src/index";
@@ -136,6 +136,7 @@ describe("管理后台安全边界", () => {
   });
 
   it("账号密码正确时创建 KV 会话，D1 不保存明文密码", async () => {
+    expect(PASSWORD_ITERATIONS).toBe(100_000);
     await seedAdmin("admin", ADMIN_PASSWORD);
     const wrong = await call(
       "/admin/api/login",

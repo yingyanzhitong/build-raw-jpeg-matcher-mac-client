@@ -2,7 +2,7 @@ import type { AdminIdentity, AdminUserRow, Env } from "./types";
 
 const SESSION_COOKIE = "rjm_admin_session";
 const SESSION_TTL_SECONDS = 12 * 60 * 60;
-export const PASSWORD_ITERATIONS = 310_000;
+export const PASSWORD_ITERATIONS = 100_000;
 
 export class AdminAuthError extends Error {
   constructor(readonly code: "AUTH_REQUIRED" | "INVALID_CREDENTIALS" | "RATE_LIMITED") {
@@ -145,7 +145,7 @@ async function verifyPassword(
   expectedHash: string,
   iterations: number,
 ) {
-  if (!Number.isSafeInteger(iterations) || iterations < 100_000 || iterations > 1_000_000) {
+  if (!Number.isSafeInteger(iterations) || iterations !== PASSWORD_ITERATIONS) {
     return false;
   }
   const actualHash = await derivePasswordHash(password, salt, iterations);

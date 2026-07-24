@@ -2,7 +2,7 @@ import { pbkdf2Sync, randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 
-const ITERATIONS = 310_000;
+const ITERATIONS = 100_000;
 const args = process.argv.slice(2);
 const usernameIndex = args.indexOf("--username");
 const username = (usernameIndex >= 0 ? args[usernameIndex + 1] : "admin")

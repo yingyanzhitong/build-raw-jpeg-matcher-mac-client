@@ -6,7 +6,7 @@
 
 - `POST /api/v1/activate` 与 `POST /api/v1/renew` 是客户端公开接口，使用独立 Rate Limiting binding。
 - `/admin/*` 使用管理员账号密码登录，不依赖邮箱或 Cloudflare Zero Trust。
-- 管理员密码使用 PBKDF2-SHA-256、随机盐和 310,000 次迭代后写入 D1，不保存明文。
+- 管理员密码使用 PBKDF2-SHA-256、随机盐和 Cloudflare Web Crypto 支持上限 100,000 次迭代后写入 D1，不保存明文。
 - 浏览器只接收 `HttpOnly`、`Secure`、`SameSite=Strict` 会话 Cookie，KV key 只包含会话 token 的 SHA-256 摘要。
 - `TOKEN_PEPPER` 与 `LICENSE_PRIVATE_KEY_PEM` 必须使用 Worker Secrets，不得写入配置或仓库。
 

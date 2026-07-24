@@ -21,3 +21,4 @@
 - 补齐 Worker 独立 CI 所需的 Node.js 类型依赖，确保 GitHub Actions 的 TypeScript 检查与本地结果一致。
 - 固定跨平台可选 WASM 运行时依赖，使 macOS 生成的 lockfile 能被 Linux GitHub runner 严格执行 `npm ci`。
 - 将签名篡改测试改为稳定翻转首字节，避免 Base64 尾部填充位造成偶发的等价解码。
+- 将管理员密码 PBKDF2 迭代次数调整为 Cloudflare Web Crypto 支持上限 100,000 次，并保持随机盐与恒定时间比较。
