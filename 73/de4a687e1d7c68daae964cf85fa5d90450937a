@@ -1,0 +1,22 @@
+CHANGELOG.licensed.md
+  s_f1d92f0c20eff5::t_f650e098958e86 25-29
+openspec/changes/add-licensed-activation/tasks.md
+  s_f1d92f0c20eff5::t_a94224e61b745e 50,54,56-58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "73de4a687e1d7c68daae964cf85fa5d90450937a",
+  "prompts": {},
+  "logical_commit_id": "73de4a687e1d7c68daae964cf85fa5d90450937a",
+  "sessions": {
+    "s_f1d92f0c20eff5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f92eb-8cb0-77a3-b4ff-3d87c30c046e",
+        "model": "unknown"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
