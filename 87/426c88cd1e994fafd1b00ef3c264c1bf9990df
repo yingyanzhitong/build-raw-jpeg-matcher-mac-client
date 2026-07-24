@@ -1,0 +1,26 @@
+CHANGELOG.licensed.md
+  s_f1d92f0c20eff5::t_c786417c43e572 23
+services/license-service/package-lock.json
+  s_f1d92f0c20eff5::t_e4cbd3fc314794 3,9
+services/license-service/package.json
+  s_f1d92f0c20eff5::t_6854eddf5582ab 3
+services/license-service/test/worker.test.ts
+  s_f1d92f0c20eff5::t_adf3de1c8e4fa9 80-81
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "87426c88cd1e994fafd1b00ef3c264c1bf9990df",
+  "prompts": {},
+  "logical_commit_id": "87426c88cd1e994fafd1b00ef3c264c1bf9990df",
+  "sessions": {
+    "s_f1d92f0c20eff5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f92eb-8cb0-77a3-b4ff-3d87c30c046e",
+        "model": "unknown"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
