@@ -1,0 +1,54 @@
+name: Prevent Licensed Merge
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  direction:
+    name: Prevent licensed-to-main merge
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Reject licensed source branch and licensed-only files
+        uses: actions/github-script@v7
+        with:
+          script: |
+            if (context.payload.pull_request.head.ref === "licensed") {
+              core.setFailed("licensed 只能接收 main 的共享改动，禁止反向合并到 main。");
+              return;
+            }
+
+            const files = await github.paginate(
+              github.rest.pulls.listFiles,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number,
+                per_page: 100,
+              },
+            );
+            const licensedOnly = [
+              /^CHANGELOG\.licensed\.md$/,
+              /^docs\/LICENSED_BRANCH\.md$/,
+              /^services\/license-service\//,
+              /^src\/features\/license\//,
+              /^src-tauri\/src\/license\.rs$/,
+              /^src-tauri\/tauri\.licensed\.conf\.json$/,
+              /^scripts\/check-licensed-invariants\.mjs$/,
+              /^\.github\/workflows\/(?:build-licensed-installers|deploy-license-service|licensed-invariants)\.yml$/,
+            ];
+            const violations = files
+              .map((file) => file.filename)
+              .filter((filename) => licensedOnly.some((pattern) => pattern.test(filename)));
+
+            if (violations.length > 0) {
+              core.setFailed(
+                `无激活版 PR 包含 licensed 专属文件：\n${violations.join("\n")}`,
+              );
+            }
