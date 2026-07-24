@@ -1,0 +1,32 @@
+CHANGELOG.licensed.md
+  s_f1d92f0c20eff5::t_c4215594400a2d 24
+services/license-service/README.md
+  s_f1d92f0c20eff5::t_830cb300ff8d30 9
+services/license-service/package-lock.json
+  s_f1d92f0c20eff5::t_a7ebf561cfc8ce 3,9
+services/license-service/package.json
+  s_f1d92f0c20eff5::t_a568f01ac8c247 3
+services/license-service/scripts/create-admin.mjs
+  s_f1d92f0c20eff5::t_97b06ae896165a 5
+services/license-service/src/auth.ts
+  s_f1d92f0c20eff5::t_2921619ca48e9f 5,148
+services/license-service/test/worker.test.ts
+  s_f1d92f0c20eff5::t_37bdf2193e8d62 5,139
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "924297ce91827a619ffded26150dd28f78de6865",
+  "prompts": {},
+  "logical_commit_id": "924297ce91827a619ffded26150dd28f78de6865",
+  "sessions": {
+    "s_f1d92f0c20eff5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f92eb-8cb0-77a3-b4ff-3d87c30c046e",
+        "model": "unknown"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
