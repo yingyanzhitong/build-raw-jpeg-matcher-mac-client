@@ -22,3 +22,8 @@
 - 固定跨平台可选 WASM 运行时依赖，使 macOS 生成的 lockfile 能被 Linux GitHub runner 严格执行 `npm ci`。
 - 将签名篡改测试改为稳定翻转首字节，避免 Base64 尾部填充位造成偶发的等价解码。
 - 将管理员密码 PBKDF2 迭代次数调整为 Cloudflare Web Crypto 支持上限 100,000 次，并保持随机盐与恒定时间比较。
+
+### 发布验证
+
+- 已发布 `licensed-v1.0.0` 的 macOS Apple Silicon、macOS Intel 和 Windows x64 产物，并同步至独立 Gitee Release 与 `release/latest.json`。
+- 已完成两台逻辑设备的激活、第二台拒绝、后台重置、换机激活和旧租约失效协议验收；两台真实设备安装验收仍需上线前人工执行。
