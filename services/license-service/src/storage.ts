@@ -1,6 +1,7 @@
 import type {
   AdminSession,
   AdminUserRow,
+  ApiKeyRecord,
   Env,
   LicenseClaim,
   LicenseEvent,
@@ -15,6 +16,8 @@ const EVENT_PREFIX = "events/";
 const ADMIN_PREFIX = "admins/";
 const SESSION_PREFIX = "sessions/";
 const RATE_PREFIX = "rate/";
+const API_KEY_PREFIX = "api-keys/";
+const API_KEY_INDEX_PREFIX = "api-key-index/";
 
 export async function getLicenseByDigest(env: Env, digest: string) {
   const index = await getJson<{ id?: unknown }>(env, `${TOKEN_INDEX_PREFIX}${digest}.json`);
@@ -39,6 +42,35 @@ export async function createLicense(env: Env, license: LicenseRecord) {
 
 export function updateLicense(env: Env, license: LicenseRecord) {
   return env.LICENSE_STORE.setJSON(licenseKey(license.id), license);
+}
+
+export async function createApiKey(env: Env, apiKey: ApiKeyRecord) {
+  await writeNew(env, apiKeyKey(apiKey.id), apiKey);
+  try {
+    await writeNew(env, `${API_KEY_INDEX_PREFIX}${apiKey.key_digest}.json`, {
+      id: apiKey.id,
+    });
+  } catch (error) {
+    await env.LICENSE_STORE.delete(apiKeyKey(apiKey.id));
+    throw error;
+  }
+}
+
+export async function getApiKeyByDigest(env: Env, digest: string) {
+  const index = await getJson<{ id?: unknown }>(env, `${API_KEY_INDEX_PREFIX}${digest}.json`);
+  return typeof index?.id === "string" ? getApiKeyById(env, index.id) : null;
+}
+
+export function getApiKeyById(env: Env, id: string) {
+  return getJson<ApiKeyRecord>(env, apiKeyKey(id));
+}
+
+export function listApiKeys(env: Env) {
+  return listJson<ApiKeyRecord>(env, API_KEY_PREFIX);
+}
+
+export function updateApiKey(env: Env, apiKey: ApiKeyRecord) {
+  return env.LICENSE_STORE.setJSON(apiKeyKey(apiKey.id), apiKey);
 }
 
 export async function listLicenseRows(env: Env) {
@@ -182,6 +214,10 @@ function licenseKey(id: string) {
 
 function claimKey(id: string) {
   return `${CLAIM_PREFIX}${id}.json`;
+}
+
+function apiKeyKey(id: string) {
+  return `${API_KEY_PREFIX}${id}.json`;
 }
 
 async function sha256Hex(value: string) {
