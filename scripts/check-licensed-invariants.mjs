@@ -12,8 +12,7 @@ const [
   publicConfigSource,
   licenseSource,
   libSource,
-  scfServerSource,
-  scfBootstrapSource,
+  edgeOneHandlerSource,
   storageSource,
   servicePackageSource,
 ] = await Promise.all([
@@ -21,8 +20,7 @@ const [
   read("src-tauri/tauri.conf.json"),
   read("src-tauri/src/license.rs"),
   read("src-tauri/src/lib.rs"),
-  read("services/license-service/src/scf-server.ts"),
-  read("services/license-service/scf/scf_bootstrap"),
+  read("services/license-service/cloud-functions/_handler.ts"),
   read("services/license-service/src/storage.ts"),
   read("services/license-service/package.json"),
 ]);
@@ -32,7 +30,7 @@ const publicConfig = JSON.parse(publicConfigSource);
 const servicePackage = JSON.parse(servicePackageSource);
 
 assert.equal(licensedConfig.productName, "摄影修图师助手");
-assert.equal(licensedConfig.version, "1.0.1");
+assert.equal(licensedConfig.version, "1.0.0");
 assert.equal(licensedConfig.identifier, "com.masongzhi.rawjpegmatcher.licensed");
 assert.deepEqual(licensedConfig.plugins.updater.endpoints, [
   "https://gitee.com/masongzhi1/raw-jpeg-matcher-licensed-release/raw/main/release/latest.json",
@@ -43,32 +41,24 @@ assert.notEqual(
   "激活版与无激活版不得复用 updater 公钥",
 );
 assert.match(licenseSource, /const PRODUCT_ID: &str = "raw-jpeg-matcher-licensed"/);
-assert.match(
-  licenseSource,
-  /https:\/\/1319909213-11o589l07z\.ap-guangzhou\.tencentscf\.com/,
-);
-assert.match(licenseSource, /const LICENSED_APP_VERSION: &str = "1\.0\.1"/);
+assert.match(licenseSource, /const SERVICE_URL: &str = "https:\/\/licensed\.xyyamsz\.cn"/);
 assert.match(licenseSource, /const LICENSE_PUBLIC_KEY_BASE64: &str = "[A-Za-z0-9+/=]+"/);
 assert.match(libSource, /mod license;/);
 assert.match(libSource, /license_status,\s+activate_license,\s+renew_license,/);
-assert.equal(servicePackage.version, "1.2.0");
 assert.equal(servicePackage.dependencies["@edgeone/pages-blob"], "0.0.14");
-assert.equal(servicePackage.devDependencies.esbuild, "0.28.1");
-assert.match(scfServerSource, /getStore\(\{/);
-assert.match(scfServerSource, /RUNTIME_NAME:\s*"tencent-scf"/);
-assert.match(scfServerSource, /webcrypto/);
-assert.match(scfBootstrapSource, /node18\/bin\/node server\.mjs/);
+assert.equal(servicePackage.devDependencies.edgeone, "1.6.17");
+assert.match(edgeOneHandlerSource, /getStore\("raw-jpeg-matcher-license"\)/);
 assert.match(storageSource, /onlyIfNew:\s*true/);
 assert.match(storageSource, /consistency:\s*"strong"/);
 assert.equal(
-  existsSync(path.join(repositoryRoot, "services/license-service/src/scf-server.ts")),
+  existsSync(path.join(repositoryRoot, "services/license-service/cloud-functions/_handler.ts")),
   true,
-  "激活服务必须保留腾讯云 SCF Web 函数入口",
+  "激活服务必须保留 EdgeOne Node.js 云函数入口",
 );
 assert.equal(
-  existsSync(path.join(repositoryRoot, "services/license-service/cloud-functions")),
+  existsSync(path.join(repositoryRoot, "services/license-service/edge-functions")),
   false,
-  "激活服务不得恢复旧 EdgeOne Cloud Functions 入口",
+  "激活服务不得恢复不稳定的 Edge Runtime 入口",
 );
 assert.equal(
   existsSync(path.join(repositoryRoot, "services/license-service/wrangler.jsonc")),

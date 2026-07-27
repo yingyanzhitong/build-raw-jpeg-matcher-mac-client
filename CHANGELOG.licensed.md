@@ -2,20 +2,6 @@
 
 本文件只记录 `licensed` 分支的许可证、管理服务和独立发行变更。来自 `main` 的共享功能更新继续记录在 `CHANGELOG.md`。
 
-## [1.0.1 / 许可证服务 1.2.0] - 2026-07-27
-
-### 变更
-
-- 将鉴权运行时迁移到腾讯云 SCF 广州地域的 Node.js 18 Web 函数，并固定使用腾讯云公开函数 URL，不配置自定义域名。
-- SCF 继续使用现有 EdgeOne Blob，许可证、设备绑定、审计、管理员、会话和限流数据无需迁移。
-- 新增 SCF HTTP 适配器和 Web Crypto 兼容处理，根路径 `/` 跳转到 `/admin/`，未登录用户随后进入账号密码登录页。
-- GitHub Actions 会验证并生成 SCF ZIP 部署包，同时检查生产健康状态、运行时、激活错误码和后台入口。
-
-### 发布
-
-- 激活版升级到 `1.0.1`，使用 `licensed-v1.0.1` 构建 macOS Apple Silicon、macOS Intel 和 Windows x64 安装包。
-- GitHub Release 附件继续同步到独立 Gitee 仓库及 `release/latest.json`，不上传额外源码附件；Gitee 根据 tag 自动显示的源码归档不属于同步脚本上传内容。
-
 ## [许可证服务 1.1.0] - 2026-07-24
 
 ### 变更

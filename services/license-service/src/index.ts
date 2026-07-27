@@ -47,7 +47,6 @@ const PUBLIC_ERROR_CODES = new Set([
   "SERVER_ERROR",
 ]);
 const PLATFORM_VALUES = new Set(["macos", "windows"]);
-const SERVICE_VERSION = "1.2.0";
 
 interface ExecutionContextLike {
   waitUntil(promise: Promise<unknown>): void;
@@ -77,12 +76,8 @@ export default {
         return json({
           ok: true,
           service: "raw-jpeg-matcher-license",
-          version: SERVICE_VERSION,
-          runtime: env.RUNTIME_NAME ?? "tencent-scf",
+          runtime: "edgeone-node",
         });
-      }
-      if (request.method === "GET" && url.pathname === "/") {
-        return redirect("/admin/");
       }
       if (url.pathname.startsWith("/admin")) {
         return await handleAdmin(request, env, url, requestId);
@@ -323,7 +318,7 @@ async function handleAdmin(
       request.method === "GET" &&
       (url.pathname === "/admin" || url.pathname === "/admin/")
     ) {
-      return redirect("/admin/login");
+      return Response.redirect(`${url.origin}/admin/login`, 302);
     }
     throw new ApiError("AUTH_REQUIRED", "请先登录管理后台。", 401);
   }
@@ -628,16 +623,6 @@ function json(body: unknown, status = 200, extraHeaders: HeadersInit = {}) {
       "content-type": "application/json; charset=utf-8",
       "x-content-type-options": "nosniff",
       ...extraHeaders,
-    },
-  });
-}
-
-function redirect(location: string) {
-  return new Response(null, {
-    status: 302,
-    headers: {
-      "cache-control": "no-store",
-      location,
     },
   });
 }

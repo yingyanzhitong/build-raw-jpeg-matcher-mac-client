@@ -2,7 +2,7 @@
 
 现有仓库在公开 `main` 分支构建“照片配对助手”，使用 `vX.Y.Z` GitHub Release、原 Gitee 发行镜像和一套 Tauri updater 签名密钥。客户端业务命令均可直接调用，不存在许可证状态或服务端依赖。
 
-本变更需要在同一公开仓库中维护长期 `licensed` 分支。共享功能只从 `main` 合并到 `licensed`，激活能力和腾讯云 SCF 服务永不反向进入 `main`。激活版面向 macOS Apple Silicon、macOS Intel 和 Windows x64，必须与旧应用、旧数据目录和旧更新通道并存。
+本变更需要在同一公开仓库中维护长期 `licensed` 分支。共享功能只从 `main` 合并到 `licensed`，激活能力和 EdgeOne 服务永不反向进入 `main`。激活版面向 macOS Apple Silicon、macOS Intel 和 Windows x64，必须与旧应用、旧数据目录和旧更新通道并存。
 
 ## Goals / Non-Goals
 
@@ -37,7 +37,7 @@ macOS 通过 IOKit 获取 `IOPlatformUUID`，Windows 从注册表获取 `Machine
 
 ### 签名租约与续签
 
-腾讯云 SCF 广州地域的 Node.js 18 Web 函数使用独立 Ed25519 私钥签署原始 JSON 字节，客户端内置对应公钥并验证签名后再解析。服务通过腾讯云公开函数 URL 提供 HTTPS，不依赖自定义域名。租约字段固定为：
+EdgeOne Node.js 云函数使用独立 Ed25519 私钥签署原始 JSON 字节，客户端内置对应公钥并验证签名后再解析。租约字段固定为：
 
 - `schema_version`
 - `license_id`
@@ -57,7 +57,7 @@ Tauri 管理一个共享 `LicenseManager`。许可证命令可在未激活状态
 
 ### EdgeOne Blob 数据和设备绑定
 
-腾讯云 SCF Web 函数通过 EdgeOne Blob SDK 保存许可证元数据、token 摘引、设备 claim、审计、管理员与会话。所有授权判断采用强一致读取。token 为 `RJM-` 前缀的 Crockford Base32 随机值，Blob 只保存 `HMAC-SHA-256(pepper, normalized_token)`、末四位和管理员备注。
+EdgeOne Node.js 云函数使用 Blob 保存许可证元数据、token 摘引、设备 claim、审计、管理员与会话。所有授权判断采用强一致读取。token 为 `RJM-` 前缀的 Crockford Base32 随机值，Blob 只保存 `HMAC-SHA-256(pepper, normalized_token)`、末四位和管理员备注。
 
 首次绑定为每个许可证创建独立 claim 对象，先强一致读取，再使用 `onlyIfNew` 条件写，并在 750 毫秒竞争稳定窗口后强一致回读 nonce 确认获胜设备。同设备重复激活幂等，不同设备返回 `ALREADY_BOUND`。重置先递增元数据 `generation` 再删除 claim；旧租约不能再续签。每次管理操作和激活结果写入审计对象，但日志不记录明文 token、原始设备标识或完整设备哈希。
 
@@ -67,7 +67,7 @@ EdgeOne KV 是最终一致存储，不用于设备 claim、管理员会话或授
 
 ### API 与管理员边界
 
-公共 API 为 `POST /api/v1/activate`、`POST /api/v1/renew` 和 `GET /healthz`。请求体执行严格大小、类型和格式校验，并用 Blob 强一致计数窗口抑制滥用。
+公共 API 为 `POST /api/v1/activate`、`POST /api/v1/renew` 和 `GET /healthz`。请求体执行严格大小、类型和格式校验，并用 Rate Limiting binding 抑制滥用。
 
 管理页面和管理 API 统一放在 `/admin/*`。管理员账号和使用 PBKDF2-SHA-256 加盐派生的密码哈希保存在 Blob，禁止保存明文密码；登录成功后生成高熵随机会话 token，仅把 token 摘要作为 Blob key，并通过 `HttpOnly`、`Secure`、`SameSite=Strict` Cookie 交付浏览器。会话记录包含 12 小时绝对到期时间，并通过强一致读取和删除实现即时登出。登录和所有管理写操作执行同源校验，登录接口使用独立限流空间。
 
@@ -92,20 +92,20 @@ EdgeOne KV 是最终一致存储，不用于设备 claim、管理员会话或授
 - [合并 `main` 可能覆盖激活版文件] → 采用分支专属配置、独立 workflow、必需 CI 不变量测试和禁止反向合并规则。
 - [管理员密码被猜测或会话被盗用] → 密码使用高迭代 PBKDF2 哈希、登录独立限流、会话仅保存摘要并使用安全 Cookie，登出立即删除 Blob 会话。
 - [Blob 条件写未提供数据库事务级保证] → 使用强一致读取、竞争稳定窗口和 nonce 回读降低并发双绑概率，保留并发验收；严格线性化场景需改用支持事务或 CAS 的存储。
-- [密钥丢失会导致无法续签或更新] → 许可证私钥仅存 SCF 环境变量和离线备份，updater 私钥仅存 GitHub Secrets；公钥提交仓库。
+- [密钥丢失会导致无法续签或更新] → 私钥仅存 EdgeOne/GitHub Secrets，并在部署前保存离线备份；公钥提交仓库。
 
 ## Migration Plan
 
 1. 在 `main` 参数化发布脚本、切换无激活版 tag 触发、更新版本和变更日志，并验证产物行为不变。
 2. 从已验证的 `main` 创建 `licensed`，添加 OpenSpec、客户端鉴权、服务端、管理后台和独立发行配置。
-3. 创建 EdgeOne Blob 数据项目和腾讯云 SCF Web 函数，配置环境变量与公开函数 URL，并通过标准输入初始化管理员账号。
+3. 创建 EdgeOne 项目与 Blob，配置环境变量和 Custom Domain，并通过标准输入初始化管理员账号。
 4. 创建公开 Gitee 激活版发行仓库，配置 GitHub Secrets 和分支保护。
 5. 使用测试 token 完成双设备激活、拒绝、重置、续签和离线宽限验收。
 6. 推送 `licensed-v1.0.0` 后校验 GitHub/Gitee 产物和 `latest.json`，再对外发放 token。
 
-从 Cloudflare 迁移时，先把 D1 的许可证、审计与管理员密码哈希幂等写入 EdgeOne Blob，再完成接口和双设备验收。从 EdgeOne Cloud Functions 迁移到腾讯云 SCF 时不复制存量数据，SCF 直接读取同一个 Blob 项目；客户端、管理后台和发行健康检查统一切换到公开函数 URL。
+从 Cloudflare 迁移时，先在 EdgeOne 默认域名完成接口和双设备验收，再将 D1 的许可证、审计与管理员密码哈希幂等写入 Blob，最后切换 `licensed.xyyamsz.cn`。旧 KV 会话不迁移，管理员切换后重新登录。
 
-回滚时保留 Cloudflare D1、EdgeOne Blob 与密钥，先恢复上一版服务入口，再回退服务代码；`main` 无激活版不受影响。已签发租约在宽限期内仍可离线验证，因此不得通过删除任一存储代替正常回滚。
+回滚时保留 Cloudflare D1、EdgeOne Blob 与密钥，先恢复旧域名路由，再回退服务代码；`main` 无激活版不受影响。已签发租约在宽限期内仍可离线验证，因此不得通过删除任一存储代替正常回滚。
 
 ## Open Questions
 

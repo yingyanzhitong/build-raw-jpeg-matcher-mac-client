@@ -24,7 +24,6 @@ export interface Env {
   LICENSE_PUBLIC_KEY_BASE64: string;
   PRODUCT_ID: string;
   CLAIM_SETTLE_MS?: string | number;
-  RUNTIME_NAME?: string;
 }
 
 export interface LicenseRecord {

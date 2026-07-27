@@ -12,7 +12,7 @@
 - **THEN** 存储仅包含 token 的 HMAC 摘要、末四位和备注，不包含明文 token
 
 ### Requirement: Administrator password authentication
-所有 `/admin/*` 页面和 API MUST 由腾讯云 SCF Web 函数管理员会话保护。管理员密码 MUST 只以加盐 PBKDF2-SHA-256 哈希存入 Blob，登录会话 MUST 使用不可预测 token、绝对到期时间、强一致读写和安全 Cookie。
+所有 `/admin/*` 页面和 API MUST 由 EdgeOne Node.js 云函数管理员会话保护。管理员密码 MUST 只以加盐 PBKDF2-SHA-256 哈希存入 Blob，登录会话 MUST 使用不可预测 token、绝对到期时间、强一致读写和安全 Cookie。
 
 #### Scenario: Missing or forged session
 - **WHEN** 请求没有有效的管理员会话 Cookie
@@ -20,7 +20,7 @@
 
 #### Scenario: Wrong password or brute-force login
 - **WHEN** 账号密码错误或登录请求超过限流阈值
-- **THEN** 服务不创建会话并返回统一凭据错误或 `RATE_LIMITED`
+- **THEN** Worker 不创建会话并返回统一凭据错误或 `RATE_LIMITED`
 
 #### Scenario: Administrator logs out
 - **WHEN** 管理员主动退出登录

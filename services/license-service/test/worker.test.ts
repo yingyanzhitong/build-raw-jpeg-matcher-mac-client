@@ -34,26 +34,10 @@ beforeEach(() => {
 });
 
 describe("公开激活与续签接口", () => {
-  it("健康检查确认许可证存储可用", async () => {
+  it("健康检查确认 EdgeOne Blob 可用", async () => {
     const result = await call("/healthz", undefined, true, "GET");
     expect(result.response.status).toBe(200);
-    expect(result.body).toMatchObject({
-      ok: true,
-      version: "1.2.0",
-      runtime: "tencent-scf",
-    });
-  });
-
-  it("根路径跳转到账号密码管理后台", async () => {
-    const result = await call("/", undefined, true, "GET");
-    expect(result.response.status).toBe(302);
-    expect(result.response.headers.get("location")).toBe("/admin/");
-  });
-
-  it("未登录的管理后台使用同源相对跳转", async () => {
-    const result = await call("/admin/", undefined, true, "GET");
-    expect(result.response.status).toBe(302);
-    expect(result.response.headers.get("location")).toBe("/admin/login");
+    expect(result.body).toMatchObject({ ok: true, runtime: "edgeone-node" });
   });
 
   it("拒绝非法 token，且 Blob 不保存明文 token", async () => {
@@ -172,10 +156,7 @@ describe("管理后台安全边界", () => {
       { username: "admin", password: "wrong-password-value" },
       true,
       "POST",
-      {
-        origin:
-          "https://1319909213-11o589l07z.ap-guangzhou.tencentscf.com",
-      },
+      { origin: "https://licensed.xyyamsz.cn" },
     );
     expect(wrong.response.status).toBe(401);
     expect(wrong.body.error.code).toBe("INVALID_CREDENTIALS");
@@ -222,10 +203,7 @@ describe("管理后台安全边界", () => {
       { username: "admin", password: ADMIN_PASSWORD },
       true,
       "POST",
-      {
-        origin:
-          "https://1319909213-11o589l07z.ap-guangzhou.tencentscf.com",
-      },
+      { origin: "https://licensed.xyyamsz.cn" },
       false,
     );
     expect(limited.response.status).toBe(429);
@@ -238,11 +216,7 @@ describe("管理后台安全边界", () => {
       {},
       true,
       "POST",
-      {
-        cookie: sessionCookie,
-        origin:
-          "https://1319909213-11o589l07z.ap-guangzhou.tencentscf.com",
-      },
+      { cookie: sessionCookie, origin: "https://licensed.xyyamsz.cn" },
     );
     expect(logout.response.status).toBe(200);
     expect(logout.response.headers.get("set-cookie")).toContain("Max-Age=0");
@@ -354,10 +328,7 @@ function login() {
     { username: "admin", password: ADMIN_PASSWORD },
     true,
     "POST",
-    {
-      origin:
-        "https://1319909213-11o589l07z.ap-guangzhou.tencentscf.com",
-    },
+    { origin: "https://licensed.xyyamsz.cn" },
   );
 }
 
@@ -389,17 +360,14 @@ async function call(
 ) {
   const pending: Promise<unknown>[] = [];
   const response = await worker.fetch(
-    new Request(
-      `https://1319909213-11o589l07z.ap-guangzhou.tencentscf.com${requestPath}`,
-      {
-        method,
-        headers: {
-          ...(body === undefined ? {} : { "content-type": "application/json" }),
-          ...headers,
-        },
-        body: body === undefined ? undefined : JSON.stringify(body),
+    new Request(`https://licensed.xyyamsz.cn${requestPath}`, {
+      method,
+      headers: {
+        ...(body === undefined ? {} : { "content-type": "application/json" }),
+        ...headers,
       },
-    ),
+      body: body === undefined ? undefined : JSON.stringify(body),
+    }),
     serviceEnv(rateLimitSuccess, adminLoginRateLimitSuccess),
     {
       waitUntil(promise) {
@@ -408,13 +376,11 @@ async function call(
     },
   );
   await Promise.all(pending);
-  const responseText = await response.text();
   return {
     response,
-    body: (responseText ? JSON.parse(responseText) : {}) as {
+    body: (await response.json()) as {
       ok: boolean;
       runtime?: string;
-      version?: string;
       lease: SignedLease;
       error: { code: string; message: string };
     },

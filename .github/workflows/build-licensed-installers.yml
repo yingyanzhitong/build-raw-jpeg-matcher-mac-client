@@ -76,20 +76,16 @@ jobs:
       - name: Verify deployed license service
         if: github.event_name == 'push'
         shell: bash
-        env:
-          LICENSE_SERVICE_URL: https://1319909213-11o589l07z.ap-guangzhou.tencentscf.com
         run: |
           HEALTH="$(curl --silent --show-error --fail --retry 5 --retry-all-errors --max-time 20 \
-            "${LICENSE_SERVICE_URL}/healthz")"
+            https://licensed.xyyamsz.cn/healthz)"
           test "$(jq -r '.ok' <<<"$HEALTH")" = "true"
-          test "$(jq -r '.version' <<<"$HEALTH")" = "1.2.0"
-          test "$(jq -r '.runtime' <<<"$HEALTH")" = "tencent-scf"
 
           HTTP_CODE="$(curl --silent --show-error --output /tmp/activation-response.json \
             --write-out '%{http_code}' --max-time 20 \
-            "${LICENSE_SERVICE_URL}/api/v1/activate" \
+            https://licensed.xyyamsz.cn/api/v1/activate \
             -H 'Content-Type: application/json' \
-            --data '{"token":"RJM-00000-00000-00000-00000-00000","deviceHash":"0000000000000000000000000000000000000000000000000000000000000000","platform":"macos","version":"1.0.1"}')"
+            --data '{"token":"RJM-00000-00000-00000-00000-00000","deviceHash":"0000000000000000000000000000000000000000000000000000000000000000","platform":"macos","version":"1.0.0"}')"
           test "$HTTP_CODE" = "400"
           test "$(jq -r '.error.code' /tmp/activation-response.json)" = "INVALID_TOKEN"
 

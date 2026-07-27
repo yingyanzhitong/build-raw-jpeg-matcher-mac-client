@@ -23,7 +23,7 @@
 - **THEN** 应用进入业务工作区并在需要时后台续签
 
 ### Requirement: Signed device lease
-腾讯云 SCF 服务 MUST 使用独立 Ed25519 私钥签署包含许可证、产品、设备、代次和时间边界的租约，客户端 MUST 在解析和使用前验证签名。
+EdgeOne 服务 MUST 使用独立 Ed25519 私钥签署包含许可证、产品、设备、代次和时间边界的租约，客户端 MUST 在解析和使用前验证签名。
 
 #### Scenario: Tampered lease is rejected
 - **WHEN** 租约内容或签名任意一处被修改
