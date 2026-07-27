@@ -2,8 +2,12 @@ name: Deploy GitHub Pages
 
 on:
   push:
-    tags:
-      - "v*.*.*"
+    branches:
+      - main
+    paths:
+      - gitee-pages/**
+      - .github/workflows/deploy-github-pages.yml
+  workflow_dispatch:
 
 permissions:
   contents: read
