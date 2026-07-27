@@ -3,6 +3,7 @@ import type { Env, LeasePayload, LicenseRow, SignedLease } from "./types";
 const TOKEN_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 const TOKEN_BODY_LENGTH = 25;
 const DAY_SECONDS = 24 * 60 * 60;
+const API_KEY_PREFIX = "rjm_live_";
 
 export function normalizeToken(input: string) {
   const compact = input.toUpperCase().replace(/[\s-]/g, "");
@@ -33,6 +34,25 @@ export function generateToken() {
 }
 
 export async function tokenDigest(token: string, pepper: string) {
+  return hmacDigest(normalizeToken(token), pepper);
+}
+
+export function generateApiKey() {
+  return `${API_KEY_PREFIX}${bytesToBase64Url(crypto.getRandomValues(new Uint8Array(32)))}`;
+}
+
+export function normalizeApiKey(input: string) {
+  if (!/^rjm_live_[A-Za-z0-9_-]{43}$/.test(input)) {
+    throw new Error("INVALID_API_KEY");
+  }
+  return input;
+}
+
+export async function apiKeyDigest(apiKey: string, pepper: string) {
+  return hmacDigest(`api-key:${normalizeApiKey(apiKey)}`, pepper);
+}
+
+async function hmacDigest(value: string, pepper: string) {
   const key = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(pepper),
@@ -43,7 +63,7 @@ export async function tokenDigest(token: string, pepper: string) {
   const digest = await crypto.subtle.sign(
     "HMAC",
     key,
-    new TextEncoder().encode(normalizeToken(token)),
+    new TextEncoder().encode(value),
   );
   return bytesToHex(new Uint8Array(digest));
 }

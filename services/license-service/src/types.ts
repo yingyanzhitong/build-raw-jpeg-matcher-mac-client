@@ -19,6 +19,7 @@ export interface Env {
   LICENSE_STORE: BlobStore;
   LICENSE_RATE_LIMITER?: RateLimiter;
   ADMIN_LOGIN_RATE_LIMITER?: RateLimiter;
+  API_KEY_RATE_LIMITER?: RateLimiter;
   TOKEN_PEPPER: string;
   LICENSE_PRIVATE_KEY_PEM: string;
   LICENSE_PUBLIC_KEY_BASE64: string;
@@ -66,6 +67,19 @@ export interface LicenseEvent {
   platform: string | null;
   deviceSuffix: string | null;
   detailJson: string;
+}
+
+export interface ApiKeyRecord {
+  id: string;
+  name: string;
+  key_digest: string;
+  key_prefix: string;
+  key_last4: string;
+  status: "active" | "revoked";
+  created_at: number;
+  last_used_at: number | null;
+  revoked_at: number | null;
+  updated_at: number;
 }
 
 export interface LeasePayload {

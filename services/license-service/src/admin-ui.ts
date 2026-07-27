@@ -30,7 +30,7 @@ const adminHtml = String.raw`<!doctype html>
         <h1>设备授权</h1>
         <p>生成销售 token，跟踪单设备绑定，并处理撤销与换机重置。</p>
       </div>
-      <button class="primary" id="open-generate">生成 token</button>
+      <div class="hero-actions"><button class="secondary" id="open-api-keys">API Key</button><button class="primary" id="open-generate">生成 token</button></div>
     </section>
 
     <section class="metrics" aria-label="授权统计">
@@ -93,6 +93,24 @@ const adminHtml = String.raw`<!doctype html>
     </section>
   </dialog>
 
+  <dialog id="api-keys-dialog">
+    <section class="dialog-card api-key-dialog">
+      <header><div><p class="eyebrow">ISSUANCE API</p><h2>API Key 配置</h2></div><button class="icon-button" id="close-api-keys" aria-label="关闭">×</button></header>
+      <form id="api-key-form"><label>名称<input id="api-key-name" maxlength="80" placeholder="例如：商城自动发货" required></label><button class="primary" id="api-key-submit" type="submit">创建 API Key</button></form>
+      <p class="notice">Key 仅用于服务端调用，下发 token 的接口为 <code>POST /api/v1/tokens</code>。创建后只显示一次，请立即保存。</p>
+      <div class="api-key-list" id="api-key-list"></div>
+    </section>
+  </dialog>
+
+  <dialog id="api-key-result-dialog">
+    <section class="dialog-card token-result">
+      <header><div><p class="eyebrow">ONE-TIME SECRET</p><h2>请立即保存 API Key</h2></div></header>
+      <p class="notice warning">关闭后无法再次查看该 API Key。请求时使用 <code>Authorization: Bearer …</code>。</p>
+      <textarea id="generated-api-key" readonly aria-label="新 API Key"></textarea>
+      <footer><button class="primary" id="copy-api-key">复制 API Key</button><button class="quiet" id="close-api-key-result">完成</button></footer>
+    </section>
+  </dialog>
+
   <dialog id="confirm-dialog">
     <form method="dialog" class="dialog-card" id="confirm-form">
       <header><div><p class="eyebrow" id="confirm-eyebrow">CONFIRM</p><h2 id="confirm-title">确认操作</h2></div><button value="cancel" class="icon-button" aria-label="关闭">×</button></header>
@@ -121,13 +139,13 @@ const adminCss = String.raw`:root{
   linear-gradient(90deg,rgba(45,57,70,.035) 1px,transparent 1px),#eef1f4;background-size:32px 32px}
 button,input,select,textarea{font:inherit}.topbar{height:62px;display:flex;align-items:center;justify-content:space-between;padding:0 34px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.9);backdrop-filter:blur(16px)}
 .brand{display:flex;align-items:center;gap:11px}.brand-mark{display:grid;width:34px;height:34px;place-items:center;border-radius:9px;background:#18212b;color:#8bc5ff;font:700 15px/1 ui-monospace,monospace}.brand div{display:grid}.brand strong{font-size:13px}.brand div span{font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}.topbar-actions{display:flex;align-items:center;gap:12px}.topbar-actions .quiet{height:31px}.environment{font:600 11px/1 ui-monospace,monospace;color:var(--muted)}.environment i{display:inline-block;width:7px;height:7px;margin-right:7px;border-radius:50%;background:#1f9d55;box-shadow:0 0 0 3px rgba(31,157,85,.12)}
-main{width:min(1240px,calc(100% - 64px));margin:48px auto 72px}.hero{display:flex;align-items:flex-end;justify-content:space-between}.eyebrow{margin:0 0 8px;color:#4676a7;font:700 10px/1 ui-monospace,monospace;letter-spacing:.13em}.hero h1{margin:0;font-size:34px;line-height:1.1;letter-spacing:-.035em}.hero p:last-child{margin:10px 0 0;color:var(--muted)}button{border:0;border-radius:7px;cursor:pointer;font-weight:650;transition:background .15s,border-color .15s,transform .15s}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #6aa8e8;outline-offset:2px}.primary,.secondary,.danger,.quiet{height:37px;padding:0 14px}.primary{color:#fff;background:var(--blue);box-shadow:0 1px 2px rgba(12,55,101,.18)}.primary:hover{background:#105cac}.secondary{color:var(--ink);border:1px solid var(--line);background:var(--paper)}.quiet{color:#4c5662;border:1px solid var(--line);background:#f7f8fa}.danger{color:#fff;background:var(--red)}button:disabled{cursor:not-allowed;opacity:.45}
+main{width:min(1240px,calc(100% - 64px));margin:48px auto 72px}.hero{display:flex;align-items:flex-end;justify-content:space-between}.hero-actions{display:flex;gap:8px}.eyebrow{margin:0 0 8px;color:#4676a7;font:700 10px/1 ui-monospace,monospace;letter-spacing:.13em}.hero h1{margin:0;font-size:34px;line-height:1.1;letter-spacing:-.035em}.hero p:last-child{margin:10px 0 0;color:var(--muted)}button{border:0;border-radius:7px;cursor:pointer;font-weight:650;transition:background .15s,border-color .15s,transform .15s}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #6aa8e8;outline-offset:2px}.primary,.secondary,.danger,.quiet{height:37px;padding:0 14px}.primary{color:#fff;background:var(--blue);box-shadow:0 1px 2px rgba(12,55,101,.18)}.primary:hover{background:#105cac}.secondary{color:var(--ink);border:1px solid var(--line);background:var(--paper)}.quiet{color:#4c5662;border:1px solid var(--line);background:#f7f8fa}.danger{color:#fff;background:var(--red)}button:disabled{cursor:not-allowed;opacity:.45}
 .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:30px 0 16px}.metrics article{display:grid;gap:8px;padding:18px 20px;border:1px solid var(--line);border-radius:9px;background:rgba(255,255,255,.9);box-shadow:0 1px 2px rgba(28,39,51,.03)}.metrics span{color:var(--muted);font-size:11px}.metrics strong{font:650 25px/1 ui-monospace,monospace;letter-spacing:-.04em}
 .panel{overflow:hidden;border:1px solid var(--line);border-radius:10px;background:var(--paper);box-shadow:0 10px 35px rgba(35,45,56,.06)}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:28px;padding:20px 22px;border-bottom:1px solid var(--line)}.panel h2{margin:0;font-size:15px}.panel-head p{margin:3px 0 0;color:var(--muted);font-size:11px}.filters{display:flex;gap:8px}.filters input{width:280px}.filters input,.filters select,.dialog-card input{height:36px;border:1px solid var(--line);border-radius:6px;background:#fafbfc;padding:0 11px;color:var(--ink)}.filters select{min-width:125px}.table-wrap{min-height:350px}table{width:100%;border-collapse:collapse}th{height:39px;padding:0 18px;background:#f7f8fa;color:#717b86;font-size:10px;text-align:left;text-transform:uppercase;letter-spacing:.07em}td{height:65px;padding:10px 18px;border-top:1px solid #e7ebef;vertical-align:middle}.license-id{display:grid;gap:3px}.license-id strong{font:650 12px/1.2 ui-monospace,monospace}.license-id span,.device span{color:var(--muted);font-size:11px}.device{display:grid;gap:3px}.device code{font:600 11px/1.2 ui-monospace,monospace}.pill{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 8px;border:1px solid;border-radius:999px;font-size:10px;font-weight:700}.pill:before{width:6px;height:6px;border-radius:50%;background:currentColor;content:""}.pill.active{color:#26734d;border-color:#b9dbc9;background:#f0faf4}.pill.unbound{color:#4f667c;border-color:#cfdae4;background:#f5f8fa}.pill.revoked{color:#a33b32;border-color:#e8c7c2;background:#fff5f3}.row-actions{display:flex;justify-content:flex-end;gap:6px}.row-actions button{height:30px;padding:0 9px;border:1px solid var(--line);background:#fff;color:#4e5965;font-size:11px}.row-actions .revoke{color:var(--red)}.empty{padding:86px;text-align:center;color:var(--muted)}.panel-foot{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-top:1px solid var(--line);color:var(--muted);font-size:11px}.panel-foot div{display:flex;gap:7px}
-dialog{width:min(520px,calc(100% - 32px));padding:0;border:0;border-radius:11px;background:transparent;box-shadow:0 30px 90px rgba(14,22,32,.28)}dialog::backdrop{background:rgba(19,28,38,.48);backdrop-filter:blur(3px)}.dialog-card{display:grid;gap:18px;margin:0;padding:24px;border:1px solid rgba(255,255,255,.5);border-radius:11px;background:#fff}.dialog-card header{display:flex;align-items:start;justify-content:space-between}.dialog-card h2{margin:0;font-size:20px;letter-spacing:-.02em}.dialog-card label{display:grid;gap:7px;font-size:11px;font-weight:700}.dialog-card input{width:100%}.dialog-card footer{display:flex;justify-content:flex-end;gap:8px}.icon-button{width:30px;height:30px;background:#f2f4f6;color:#68717c;font-size:19px}.notice{margin:0;padding:10px 12px;border:1px solid #dbe3ea;border-radius:6px;background:#f6f8fa;color:#5d6874;font-size:11px}.notice.warning{border-color:#ead8ad;background:#fff9e9;color:#765b13}.token-result textarea{height:270px;resize:none;border:1px solid var(--line);border-radius:7px;padding:12px;background:#f7f8fa;font:12px/1.8 ui-monospace,monospace}.event-list{display:grid;max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:7px}.event-row{display:grid;grid-template-columns:110px 1fr auto;gap:12px;padding:11px 12px;border-top:1px solid #e7ebef}.event-row:first-child{border-top:0}.event-row strong{font-size:11px}.event-row span{color:var(--muted);font:10px/1.45 ui-monospace,monospace}.event-empty{padding:42px;text-align:center;color:var(--muted);font-size:11px}.toast{position:fixed;right:24px;bottom:24px;max-width:380px;padding:11px 14px;border:1px solid #283643;border-radius:7px;background:#18212b;color:#fff;box-shadow:0 12px 32px rgba(14,22,32,.2);font-size:12px}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+dialog{width:min(520px,calc(100% - 32px));padding:0;border:0;border-radius:11px;background:transparent;box-shadow:0 30px 90px rgba(14,22,32,.28)}dialog::backdrop{background:rgba(19,28,38,.48);backdrop-filter:blur(3px)}.dialog-card{display:grid;gap:18px;margin:0;padding:24px;border:1px solid rgba(255,255,255,.5);border-radius:11px;background:#fff}.dialog-card header{display:flex;align-items:start;justify-content:space-between}.dialog-card h2{margin:0;font-size:20px;letter-spacing:-.02em}.dialog-card label{display:grid;gap:7px;font-size:11px;font-weight:700}.dialog-card input{width:100%}.dialog-card footer{display:flex;justify-content:flex-end;gap:8px}.icon-button{width:30px;height:30px;background:#f2f4f6;color:#68717c;font-size:19px}.notice{margin:0;padding:10px 12px;border:1px solid #dbe3ea;border-radius:6px;background:#f6f8fa;color:#5d6874;font-size:11px}.notice.warning{border-color:#ead8ad;background:#fff9e9;color:#765b13}.token-result textarea{height:270px;resize:none;border:1px solid var(--line);border-radius:7px;padding:12px;background:#f7f8fa;font:12px/1.8 ui-monospace,monospace}.api-key-list{display:grid;max-height:320px;overflow:auto;border:1px solid var(--line);border-radius:7px}.api-key-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:12px;border-top:1px solid #e7ebef}.api-key-row:first-child{border-top:0}.api-key-row strong{display:block;font-size:12px}.api-key-row span{display:block;margin-top:3px;color:var(--muted);font:10px/1.45 ui-monospace,monospace}.api-key-row button{height:30px;padding:0 9px;border:1px solid var(--line);background:#fff;color:var(--red);font-size:11px}.api-key-row .revoked-key{color:#a33b32}.api-key-empty{padding:32px;text-align:center;color:var(--muted);font-size:11px}.event-list{display:grid;max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:7px}.event-row{display:grid;grid-template-columns:110px 1fr auto;gap:12px;padding:11px 12px;border-top:1px solid #e7ebef}.event-row:first-child{border-top:0}.event-row strong{font-size:11px}.event-row span{color:var(--muted);font:10px/1.45 ui-monospace,monospace}.event-empty{padding:42px;text-align:center;color:var(--muted);font-size:11px}.toast{position:fixed;right:24px;bottom:24px;max-width:380px;padding:11px 14px;border:1px solid #283643;border-radius:7px;background:#18212b;color:#fff;box-shadow:0 12px 32px rgba(14,22,32,.2);font-size:12px}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 @media(prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}}`;
 
-const adminJs = String.raw`const state={offset:0,limit:25,total:0,tokens:[],action:null};
+const adminJs = String.raw`const state={offset:0,limit:25,total:0,tokens:[],apiKeys:[],action:null};
 const $=(selector)=>document.querySelector(selector);
 const rows=$("#license-rows"),empty=$("#empty"),toast=$("#toast");
 const formatTime=(value)=>value?new Intl.DateTimeFormat("zh-CN",{dateStyle:"medium",timeStyle:"short"}).format(new Date(value*1000)):"—";
@@ -149,6 +167,16 @@ function renderRow(license){
   if(license.status!=="revoked"){const revoke=document.createElement("button");revoke.textContent="撤销";revoke.className="revoke";revoke.onclick=()=>confirmAction("revoke",license);actions.append(revoke)}
   tr.dataset.id=license.id;return tr
 }
+function renderApiKey(apiKey){
+  const row=document.createElement("div");row.className="api-key-row";
+  const details=document.createElement("div");const title=document.createElement("strong");title.textContent=apiKey.name;details.append(title);
+  const meta=document.createElement("span");meta.textContent=apiKey.keyPrefix+"…"+apiKey.keyLast4+" · "+(apiKey.status==="active"?"有效":"已撤销")+" · 最近使用 "+formatTime(apiKey.lastUsedAt);if(apiKey.status!=="active")meta.className="revoked-key";details.append(meta);row.append(details);
+  if(apiKey.status==="active"){const revoke=document.createElement("button");revoke.textContent="撤销";revoke.onclick=()=>confirmApiKeyRevoke(apiKey);row.append(revoke)}
+  return row
+}
+async function loadApiKeys(){
+  try{const data=await api("/admin/api/api-keys");state.apiKeys=data.items;const list=$("#api-key-list");if(data.items.length)list.replaceChildren(...data.items.map(renderApiKey));else{const item=document.createElement("p");item.className="api-key-empty";item.textContent="还没有 API Key。创建后可供商城或自动发货系统调用。";list.replaceChildren(item)}}catch(error){notify(error.message)}
+}
 async function load(){
   const query=new URLSearchParams({offset:String(state.offset),limit:String(state.limit)});
   const search=$("#search").value.trim(),status=$("#status-filter").value;if(search)query.set("query",search);if(status)query.set("status",status);
@@ -164,6 +192,11 @@ function confirmAction(action,license){
   $("#confirm-title").textContent=action==="reset"?"解除设备绑定":"撤销这份授权";
   $("#confirm-message").textContent=action==="reset"?"绑定代次会递增，原 token 可以激活新设备；旧设备将在下次联网时失效。":"撤销后设备将在下次联网检查时失效。";
   $("#confirm-submit").textContent=action==="reset"?"确认重置":"确认撤销";$("#confirm-dialog").showModal()
+}
+function confirmApiKeyRevoke(apiKey){
+  state.action={action:"revoke-api-key",id:apiKey.id};$("#confirm-eyebrow").textContent="REVOKE API KEY";
+  $("#confirm-title").textContent="撤销 API Key";$("#confirm-message").textContent="撤销后，使用此 Key 的下发 token 请求会立即被拒绝。";
+  $("#confirm-submit").textContent="确认撤销";$("#confirm-dialog").showModal()
 }
 async function openEvents(license){
   $("#events-title").textContent="激活记录 · •••• "+license.tokenLast4;const list=$("#event-list");list.replaceChildren();
@@ -183,8 +216,13 @@ $("#generate-form").onsubmit=async(event)=>{
 $("#copy-tokens").onclick=async()=>{await navigator.clipboard.writeText(state.tokens.map(item=>item.token).join("\n"));notify("已复制全部 token")};
 $("#export-csv").onclick=()=>{const lines=["license_id,token,note",...state.tokens.map(item=>[item.id,item.token,item.note].map(value=>'"'+String(value).replaceAll('"','""')+'"').join(","))];const link=document.createElement("a");link.href=URL.createObjectURL(new Blob(["\uFEFF"+lines.join("\n")],{type:"text/csv;charset=utf-8"}));link.download="licensed-tokens-"+new Date().toISOString().slice(0,10)+".csv";link.click();URL.revokeObjectURL(link.href)};
 $("#close-tokens").onclick=()=>{state.tokens=[];$("#generated-tokens").value="";$("#tokens-dialog").close()};
+$("#open-api-keys").onclick=async()=>{$("#api-keys-dialog").showModal();await loadApiKeys()};
+$("#close-api-keys").onclick=()=>$("#api-keys-dialog").close();
+$("#api-key-form").onsubmit=async(event)=>{event.preventDefault();const button=$("#api-key-submit");button.disabled=true;try{const data=await api("/admin/api/api-keys",{method:"POST",body:JSON.stringify({name:$("#api-key-name").value})});$("#api-key-name").value="";$("#generated-api-key").value=data.key;$("#api-keys-dialog").close();$("#api-key-result-dialog").showModal()}catch(error){notify(error.message)}finally{button.disabled=false}};
+$("#copy-api-key").onclick=async()=>{await navigator.clipboard.writeText($("#generated-api-key").value);notify("已复制 API Key")};
+$("#close-api-key-result").onclick=()=>{$("#generated-api-key").value="";$("#api-key-result-dialog").close()};
 $("#close-events").onclick=()=>$("#events-dialog").close();
-$("#confirm-form").onsubmit=async(event)=>{if(event.submitter?.value==="cancel")return;event.preventDefault();if(!state.action)return;const button=$("#confirm-submit");button.disabled=true;try{await api("/admin/api/licenses/"+state.action.id+"/"+state.action.action,{method:"POST",body:"{}"});$("#confirm-dialog").close();notify(state.action.action==="reset"?"设备绑定已解除":"许可证已撤销");await load()}catch(error){notify(error.message)}finally{button.disabled=false;state.action=null}};
+$("#confirm-form").onsubmit=async(event)=>{if(event.submitter?.value==="cancel")return;event.preventDefault();if(!state.action)return;const button=$("#confirm-submit");button.disabled=true;try{if(state.action.action==="revoke-api-key"){await api("/admin/api/api-keys/"+state.action.id+"/revoke",{method:"POST",body:"{}"});notify("API Key 已撤销");await loadApiKeys()}else{await api("/admin/api/licenses/"+state.action.id+"/"+state.action.action,{method:"POST",body:"{}"});notify(state.action.action==="reset"?"设备绑定已解除":"许可证已撤销");await load()}$("#confirm-dialog").close()}catch(error){notify(error.message)}finally{button.disabled=false;state.action=null}};
 let searchTimer;$("#search").oninput=()=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>{state.offset=0;load()},260)};$("#status-filter").onchange=()=>{state.offset=0;load()};$("#previous").onclick=()=>{state.offset=Math.max(0,state.offset-state.limit);load()};$("#next").onclick=()=>{state.offset+=state.limit;load()};
 $("#logout").onclick=async()=>{try{await api("/admin/api/logout",{method:"POST",body:"{}"})}finally{location.replace("/admin/login")}};
 api("/admin/api/session").then(session=>{$("#admin-username").textContent=session.username;load()}).catch(()=>{});`;

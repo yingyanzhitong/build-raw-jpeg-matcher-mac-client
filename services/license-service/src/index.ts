@@ -7,30 +7,39 @@ import {
 } from "./auth";
 import { adminLoginResponse, adminUiResponse } from "./admin-ui";
 import {
+  apiKeyDigest,
+  generateApiKey,
   generateToken,
   isDeviceHash,
   issueLease,
+  normalizeApiKey,
   normalizeToken,
   tokenDigest,
   verifyLease,
 } from "./crypto";
 import {
   claimLicense,
+  createApiKey,
   createLicense,
   deleteClaim,
   enforceStoredRateLimit,
+  getApiKeyByDigest,
+  getApiKeyById,
   getClaim,
   getLicenseByDigest,
   getLicenseById,
   hydrateLicense,
   listLicenseEvents,
   listLicenseRows,
+  listApiKeys,
   recordLicenseEvent,
   updateClaim,
+  updateApiKey,
   updateLicense,
 } from "./storage";
 import type {
   AdminIdentity,
+  ApiKeyRecord,
   Env,
   LicenseClaim,
   LicenseRecord,
@@ -45,6 +54,7 @@ const PUBLIC_ERROR_CODES = new Set([
   "RATE_LIMITED",
   "LICENSE_EXPIRED",
   "SERVER_ERROR",
+  "INVALID_API_KEY",
 ]);
 const PLATFORM_VALUES = new Set(["macos", "windows"]);
 
@@ -92,6 +102,9 @@ export default {
       if (request.method === "POST" && url.pathname === "/api/v1/renew") {
         await enforceRateLimit(request, env);
         return json({ ok: true, lease: await renew(request, env, requestId) });
+      }
+      if (request.method === "POST" && url.pathname === "/api/v1/tokens") {
+        return json({ ok: true, ...(await issueTokensWithApiKey(request, env, requestId)) }, 201);
       }
       return json({ error: { code: "NOT_FOUND", message: "接口不存在。" } }, 404);
     } catch (error) {
@@ -341,6 +354,13 @@ async function handleAdmin(
   if (request.method === "GET" && url.pathname === "/admin/api/licenses") {
     return json(await listLicenses(env, url));
   }
+  if (request.method === "GET" && url.pathname === "/admin/api/api-keys") {
+    return json({ items: await listAdminApiKeys(env) });
+  }
+  if (request.method === "POST" && url.pathname === "/admin/api/api-keys") {
+    assertSameOrigin(request);
+    return json(await createAdminApiKey(request, env, identity), 201);
+  }
   if (request.method === "POST" && url.pathname === "/admin/api/licenses/generate") {
     assertSameOrigin(request);
     return json(await generateLicenses(request, env, identity, requestId), 201);
@@ -354,6 +374,11 @@ async function handleAdmin(
   if (match && request.method === "POST" && (match[2] === "revoke" || match[2] === "reset")) {
     assertSameOrigin(request);
     return json(await mutateLicense(env, match[1], match[2], identity, requestId));
+  }
+  const apiKeyMatch = url.pathname.match(/^\/admin\/api\/api-keys\/([0-9a-f-]+)\/revoke$/);
+  if (apiKeyMatch && request.method === "POST") {
+    assertSameOrigin(request);
+    return json(await revokeAdminApiKey(env, apiKeyMatch[1]));
   }
   throw new ApiError("NOT_FOUND", "管理接口不存在。", 404);
 }
@@ -374,26 +399,58 @@ async function generateLicenses(
   identity: AdminIdentity,
   requestId: string,
 ) {
-  const body = await readJson<{ count?: unknown; note?: unknown }>(request);
+  const input = parseTokenIssueInput(
+    await readJson<{ count?: unknown; note?: unknown }>(request),
+  );
+  return issueTokens(env, input, identity.username, requestId);
+}
+
+async function issueTokensWithApiKey(
+  request: Request,
+  env: Env,
+  requestId: string,
+) {
+  const apiKey = await requireIssuingApiKey(request, env);
+  await enforceApiKeyRateLimit(env, apiKey);
+  const input = parseTokenIssueInput(
+    await readJson<{ count?: unknown; note?: unknown }>(request),
+  );
+  const now = unixNow();
+  await updateApiKey(env, { ...apiKey, last_used_at: now, updated_at: now });
+  return issueTokens(env, input, `api-key:${apiKey.key_last4}`, requestId, now);
+}
+
+function parseTokenIssueInput(body: { count?: unknown; note?: unknown }) {
+  const count = body.count ?? 1;
   if (
-    !Number.isInteger(body.count) ||
-    Number(body.count) < 1 ||
-    Number(body.count) > 100 ||
+    !Number.isInteger(count) ||
+    Number(count) < 1 ||
+    Number(count) > 100 ||
     (body.note !== undefined && typeof body.note !== "string")
   ) {
     throw new ApiError("BAD_REQUEST", "生成数量必须为 1 到 100。");
   }
-  const count = Number(body.count);
-  const note = String(body.note ?? "").trim().slice(0, 120);
-  const now = unixNow();
+  return {
+    count: Number(count),
+    note: String(body.note ?? "").trim().slice(0, 120),
+  };
+}
+
+async function issueTokens(
+  env: Env,
+  input: { count: number; note: string },
+  actor: string,
+  requestId: string,
+  now = unixNow(),
+) {
   const tokens = await Promise.all(
-    Array.from({ length: count }, async () => {
+    Array.from({ length: input.count }, async () => {
       const token = generateToken();
       const license: LicenseRecord = {
         id: randomId(),
         token_digest: await tokenDigest(token, env.TOKEN_PEPPER),
         token_last4: token.replaceAll("-", "").slice(-4),
-        note,
+        note: input.note,
         status: "active",
         generation: 1,
         created_at: now,
@@ -401,11 +458,91 @@ async function generateLicenses(
         updated_at: now,
       };
       await createLicense(env, license);
-      await recordEvent(env, license.id, "generated", identity.username, requestId, {});
-      return { id: license.id, token, note };
+      await recordEvent(env, license.id, "generated", actor, requestId, {});
+      return { id: license.id, token, note: input.note };
     }),
   );
   return { tokens };
+}
+
+async function createAdminApiKey(request: Request, env: Env, identity: AdminIdentity) {
+  const body = await readJson<{ name?: unknown }>(request);
+  if (typeof body.name !== "string") {
+    throw new ApiError("BAD_REQUEST", "API Key 名称不能为空。");
+  }
+  const name = body.name.trim();
+  if (!name || name.length > 80) {
+    throw new ApiError("BAD_REQUEST", "API Key 名称长度必须为 1 到 80 个字符。");
+  }
+  const key = generateApiKey();
+  const now = unixNow();
+  const apiKey: ApiKeyRecord = {
+    id: randomId(),
+    name,
+    key_digest: await apiKeyDigest(key, env.TOKEN_PEPPER),
+    key_prefix: key.slice(0, 17),
+    key_last4: key.slice(-4),
+    status: "active",
+    created_at: now,
+    last_used_at: null,
+    revoked_at: null,
+    updated_at: now,
+  };
+  await createApiKey(env, apiKey);
+  console.log(
+    JSON.stringify({ event: "api_key_created", apiKeyId: apiKey.id, actor: identity.username }),
+  );
+  return { apiKey: toAdminApiKey(apiKey), key };
+}
+
+async function listAdminApiKeys(env: Env) {
+  const keys = await listApiKeys(env);
+  return keys
+    .sort((left, right) => right.updated_at - left.updated_at)
+    .map(toAdminApiKey);
+}
+
+async function revokeAdminApiKey(env: Env, id: string) {
+  const apiKey = await getApiKeyById(env, id);
+  if (!apiKey || apiKey.status === "revoked") {
+    throw new ApiError("NOT_FOUND", "API Key 不存在或已撤销。", 404);
+  }
+  const now = unixNow();
+  await updateApiKey(env, {
+    ...apiKey,
+    status: "revoked",
+    revoked_at: now,
+    updated_at: now,
+  });
+  return { ok: true };
+}
+
+async function requireIssuingApiKey(request: Request, env: Env) {
+  const authorization = request.headers.get("authorization") ?? "";
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  if (!match) {
+    throw new ApiError("INVALID_API_KEY", "API Key 无效。", 401);
+  }
+  let digest: string;
+  try {
+    digest = await apiKeyDigest(normalizeApiKey(match[1].trim()), env.TOKEN_PEPPER);
+  } catch {
+    throw new ApiError("INVALID_API_KEY", "API Key 无效。", 401);
+  }
+  const apiKey = await getApiKeyByDigest(env, digest);
+  if (!apiKey || apiKey.status !== "active") {
+    throw new ApiError("INVALID_API_KEY", "API Key 无效。", 401);
+  }
+  return apiKey;
+}
+
+async function enforceApiKeyRateLimit(env: Env, apiKey: ApiKeyRecord) {
+  const success = env.API_KEY_RATE_LIMITER
+    ? (await env.API_KEY_RATE_LIMITER.limit({ key: apiKey.id })).success
+    : await enforceStoredRateLimit(env, "token-issue", apiKey.id, 30, 60);
+  if (!success) {
+    throw new ApiError("RATE_LIMITED", "请求过于频繁，请稍后重试。", 429);
+  }
 }
 
 async function listLicenses(env: Env, url: URL) {
@@ -565,6 +702,20 @@ function toAdminLicense(row: LicenseRow) {
     activatedAt: row.activated_at,
     lastRenewedAt: row.last_renewed_at,
     updatedAt: row.updated_at,
+  };
+}
+
+function toAdminApiKey(apiKey: ApiKeyRecord) {
+  return {
+    id: apiKey.id,
+    name: apiKey.name,
+    keyPrefix: apiKey.key_prefix,
+    keyLast4: apiKey.key_last4,
+    status: apiKey.status,
+    createdAt: apiKey.created_at,
+    lastUsedAt: apiKey.last_used_at,
+    revokedAt: apiKey.revoked_at,
+    updatedAt: apiKey.updated_at,
   };
 }
 
