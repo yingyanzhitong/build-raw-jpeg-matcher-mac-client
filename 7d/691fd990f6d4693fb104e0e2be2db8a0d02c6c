@@ -1,0 +1,26 @@
+.github/workflows/deploy-github-pages.yml
+  s_f1d92f0c20eff5::t_1e0601d61dc2ad 5-6
+AGENTS.md
+  s_f1d92f0c20eff5::t_1e0601d61dc2ad 1-8
+README.md
+  s_f1d92f0c20eff5::t_1e0601d61dc2ad 1-7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "7d691fd990f6d4693fb104e0e2be2db8a0d02c6c",
+  "prompts": {},
+  "logical_commit_id": "7d691fd990f6d4693fb104e0e2be2db8a0d02c6c",
+  "sessions": {
+    "s_f1d92f0c20eff5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f92eb-8cb0-77a3-b4ff-3d87c30c046e",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>",
+      "total_additions": 17,
+      "total_deletions": 7
+    }
+  }
+}
