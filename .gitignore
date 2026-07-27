@@ -20,3 +20,8 @@ pnpm-debug.log*
 
 # Local icon backups
 src-tauri/icons/*.previous.*
+
+# Tencent Cloud EdgeOne
+.env
+.edgeone/*
+.tef_dist/*
