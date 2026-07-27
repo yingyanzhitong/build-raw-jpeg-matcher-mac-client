@@ -96,10 +96,9 @@ export function assertSameOrigin(request: Request) {
   } catch {
     throw new AdminAuthError("AUTH_REQUIRED");
   }
-  if (
-    normalizedOrigin !== new URL(request.url).origin ||
-    !ADMIN_ALLOWED_ORIGINS.has(normalizedOrigin)
-  ) {
+  // EdgeOne 在自定义域名后会把函数请求 URL 改写为内部运行域名，
+  // 因此不能再用 request.url 的 origin 作为浏览器同源基准。
+  if (!ADMIN_ALLOWED_ORIGINS.has(normalizedOrigin)) {
     throw new AdminAuthError("AUTH_REQUIRED");
   }
 }
