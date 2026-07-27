@@ -125,3 +125,28 @@ jobs:
 
           verify_origin "$DEPLOYMENT_ORIGIN" "$DEPLOYMENT_QUERY"
           verify_origin "https://licensed.xyyamsz.cn"
+
+          assert_redirect() {
+            local PATH="$1"
+            local EXPECTED_LOCATION="$2"
+            local HEADERS
+            local LOCATION
+            HEADERS="$(curl --silent --show-error --dump-header - --output /dev/null \
+              --max-time 20 "https://licensed.xyyamsz.cn${PATH}")"
+            test "$(awk '/^HTTP\// { status = $2 } END { print status }' <<<"$HEADERS")" = "302"
+            LOCATION="$(awk '/^[Ll]ocation:/ { location = $0; sub(/^[^:]*:[[:space:]]*/, "", location) } END { print location }' <<<"$HEADERS" | tr -d '\r')"
+            test "$LOCATION" = "$EXPECTED_LOCATION"
+          }
+
+          assert_redirect "/" "/admin/"
+          assert_redirect "/admin/" "/admin/login"
+
+          LOGIN_STATUS="$(curl --silent --show-error \
+            --output /tmp/admin-login-response.json \
+            --write-out '%{http_code}' --max-time 20 \
+            "https://licensed.xyyamsz.cn/admin/api/login" \
+            -H 'Content-Type: application/json' \
+            -H 'Origin: https://licensed.xyyamsz.cn' \
+            --data '{"username":"deployment-check","password":"invalid-password-2026"}')"
+          test "$LOGIN_STATUS" = "401"
+          test "$(jq -r '.error.code' /tmp/admin-login-response.json)" = "INVALID_CREDENTIALS"

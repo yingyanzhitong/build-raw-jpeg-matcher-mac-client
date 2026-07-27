@@ -69,7 +69,7 @@ EdgeOne KV 是最终一致存储，不用于设备 claim、管理员会话或授
 
 公共 API 为 `POST /api/v1/activate`、`POST /api/v1/renew` 和 `GET /healthz`。请求体执行严格大小、类型和格式校验，并用 Rate Limiting binding 抑制滥用。
 
-管理页面和管理 API 统一放在 `/admin/*`。管理员账号和使用 PBKDF2-SHA-256 加盐派生的密码哈希保存在 Blob，禁止保存明文密码；登录成功后生成高熵随机会话 token，仅把 token 摘要作为 Blob key，并通过 `HttpOnly`、`Secure`、`SameSite=Strict` Cookie 交付浏览器。会话记录包含 12 小时绝对到期时间，并通过强一致读取和删除实现即时登出。登录和所有管理写操作执行同源校验，登录接口使用独立限流空间。
+管理页面和管理 API 统一放在 `/admin/*`，根路径 `/` 以相对跳转进入 `/admin/`。管理员账号和使用 PBKDF2-SHA-256 加盐派生的密码哈希保存在 Blob，禁止保存明文密码；登录成功后生成高熵随机会话 token，仅把 token 摘要作为 Blob key，并通过 `HttpOnly`、`Secure`、`SameSite=Strict` Cookie 交付浏览器。会话记录包含 12 小时绝对到期时间，并通过强一致读取和删除实现即时登出。登录和所有管理写操作执行同源校验，固定只接受 `https://licensed.xyyamsz.cn`；不得以 EdgeOne 函数内部运行 URL 判定同源，也不得在 Location 响应头暴露内部域名。登录接口使用独立限流空间。
 
 ### 发行通道
 

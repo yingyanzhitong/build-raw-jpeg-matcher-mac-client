@@ -1,5 +1,16 @@
 ## ADDED Requirements
 
+### Requirement: Custom-domain management console entry
+`https://licensed.xyyamsz.cn/` MUST 作为 Token 管理平台的公开入口，并由 EdgeOne Node.js 云函数处理。管理页面跳转 MUST 使用相对路径，且登录同源校验 MUST 固定信任该公开域名而不是 EdgeOne 内部运行域名。
+
+#### Scenario: Administrator opens the custom domain
+- **WHEN** 管理员访问 `https://licensed.xyyamsz.cn/`
+- **THEN** 服务返回到 `/admin/` 的相对跳转，未登录时再相对跳转到 `/admin/login`
+
+#### Scenario: EdgeOne rewrites the function request URL
+- **WHEN** 浏览器以 `https://licensed.xyyamsz.cn` 作为 Origin 登录，但 EdgeOne 将函数请求 URL 改写为内部域名
+- **THEN** 服务接受该公开 Origin 的登录请求，且任何 Location 响应头均不包含 EdgeOne 内部域名
+
 ### Requirement: Secure token generation
 管理后台 MUST 生成带 `RJM-` 前缀的高熵 Crockford Base32 token，并 MUST 只在创建响应中返回一次明文。
 

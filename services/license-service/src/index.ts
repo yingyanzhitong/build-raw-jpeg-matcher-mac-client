@@ -79,6 +79,9 @@ export default {
           runtime: "edgeone-node",
         });
       }
+      if (request.method === "GET" && url.pathname === "/") {
+        return redirect("/admin/");
+      }
       if (url.pathname.startsWith("/admin")) {
         return await handleAdmin(request, env, url, requestId);
       }
@@ -318,7 +321,7 @@ async function handleAdmin(
       request.method === "GET" &&
       (url.pathname === "/admin" || url.pathname === "/admin/")
     ) {
-      return Response.redirect(`${url.origin}/admin/login`, 302);
+      return redirect("/admin/login");
     }
     throw new ApiError("AUTH_REQUIRED", "请先登录管理后台。", 401);
   }
@@ -353,6 +356,16 @@ async function handleAdmin(
     return json(await mutateLicense(env, match[1], match[2], identity, requestId));
   }
   throw new ApiError("NOT_FOUND", "管理接口不存在。", 404);
+}
+
+function redirect(location: string) {
+  return new Response(null, {
+    status: 302,
+    headers: {
+      "cache-control": "no-store",
+      location,
+    },
+  });
 }
 
 async function generateLicenses(

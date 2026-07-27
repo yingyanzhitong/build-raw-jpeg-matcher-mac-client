@@ -34,6 +34,16 @@ beforeEach(() => {
 });
 
 describe("公开激活与续签接口", () => {
+  it("自定义域名根路径进入管理后台，且未登录跳转不泄露 EdgeOne 内部域名", async () => {
+    const root = await call("/", undefined, true, "GET");
+    expect(root.response.status).toBe(302);
+    expect(root.response.headers.get("location")).toBe("/admin/");
+
+    const admin = await call("/admin/", undefined, true, "GET");
+    expect(admin.response.status).toBe(302);
+    expect(admin.response.headers.get("location")).toBe("/admin/login");
+  });
+
   it("健康检查确认 EdgeOne Blob 可用", async () => {
     const result = await call("/healthz", undefined, true, "GET");
     expect(result.response.status).toBe(200);
@@ -187,6 +197,20 @@ describe("管理后台安全边界", () => {
     });
     expect(crossSite.response.status).toBe(401);
     expect(crossSite.body.error.code).toBe("AUTH_REQUIRED");
+
+    const internalRuntimeUrl = await worker.fetch(
+      new Request("https://pages-pro-1-512e.pages-scf-sg-pro.qcloudteo.com/admin/api/login", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          origin: "https://licensed.xyyamsz.cn",
+        },
+        body: JSON.stringify({ username: "admin", password: ADMIN_PASSWORD }),
+      }),
+      serviceEnv(),
+      { waitUntil() {} },
+    );
+    expect(internalRuntimeUrl.status).toBe(200);
 
     const malformedOrigin = await call(
       "/admin/api/login",
@@ -376,9 +400,10 @@ async function call(
     },
   );
   await Promise.all(pending);
+  const responseText = await response.text();
   return {
     response,
-    body: (await response.json()) as {
+    body: (responseText ? JSON.parse(responseText) : {}) as {
       ok: boolean;
       runtime?: string;
       lease: SignedLease;
