@@ -1,0 +1,45 @@
+CHANGELOG.md
+  s_f1d92f0c20eff5::t_10d919e80fb733 3-8
+services/license-service/src/types.ts
+  s_f1d92f0c20eff5::t_3af81be5716c74 22,70-82
+services/license-service/src/storage.ts
+  s_f1d92f0c20eff5::t_3af81be5716c74 4,19-20,47-75,217-220
+services/license-service/README.md
+  s_f1d92f0c20eff5::t_e4665c929c4d67 9-10,16-33
+services/license-service/src/index.ts
+  s_f1d92f0c20eff5::t_a50692af0d4beb 27,424,426-428,434,473-475,506,546,705-718
+  s_f1d92f0c20eff5::t_2950864d3550b3 10-11,15,22,26,34,37,42,57,106-108,356-362,377-381,400-410,413-423,433,435-445,447,453,461-462,466-472,476-505,507-517,519-545
+  s_f1d92f0c20eff5::t_6fd4fd7df61523 547
+services/license-service/src/admin-ui.ts
+  s_f1d92f0c20eff5::t_62a6baa1e1f4b5 33,96-113,142,145,148,170-179,195-199,219-223,225
+services/license-service/package.json
+  s_f1d92f0c20eff5::t_10d919e80fb733 3
+services/license-service/src/crypto.ts
+  s_f1d92f0c20eff5::t_3af81be5716c74 6,37-55,66
+CHANGELOG.licensed.md
+  s_f1d92f0c20eff5::t_10d919e80fb733 5-16
+services/license-service/test/worker.test.ts
+  s_f1d92f0c20eff5::t_9b3772b2376b0d 257-336,395-398,469,481,508-512,520-522
+  s_f1d92f0c20eff5::t_d8a800640f5857 386
+services/license-service/package-lock.json
+  s_f1d92f0c20eff5::t_8e27f71a42745f 3,9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "8cfe6f9e520ac79e9343e332119b1777bdebb316",
+  "prompts": {},
+  "logical_commit_id": "0d0218849cf1bc14131abc8b97834190188a6450",
+  "sessions": {
+    "s_f1d92f0c20eff5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f92eb-8cb0-77a3-b4ff-3d87c30c046e",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>",
+      "total_additions": 420,
+      "total_deletions": 30
+    }
+  }
+}
