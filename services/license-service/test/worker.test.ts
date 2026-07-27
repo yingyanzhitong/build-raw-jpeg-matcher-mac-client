@@ -254,6 +254,86 @@ describe("管理后台安全边界", () => {
     expect(afterLogout.response.status).toBe(401);
   });
 
+  it("API Key 仅展示一次，可通过接口下发 token，撤销后立即失效", async () => {
+    await seedAdmin("admin", ADMIN_PASSWORD);
+    const loggedIn = await login();
+    const cookie = loggedIn.response.headers.get("set-cookie")?.split(";")[0] ?? "";
+    const created = await call(
+      "/admin/api/api-keys",
+      { name: "商城自动发货" },
+      true,
+      "POST",
+      { cookie, origin: "https://licensed.xyyamsz.cn" },
+    );
+    expect(created.response.status).toBe(201);
+    const createdBody = created.body as unknown as {
+      key: string;
+      apiKey: { id: string; keyPrefix: string; keyLast4: string; status: string };
+    };
+    expect(createdBody.key).toMatch(/^rjm_live_[A-Za-z0-9_-]{43}$/);
+    expect(createdBody.apiKey).toMatchObject({
+      keyLast4: createdBody.key.slice(-4),
+      status: "active",
+    });
+    expect(JSON.stringify(store.snapshot())).not.toContain(createdBody.key);
+
+    const listed = await call(
+      "/admin/api/api-keys",
+      undefined,
+      true,
+      "GET",
+      { cookie },
+    );
+    expect(listed.response.status).toBe(200);
+    expect(JSON.stringify(listed.body)).not.toContain(createdBody.key);
+
+    const issued = await call(
+      "/api/v1/tokens",
+      { count: 2, note: "订单 A-1001" },
+      true,
+      "POST",
+      { authorization: `Bearer ${createdBody.key}` },
+    );
+    expect(issued.response.status).toBe(201);
+    const issuedBody = issued.body as unknown as {
+      tokens: Array<{ id: string; token: string; note: string }>;
+    };
+    expect(issuedBody.tokens).toHaveLength(2);
+    expect(issuedBody.tokens[0]).toMatchObject({ note: "订单 A-1001" });
+    expect((await activate(issuedBody.tokens[0].token, DEVICE_A)).response.status).toBe(200);
+    expect(JSON.stringify(store.snapshot())).not.toContain(issuedBody.tokens[0].token);
+
+    const limited = await call(
+      "/api/v1/tokens",
+      { note: "限流测试" },
+      true,
+      "POST",
+      { authorization: `Bearer ${createdBody.key}` },
+      true,
+      false,
+    );
+    expect(limited.response.status).toBe(429);
+    expect(limited.body.error.code).toBe("RATE_LIMITED");
+
+    const revoked = await call(
+      `/admin/api/api-keys/${createdBody.apiKey.id}/revoke`,
+      {},
+      true,
+      "POST",
+      { cookie, origin: "https://licensed.xyyamsz.cn" },
+    );
+    expect(revoked.response.status).toBe(200);
+    const rejected = await call(
+      "/api/v1/tokens",
+      { note: "不应生成" },
+      true,
+      "POST",
+      { authorization: `Bearer ${createdBody.key}` },
+    );
+    expect(rejected.response.status).toBe(401);
+    expect(rejected.body.error.code).toBe("INVALID_API_KEY");
+  });
+
   it("批量生成只返回一次明文，审计生成、撤销与重置操作", async () => {
     const testEnv = serviceEnv();
     const generated = await licenseServiceTesting.generateLicenses(
@@ -303,6 +383,7 @@ describe("管理后台安全边界", () => {
     const loginHtml = await adminLoginResponse("/admin/login").text();
     const html = await adminUiResponse("/admin/").text();
     const script = await adminUiResponse("/admin/app.js").text();
+    expect(() => new Function(script)).not.toThrow();
     expect(loginHtml).toContain('type="password"');
     expect(loginHtml).not.toContain("邮箱");
     expect(html).toContain("logout");
@@ -311,6 +392,10 @@ describe("管理后台安全边界", () => {
     expect(script).toContain('confirmAction("revoke"');
     expect(script).toContain('confirmAction("reset"');
     expect(script).toContain('"/events"');
+    expect(html).toContain("open-api-keys");
+    expect(html).toContain("api-key-form");
+    expect(script).toContain('"/admin/api/api-keys"');
+    expect(script).toContain("revoke-api-key");
   });
 });
 
@@ -381,6 +466,7 @@ async function call(
   method = "POST",
   headers: Record<string, string> = {},
   adminLoginRateLimitSuccess = true,
+  apiKeyRateLimitSuccess = true,
 ) {
   const pending: Promise<unknown>[] = [];
   const response = await worker.fetch(
@@ -392,7 +478,7 @@ async function call(
       },
       body: body === undefined ? undefined : JSON.stringify(body),
     }),
-    serviceEnv(rateLimitSuccess, adminLoginRateLimitSuccess),
+    serviceEnv(rateLimitSuccess, adminLoginRateLimitSuccess, apiKeyRateLimitSuccess),
     {
       waitUntil(promise) {
         pending.push(promise);
@@ -419,7 +505,11 @@ function decodeLease(lease: SignedLease) {
   };
 }
 
-function serviceEnv(rateLimitSuccess = true, adminLoginRateLimitSuccess = true): Env {
+function serviceEnv(
+  rateLimitSuccess = true,
+  adminLoginRateLimitSuccess = true,
+  apiKeyRateLimitSuccess = true,
+): Env {
   return {
     LICENSE_STORE: store,
     LICENSE_RATE_LIMITER: {
@@ -427,6 +517,9 @@ function serviceEnv(rateLimitSuccess = true, adminLoginRateLimitSuccess = true):
     },
     ADMIN_LOGIN_RATE_LIMITER: {
       limit: async () => ({ success: adminLoginRateLimitSuccess }),
+    },
+    API_KEY_RATE_LIMITER: {
+      limit: async () => ({ success: apiKeyRateLimitSuccess }),
     },
     TOKEN_PEPPER: "test-only-token-pepper-with-at-least-32-bytes",
     LICENSE_PRIVATE_KEY_PEM: PRIVATE_KEY,
