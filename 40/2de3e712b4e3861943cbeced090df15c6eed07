@@ -1,0 +1,77 @@
+.github/workflows/build-licensed-installers.yml
+  s_f1d92f0c20eff5::t_5305181eb9cf3a 92
+  s_f1d92f0c20eff5::t_478b80971ae7b2 79-80,83,85-86,90
+openspec/changes/add-licensed-activation/tasks.md
+  s_f1d92f0c20eff5::t_5305181eb9cf3a 76
+  s_f1d92f0c20eff5::t_a71fa1b2b0e354 73-75
+  s_f1d92f0c20eff5::t_dd18ae262ecef3 68-72
+services/license-service/package-lock.json
+  s_f1d92f0c20eff5::t_d39bfa724418b0 3,9,15,20-23,26,29-35,38-41,43,46-52,55-58,60,63-69,72-77,80-86,89-92,94,97-103,106-109,111,114-120,123-126,128,131-137,140-143,145,148-154,157-160,162,165-171,174-177,179,182-188,191-194,196,199-205,208-211,213,216-222,224-230,233-239,242-247,250-256,259-262,267-273,276-279,281,284-290,292-298,301-307,310-313,315,318,320-321,323,329,335,337-338,340,346,352,354-355,363,369,371-372,380,386,388-389,397,403,405-406,414,420,422-423,431,437,439-440,442,448,454,456-457,459,465,471-481,483,489-490,492-495,497,503-504,506-509,511,517-518,520-523,525,531-532,534-537,539,545-546,548-551,553,559-560,562-565,567,574,576-579,581,588,590-593,601-602,604-607,609,615-616,618-621,623,629-630,632-635,637,643-644,646-649,651,657-658,660-663,665,671-672,674-677,679,685-686,688-691,693,699-700,702-747,750-777,784-791,793-798,800-806,808-812,814-820,823-826,828-831,833,835-838,841-843,845-851,853-856,860-863,866,868,871-874,878-883,886,889-892,896-898,901-913,916-919,921,923,925-926,929-932,936-940,943-946,950-956,959-962,965-966,969-972,976-981,984-987,991,994-997,999,1004-1007,1009,1011-1014,1016,1018-1021,1023,1025-1027,1030-1058,1061-1064,1068,1071-1074,1076,1078,1081-1084,1088-1096,1099-1102,1104,1106-1109,1111,1114-1117,1120-1121,1124-1127,1129-1134,1137,1140,1143-1146,1148-1150,1154,1157-1160,1162,1164-1167,1169,1171-1174,1177,1179-1182,1185-1188,1190-1202,1204-1210,1212,1215-1218,1222,1225,1228-1229,1231-1257,1260-1263,1265,1267-1270,1272,1274,1277-1280,1282,1284-1287,1289,1291-1296,1298-1301,1305,1308-1311,1315-1316,1319-1322,1325-1328,1332,1335-1338,1340-1344,1347,1350-1353,1355,1357-1360,1362-1363,1365-1370,1372-1374,1376-1382,1385-1395,1398-1422,1425-1428,1433-1436,1440-1459,1461-1462,1465,1468-1520,1523-1526,1530-1531,1533-1535,1537
+.github/workflows/deploy-license-service.yml
+  s_f1d92f0c20eff5::t_cbb8540d54d85a 1,17-18,22,42,46-63,67-68,71,73-92
+CHANGELOG.licensed.md
+  s_f1d92f0c20eff5::t_27328a369a4002 5-18
+CHANGELOG.md
+  s_f1d92f0c20eff5::t_9f86bc8eb19fdb 3-9
+docs/LICENSED_BRANCH.md
+  s_f1d92f0c20eff5::t_6e4f83dde2c4c7 3,5,31,37
+openspec/changes/add-licensed-activation/design.md
+  s_f1d92f0c20eff5::t_ced6af09e3fbc9 5,40,60,70,95,101,106,108
+openspec/changes/add-licensed-activation/proposal.md
+  s_f1d92f0c20eff5::t_53a80b9cf65e90 8,29-31
+openspec/changes/add-licensed-activation/specs/license-administration/spec.md
+  s_f1d92f0c20eff5::t_eeaf4715f3031b 15,23
+openspec/changes/add-licensed-activation/specs/licensed-device-activation/spec.md
+  s_f1d92f0c20eff5::t_d148d6ecc0eb45 26
+openspec/changes/add-licensed-activation/specs/licensed-release-distribution/spec.md
+  s_f1d92f0c20eff5::t_1c3671ba76dc59 66,70,72-79,82
+release/README.licensed.md
+  s_f1d92f0c20eff5::t_126ef3ffee6491 23-24,28-29
+scripts/check-licensed-invariants.mjs
+  s_f1d92f0c20eff5::t_f61d927e6f6c31 15-16,24-25,35,46-50,54,56-60,64,66,69,71
+services/license-service/README.md
+  s_f1d92f0c20eff5::t_a30f981b9f5512 3,5-10,17-18,20,26,28-33,35-43,45,51-66,68,78,80
+services/license-service/package.json
+  s_f1d92f0c20eff5::t_a69a7b2e60394e 3,9-10,19
+services/license-service/scf/scf_bootstrap
+  s_f1d92f0c20eff5::t_a91d2c46013a0c 1-3
+services/license-service/scripts/build-scf.mjs
+  s_f1d92f0c20eff5::t_a0964e1ce2726a 1,3,6-27
+services/license-service/src/auth.ts
+  s_f1d92f0c20eff5::t_bda87d2efcb520 13-15
+services/license-service/src/index.ts
+  s_f1d92f0c20eff5::t_926c3b92db880f 50,80-81,84-86,326,631-640
+services/license-service/src/scf-server.ts
+  s_f1d92f0c20eff5::t_7e083c28095c62 1-2,4-5,7-32,34-144,146-157
+services/license-service/src/types.ts
+  s_f1d92f0c20eff5::t_ed6c86b4c41812 27
+services/license-service/test/scf-server.test.ts
+  s_f1d92f0c20eff5::t_41e30f1743480b 1-4,6,8-34,36-58,60-78
+services/license-service/test/worker.test.ts
+  s_f1d92f0c20eff5::t_f787e8b48e8857 37,40-56,175-178,225-228,241-245,357-360,392-400,402,411,414,417
+services/license-service/tsconfig.json
+  s_f1d92f0c20eff5::t_43e86a15d8e87f 12
+src-tauri/src/license.rs
+  s_f1d92f0c20eff5::t_346ecb3b7aaada 13-14,17
+src-tauri/tauri.licensed.conf.json
+  s_f1d92f0c20eff5::t_6b265dbdbac899 4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "402de3e712b4e3861943cbeced090df15c6eed07",
+  "prompts": {},
+  "logical_commit_id": "402de3e712b4e3861943cbeced090df15c6eed07",
+  "sessions": {
+    "s_f1d92f0c20eff5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f92eb-8cb0-77a3-b4ff-3d87c30c046e",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>",
+      "total_additions": 2,
+      "total_deletions": 2
+    }
+  }
+}
