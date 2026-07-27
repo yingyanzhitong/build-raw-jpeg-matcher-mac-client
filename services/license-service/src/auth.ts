@@ -1,7 +1,16 @@
-import type { AdminIdentity, AdminUserRow, Env } from "./types";
+import {
+  deleteSession,
+  enforceStoredRateLimit,
+  getAdminUser,
+  getSession,
+  putAdminUser,
+  putSession,
+} from "./storage";
+import type { AdminIdentity, Env } from "./types";
 
 const SESSION_COOKIE = "rjm_admin_session";
 const SESSION_TTL_SECONDS = 12 * 60 * 60;
+const ADMIN_ALLOWED_ORIGINS = new Set(["https://licensed.xyyamsz.cn"]);
 export const PASSWORD_ITERATIONS = 100_000;
 
 export class AdminAuthError extends Error {
@@ -19,12 +28,7 @@ export async function loginAdmin(
   const password = body.password;
   await enforceLoginRateLimit(request, env, username);
 
-  const user = await env.LICENSE_DB.prepare(
-    `SELECT username, password_salt, password_hash, password_iterations, status
-     FROM admin_users WHERE username = ? LIMIT 1`,
-  )
-    .bind(username)
-    .first<AdminUserRow>();
+  const user = await getAdminUser(env, username);
   const validHash = await verifyPassword(
     password,
     user?.password_salt ?? "c29tZS1ub25zZW5zaXRpdmUtc2FsdA",
@@ -32,7 +36,7 @@ export async function loginAdmin(
     user?.password_iterations ?? PASSWORD_ITERATIONS,
   );
   const valid = user?.status === "active" && validHash;
-  if (!valid) {
+  if (!valid || !user) {
     throw new AdminAuthError("INVALID_CREDENTIALS");
   }
 
@@ -40,16 +44,12 @@ export async function loginAdmin(
   const sessionKey = await sessionStorageKey(token);
   const now = Math.floor(Date.now() / 1000);
   await Promise.all([
-    env.ADMIN_SESSIONS.put(
-      sessionKey,
-      JSON.stringify({ username: user.username, createdAt: now }),
-      { expirationTtl: SESSION_TTL_SECONDS },
-    ),
-    env.LICENSE_DB.prepare(
-      "UPDATE admin_users SET last_login_at = ?, updated_at = ? WHERE username = ?",
-    )
-      .bind(now, now, user.username)
-      .run(),
+    putSession(env, sessionKey, {
+      username: user.username,
+      createdAt: now,
+      expiresAt: now + SESSION_TTL_SECONDS,
+    }),
+    putAdminUser(env, { ...user, last_login_at: now, updated_at: now }),
   ]);
   return {
     identity: { username: user.username },
@@ -59,33 +59,47 @@ export async function loginAdmin(
 
 export async function requireAdminSession(
   request: Request,
-  env: Pick<Env, "ADMIN_SESSIONS">,
+  env: Pick<Env, "LICENSE_STORE">,
 ): Promise<AdminIdentity> {
   const token = parseCookie(request.headers.get("cookie"), SESSION_COOKIE);
   if (!token || !/^[A-Za-z0-9_-]{40,64}$/.test(token)) {
     throw new AdminAuthError("AUTH_REQUIRED");
   }
-  const session = await env.ADMIN_SESSIONS.get<{ username?: unknown }>(
-    await sessionStorageKey(token),
-    "json",
-  );
-  if (!session || typeof session.username !== "string") {
+  const sessionKey = await sessionStorageKey(token);
+  const session = await getSession(env as Env, sessionKey);
+  const now = Math.floor(Date.now() / 1000);
+  if (!session || typeof session.username !== "string" || session.expiresAt <= now) {
+    if (session) {
+      await deleteSession(env as Env, sessionKey);
+    }
     throw new AdminAuthError("AUTH_REQUIRED");
   }
   return { username: session.username };
 }
 
-export async function logoutAdmin(request: Request, env: Pick<Env, "ADMIN_SESSIONS">) {
+export async function logoutAdmin(request: Request, env: Pick<Env, "LICENSE_STORE">) {
   const token = parseCookie(request.headers.get("cookie"), SESSION_COOKIE);
   if (token) {
-    await env.ADMIN_SESSIONS.delete(await sessionStorageKey(token));
+    await deleteSession(env as Env, await sessionStorageKey(token));
   }
   return serializeSessionCookie("", 0);
 }
 
 export function assertSameOrigin(request: Request) {
   const origin = request.headers.get("origin");
-  if (!origin || origin !== new URL(request.url).origin) {
+  if (!origin) {
+    throw new AdminAuthError("AUTH_REQUIRED");
+  }
+  let normalizedOrigin: string;
+  try {
+    normalizedOrigin = new URL(origin).origin;
+  } catch {
+    throw new AdminAuthError("AUTH_REQUIRED");
+  }
+  if (
+    normalizedOrigin !== new URL(request.url).origin ||
+    !ADMIN_ALLOWED_ORIGINS.has(normalizedOrigin)
+  ) {
     throw new AdminAuthError("AUTH_REQUIRED");
   }
 }
@@ -130,11 +144,16 @@ function validatePassword(password: string) {
 
 async function enforceLoginRateLimit(request: Request, env: Env, username: string) {
   const ip =
-    request.headers.get("CF-Connecting-IP") ??
+    request.headers.get("EO-Client-IP") ??
+    request.headers.get("x-real-ip") ??
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    request.headers.get("CF-Connecting-IP") ??
     "unknown";
-  const result = await env.ADMIN_LOGIN_RATE_LIMITER.limit({ key: `${ip}:${username}` });
-  if (!result.success) {
+  const key = `${ip}:${username}`;
+  const success = env.ADMIN_LOGIN_RATE_LIMITER
+    ? (await env.ADMIN_LOGIN_RATE_LIMITER.limit({ key })).success
+    : await enforceStoredRateLimit(env, "admin-login", key, 8, 60);
+  if (!success) {
     throw new AdminAuthError("RATE_LIMITED");
   }
 }
@@ -170,7 +189,7 @@ async function derivePasswordHash(password: string, salt: string, iterations: nu
     {
       name: "PBKDF2",
       hash: "SHA-256",
-      salt: saltBytes,
+      salt: saltBytes.buffer as ArrayBuffer,
       iterations,
     },
     key,

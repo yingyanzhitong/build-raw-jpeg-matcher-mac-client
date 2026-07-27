@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - licensed
+      - codex/edgeone-license-service
   pull_request:
     branches:
       - licensed
@@ -63,4 +64,3 @@ jobs:
         run: |
           npm run typecheck
           npm test
-          npx wrangler deploy --dry-run

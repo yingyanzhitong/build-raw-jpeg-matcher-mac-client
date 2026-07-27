@@ -14,7 +14,29 @@ import {
   tokenDigest,
   verifyLease,
 } from "./crypto";
-import type { AdminIdentity, Env, LicenseRow, SignedLease } from "./types";
+import {
+  claimLicense,
+  createLicense,
+  deleteClaim,
+  enforceStoredRateLimit,
+  getClaim,
+  getLicenseByDigest,
+  getLicenseById,
+  hydrateLicense,
+  listLicenseEvents,
+  listLicenseRows,
+  recordLicenseEvent,
+  updateClaim,
+  updateLicense,
+} from "./storage";
+import type {
+  AdminIdentity,
+  Env,
+  LicenseClaim,
+  LicenseRecord,
+  LicenseRow,
+  SignedLease,
+} from "./types";
 
 const PUBLIC_ERROR_CODES = new Set([
   "INVALID_TOKEN",
@@ -25,6 +47,10 @@ const PUBLIC_ERROR_CODES = new Set([
   "SERVER_ERROR",
 ]);
 const PLATFORM_VALUES = new Set(["macos", "windows"]);
+
+interface ExecutionContextLike {
+  waitUntil(promise: Promise<unknown>): void;
+}
 
 class ApiError extends Error {
   constructor(
@@ -37,13 +63,21 @@ class ApiError extends Error {
 }
 
 export default {
-  async fetch(request: Request, env: Env, context: ExecutionContext) {
-    const requestId = request.headers.get("cf-ray") ?? crypto.randomUUID();
+  async fetch(request: Request, env: Env, context: ExecutionContextLike) {
+    const requestId =
+      request.headers.get("eo-request-id") ??
+      request.headers.get("x-request-id") ??
+      request.headers.get("cf-ray") ??
+      randomId();
     try {
       const url = new URL(request.url);
       if (request.method === "GET" && url.pathname === "/healthz") {
-        await env.LICENSE_DB.prepare("SELECT 1 AS ok").first();
-        return json({ ok: true, service: "raw-jpeg-matcher-license" });
+        await env.LICENSE_STORE.list({ prefix: "health/", consistency: "strong" });
+        return json({
+          ok: true,
+          service: "raw-jpeg-matcher-license",
+          runtime: "edgeone-node",
+        });
       }
       if (url.pathname.startsWith("/admin")) {
         return await handleAdmin(request, env, url, requestId);
@@ -104,51 +138,69 @@ async function activate(request: Request, env: Env, requestId: string): Promise<
     throw new ApiError("INVALID_TOKEN", "token 无效。");
   }
   const digest = await tokenDigest(token, env.TOKEN_PEPPER);
-  let license = await env.LICENSE_DB.prepare(
-    "SELECT * FROM licenses WHERE token_digest = ? LIMIT 1",
-  )
-    .bind(digest)
-    .first<LicenseRow>();
+  let license = await getLicenseByDigest(env, digest);
   if (!license) {
     throw new ApiError("INVALID_TOKEN", "token 无效。");
   }
-  if (license.status === "revoked") {
-    throw new ApiError("REVOKED", "授权已撤销。", 403);
-  }
+  assertActiveLicense(license);
 
   const now = unixNow();
-  if (!license.device_hash) {
-    const result = await env.LICENSE_DB.prepare(
-      `UPDATE licenses
-       SET device_hash = ?, platform = ?, activated_at = ?, last_renewed_at = ?, updated_at = ?
-       WHERE id = ? AND status = 'active' AND device_hash IS NULL`,
-    )
-      .bind(body.deviceHash, body.platform, now, now, now, license.id)
-      .run();
-    license = await env.LICENSE_DB.prepare("SELECT * FROM licenses WHERE id = ?")
-      .bind(license.id)
-      .first<LicenseRow>();
-    if (!license) {
-      throw new ApiError("SERVER_ERROR", "许可证记录读取失败。", 500);
-    }
-    if ((result.meta.changes ?? 0) > 0) {
-      await recordEvent(env, license.id, "activated", "device", requestId, {
-        platform: body.platform,
-        deviceHash: body.deviceHash,
-        version: body.version,
-      });
-    }
+  const candidate: LicenseClaim = {
+    license_id: license.id,
+    device_hash: body.deviceHash,
+    platform: body.platform,
+    generation: license.generation,
+    activated_at: now,
+    last_renewed_at: now,
+    updated_at: now,
+    nonce: randomId(),
+  };
+  let outcome = await claimLicense(env, candidate);
+  if (outcome.claim.generation !== license.generation) {
+    await deleteClaim(env, license.id);
+    outcome = await claimLicense(env, candidate);
   }
-  if (license.device_hash !== body.deviceHash) {
+  let { claim, created } = outcome;
+  if (
+    claim.generation !== license.generation ||
+    claim.device_hash !== body.deviceHash
+  ) {
     throw new ApiError("ALREADY_BOUND", "token 已绑定另一台设备。", 409);
   }
 
-  await env.LICENSE_DB.prepare(
-    "UPDATE licenses SET last_renewed_at = ?, updated_at = ? WHERE id = ?",
-  )
-    .bind(now, now, license.id)
-    .run();
-  const current = { ...license, last_renewed_at: now, updated_at: now };
+  if (!created) {
+    claim = {
+      ...claim,
+      platform: body.platform,
+      last_renewed_at: now,
+      updated_at: now,
+    };
+    await updateClaim(env, claim);
+  }
+
+  license = await getLicenseById(env, license.id);
+  if (!license) {
+    throw new ApiError("SERVER_ERROR", "许可证记录读取失败。", 500);
+  }
+  assertActiveLicense(license);
+  if (license.generation !== claim.generation) {
+    throw new ApiError("LICENSE_EXPIRED", "绑定已重置，请重新激活。", 403);
+  }
+  if (created) {
+    await recordEvent(env, license.id, "activated", "device", requestId, {
+      platform: body.platform,
+      deviceHash: body.deviceHash,
+      version: body.version,
+    });
+  }
+
+  const current: LicenseRow = {
+    ...license,
+    device_hash: claim.device_hash,
+    platform: claim.platform,
+    activated_at: claim.activated_at,
+    last_renewed_at: claim.last_renewed_at,
+  };
   logSuccess("activate", requestId, current);
   return issueLease(env, current, now);
 }
@@ -165,7 +217,8 @@ async function renew(request: Request, env: Env, requestId: string): Promise<Sig
     !isDeviceHash(body.deviceHash) ||
     typeof body.platform !== "string" ||
     !PLATFORM_VALUES.has(body.platform) ||
-    typeof body.version !== "string"
+    typeof body.version !== "string" ||
+    body.version.length > 40
   ) {
     throw new ApiError("LICENSE_EXPIRED", "租约参数无效。");
   }
@@ -180,30 +233,45 @@ async function renew(request: Request, env: Env, requestId: string): Promise<Sig
     throw new ApiError("LICENSE_EXPIRED", "租约设备不匹配。", 403);
   }
 
-  const license = await env.LICENSE_DB.prepare("SELECT * FROM licenses WHERE id = ?")
-    .bind(payload.license_id)
-    .first<LicenseRow>();
+  let license = await getLicenseById(env, payload.license_id);
+  if (!license) {
+    throw new ApiError("REVOKED", "授权不存在或已撤销。", 403);
+  }
+  assertActiveLicense(license);
+  if (license.generation !== payload.generation) {
+    throw new ApiError("LICENSE_EXPIRED", "绑定已重置，请重新激活。", 403);
+  }
+  let claim = await getClaim(env, license.id);
   if (
-    !license ||
-    license.status !== "active" ||
-    license.device_hash !== body.deviceHash ||
-    license.generation !== payload.generation
+    !claim ||
+    claim.generation !== license.generation ||
+    claim.device_hash !== body.deviceHash
   ) {
-    throw new ApiError("REVOKED", "授权已撤销或绑定已重置。", 403);
+    throw new ApiError("LICENSE_EXPIRED", "租约设备或代次不匹配。", 403);
   }
 
   const now = unixNow();
-  const update = await env.LICENSE_DB.prepare(
-    `UPDATE licenses
-     SET last_renewed_at = ?, platform = ?, updated_at = ?
-     WHERE id = ? AND status = 'active' AND device_hash = ? AND generation = ?`,
-  )
-    .bind(now, body.platform, now, license.id, body.deviceHash, payload.generation)
-    .run();
-  if ((update.meta.changes ?? 0) !== 1) {
-    throw new ApiError("REVOKED", "授权状态已变化。", 403);
+  claim = {
+    ...claim,
+    platform: body.platform,
+    last_renewed_at: now,
+    updated_at: now,
+  };
+  await updateClaim(env, claim);
+
+  license = await getLicenseById(env, license.id);
+  if (!license) {
+    throw new ApiError("REVOKED", "授权不存在或已撤销。", 403);
   }
-  const current = { ...license, last_renewed_at: now, platform: body.platform, updated_at: now };
+  assertActiveLicense(license);
+  if (license.generation !== payload.generation) {
+    throw new ApiError("LICENSE_EXPIRED", "绑定已重置，请重新激活。", 403);
+  }
+  const current = await hydrateLicense(env, license);
+  if (current.device_hash !== body.deviceHash) {
+    throw new ApiError("LICENSE_EXPIRED", "绑定状态已变化，请重新激活。", 403);
+  }
+
   await recordEvent(env, license.id, "renewed", "device", requestId, {
     platform: body.platform,
     deviceHash: body.deviceHash,
@@ -278,15 +346,7 @@ async function handleAdmin(
     /^\/admin\/api\/licenses\/([0-9a-f-]+)\/(events|revoke|reset)$/,
   );
   if (match?.[2] === "events" && request.method === "GET") {
-    const events = await env.LICENSE_DB.prepare(
-      `SELECT id, event_type AS eventType, created_at AS createdAt, actor,
-              request_id AS requestId, platform, device_suffix AS deviceSuffix,
-              detail_json AS detailJson
-       FROM license_events WHERE license_id = ? ORDER BY created_at DESC LIMIT 200`,
-    )
-      .bind(match[1])
-      .all();
-    return json({ items: events.results });
+    return json({ items: await listLicenseEvents(env, match[1]) });
   }
   if (match && request.method === "POST" && (match[2] === "revoke" || match[2] === "reset")) {
     assertSameOrigin(request);
@@ -316,79 +376,58 @@ async function generateLicenses(
   const tokens = await Promise.all(
     Array.from({ length: count }, async () => {
       const token = generateToken();
-      return {
-        id: crypto.randomUUID(),
-        token,
-        digest: await tokenDigest(token, env.TOKEN_PEPPER),
-        last4: token.replaceAll("-", "").slice(-4),
+      const license: LicenseRecord = {
+        id: randomId(),
+        token_digest: await tokenDigest(token, env.TOKEN_PEPPER),
+        token_last4: token.replaceAll("-", "").slice(-4),
         note,
+        status: "active",
+        generation: 1,
+        created_at: now,
+        revoked_at: null,
+        updated_at: now,
       };
+      await createLicense(env, license);
+      await recordEvent(env, license.id, "generated", identity.username, requestId, {});
+      return { id: license.id, token, note };
     }),
   );
-  const statements: D1PreparedStatement[] = [];
-  for (const token of tokens) {
-    statements.push(
-      env.LICENSE_DB.prepare(
-        `INSERT INTO licenses
-         (id, token_digest, token_last4, note, status, generation, created_at, updated_at)
-         VALUES (?, ?, ?, ?, 'active', 1, ?, ?)`,
-      ).bind(token.id, token.digest, token.last4, token.note, now, now),
-      eventStatement(env, token.id, "generated", identity.username, requestId, {}),
-    );
-  }
-  await env.LICENSE_DB.batch(statements);
-  return {
-    tokens: tokens.map(({ id, token, note: itemNote }) => ({ id, token, note: itemNote })),
-  };
+  return { tokens };
 }
 
 async function listLicenses(env: Env, url: URL) {
   const limit = clampInteger(url.searchParams.get("limit"), 25, 1, 100);
   const offset = clampInteger(url.searchParams.get("offset"), 0, 0, 1_000_000);
-  const query = (url.searchParams.get("query") ?? "").trim().slice(0, 120);
+  const query = (url.searchParams.get("query") ?? "").trim().toLowerCase().slice(0, 120);
   const status = url.searchParams.get("status") ?? "";
-  const conditions: string[] = [];
-  const parameters: unknown[] = [];
-  if (query) {
-    conditions.push("(id LIKE ? OR note LIKE ? OR token_last4 LIKE ?)");
-    const pattern = `%${query}%`;
-    parameters.push(pattern, pattern, pattern);
-  }
-  if (status === "active" || status === "revoked") {
-    conditions.push("status = ?");
-    parameters.push(status);
-  } else if (status === "bound") {
-    conditions.push("status = 'active' AND device_hash IS NOT NULL");
-  } else if (status === "unbound") {
-    conditions.push("status = 'active' AND device_hash IS NULL");
-  }
-  const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
-  const [items, count, total, bound, revoked] = await env.LICENSE_DB.batch([
-    env.LICENSE_DB.prepare(
-      `SELECT id, token_last4 AS tokenLast4, note, status,
-              CASE WHEN device_hash IS NULL THEN NULL ELSE substr(device_hash, -8) END AS deviceSuffix,
-              platform, generation, created_at AS createdAt, activated_at AS activatedAt,
-              last_renewed_at AS lastRenewedAt, updated_at AS updatedAt
-       FROM licenses ${where} ORDER BY updated_at DESC LIMIT ? OFFSET ?`,
-    ).bind(...parameters, limit, offset),
-    env.LICENSE_DB.prepare(`SELECT COUNT(*) AS value FROM licenses ${where}`).bind(...parameters),
-    env.LICENSE_DB.prepare("SELECT COUNT(*) AS value FROM licenses"),
-    env.LICENSE_DB.prepare(
-      "SELECT COUNT(*) AS value FROM licenses WHERE status = 'active' AND device_hash IS NOT NULL",
-    ),
-    env.LICENSE_DB.prepare("SELECT COUNT(*) AS value FROM licenses WHERE status = 'revoked'"),
-  ]);
-  const totalValue = metricValue(total);
-  const boundValue = metricValue(bound);
-  const revokedValue = metricValue(revoked);
+  const allRows = await listLicenseRows(env);
+  const filteredRows = allRows.filter((row) => {
+    const matchesQuery =
+      !query ||
+      row.id.toLowerCase().includes(query) ||
+      row.note.toLowerCase().includes(query) ||
+      row.token_last4.toLowerCase().includes(query);
+    const matchesStatus =
+      !status ||
+      (status === "active" && row.status === "active") ||
+      (status === "revoked" && row.status === "revoked") ||
+      (status === "bound" && row.status === "active" && row.device_hash !== null) ||
+      (status === "unbound" && row.status === "active" && row.device_hash === null);
+    return matchesQuery && matchesStatus;
+  });
+  filteredRows.sort((left, right) => right.updated_at - left.updated_at);
+  const bound = allRows.filter(
+    (row) => row.status === "active" && row.device_hash !== null,
+  ).length;
+  const revoked = allRows.filter((row) => row.status === "revoked").length;
   return {
-    items: items.results,
-    total: metricValue(count),
+    items: filteredRows.slice(offset, offset + limit).map(toAdminLicense),
+    total: filteredRows.length,
     metrics: {
-      total: totalValue,
-      bound: boundValue,
-      unbound: Math.max(0, totalValue - boundValue - revokedValue),
-      revoked: revokedValue,
+      total: allRows.length,
+      bound,
+      unbound: Math.max(0, allRows.length - bound - revoked),
+      revoked,
     },
   };
 }
@@ -400,25 +439,27 @@ async function mutateLicense(
   identity: AdminIdentity,
   requestId: string,
 ) {
-  const now = unixNow();
-  const result =
-    action === "revoke"
-      ? await env.LICENSE_DB.prepare(
-          `UPDATE licenses SET status = 'revoked', revoked_at = ?, updated_at = ?
-           WHERE id = ? AND status != 'revoked'`,
-        )
-          .bind(now, now, id)
-          .run()
-      : await env.LICENSE_DB.prepare(
-          `UPDATE licenses
-           SET status = 'active', device_hash = NULL, platform = NULL, generation = generation + 1,
-               activated_at = NULL, last_renewed_at = NULL, revoked_at = NULL, updated_at = ?
-           WHERE id = ?`,
-        )
-          .bind(now, id)
-          .run();
-  if ((result.meta.changes ?? 0) !== 1) {
+  const license = await getLicenseById(env, id);
+  if (!license || (action === "revoke" && license.status === "revoked")) {
     throw new ApiError("NOT_FOUND", "许可证不存在或状态未变化。", 404);
+  }
+  const now = unixNow();
+  if (action === "revoke") {
+    await updateLicense(env, {
+      ...license,
+      status: "revoked",
+      revoked_at: now,
+      updated_at: now,
+    });
+  } else {
+    await updateLicense(env, {
+      ...license,
+      status: "active",
+      generation: license.generation + 1,
+      revoked_at: null,
+      updated_at: now,
+    });
+    await deleteClaim(env, id);
   }
   await recordEvent(
     env,
@@ -439,43 +480,37 @@ async function recordEvent(
   requestId: string,
   detail: { platform?: string; deviceHash?: string; version?: string },
 ) {
-  await eventStatement(env, licenseId, eventType, actor, requestId, detail).run();
-}
-
-function eventStatement(
-  env: Env,
-  licenseId: string,
-  eventType: string,
-  actor: string,
-  requestId: string,
-  detail: { platform?: string; deviceHash?: string; version?: string },
-) {
-  const safeDetail = detail.version ? JSON.stringify({ version: detail.version }) : "{}";
-  return env.LICENSE_DB.prepare(
-    `INSERT INTO license_events
-     (id, license_id, event_type, created_at, actor, request_id, platform, device_suffix, detail_json)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  ).bind(
-    crypto.randomUUID(),
+  await recordLicenseEvent(env, {
+    id: randomId(),
     licenseId,
     eventType,
-    unixNow(),
+    createdAt: unixNow(),
     actor,
     requestId,
-    detail.platform ?? null,
-    detail.deviceHash?.slice(-8) ?? null,
-    safeDetail,
-  );
+    platform: detail.platform ?? null,
+    deviceSuffix: detail.deviceHash?.slice(-8) ?? null,
+    detailJson: detail.version ? JSON.stringify({ version: detail.version }) : "{}",
+  });
 }
 
 async function enforceRateLimit(request: Request, env: Env) {
   const key =
-    request.headers.get("CF-Connecting-IP") ??
+    request.headers.get("EO-Client-IP") ??
+    request.headers.get("x-real-ip") ??
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    request.headers.get("CF-Connecting-IP") ??
     "unknown";
-  const result = await env.LICENSE_RATE_LIMITER.limit({ key });
-  if (!result.success) {
+  const success = env.LICENSE_RATE_LIMITER
+    ? (await env.LICENSE_RATE_LIMITER.limit({ key })).success
+    : await enforceStoredRateLimit(env, "public-api", key, 20, 60);
+  if (!success) {
     throw new ApiError("RATE_LIMITED", "请求过于频繁，请稍后重试。", 429);
+  }
+}
+
+function assertActiveLicense(license: LicenseRecord) {
+  if (license.status === "revoked") {
+    throw new ApiError("REVOKED", "授权已撤销。", 403);
   }
 }
 
@@ -504,8 +539,20 @@ function isSignedLease(value: unknown): value is SignedLease {
   );
 }
 
-function metricValue(result: D1Result) {
-  return Number((result.results[0] as { value?: unknown } | undefined)?.value ?? 0);
+function toAdminLicense(row: LicenseRow) {
+  return {
+    id: row.id,
+    tokenLast4: row.token_last4,
+    note: row.note,
+    status: row.status,
+    deviceSuffix: row.device_hash?.slice(-8) ?? null,
+    platform: row.platform,
+    generation: row.generation,
+    createdAt: row.created_at,
+    activatedAt: row.activated_at,
+    lastRenewedAt: row.last_renewed_at,
+    updatedAt: row.updated_at,
+  };
 }
 
 function clampInteger(value: string | null, fallback: number, min: number, max: number) {
@@ -515,6 +562,14 @@ function clampInteger(value: string | null, fallback: number, min: number, max: 
 
 function unixNow() {
   return Math.floor(Date.now() / 1000);
+}
+
+function randomId() {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
 function logSuccess(operation: string, requestId: string, license: LicenseRow) {
@@ -561,7 +616,7 @@ function normalizeError(error: unknown) {
 }
 
 function json(body: unknown, status = 200, extraHeaders: HeadersInit = {}) {
-  return Response.json(body, {
+  return new Response(JSON.stringify(body), {
     status,
     headers: {
       "cache-control": "no-store",

@@ -1,30 +1,46 @@
-import { env } from "cloudflare:workers";
-import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { createPasswordRecord, PASSWORD_ITERATIONS } from "../src/auth";
 import { adminLoginResponse, adminUiResponse } from "../src/admin-ui";
 import { tokenDigest } from "../src/crypto";
 import worker, { licenseServiceTesting } from "../src/index";
+import {
+  createLicense,
+  getClaim,
+  getLicenseById,
+  listLicenseEvents,
+  putAdminUser,
+  updateLicense,
+} from "../src/storage";
 import type { Env, SignedLease } from "../src/types";
+import { MemoryBlobStore } from "./memory-store";
 
 const TOKEN = "RJM-01234-56789-ABCDE-FGHJK-MNPQR";
 const DEVICE_A = "a".repeat(64);
 const DEVICE_B = "b".repeat(64);
 const ADMIN_PASSWORD = "correct-horse-battery-staple-2026";
+const PRIVATE_KEY = readFileSync(
+  path.join(import.meta.dirname, "fixtures/test-ed25519-private.pem"),
+  "utf8",
+);
 
-beforeEach(async () => {
-  await env.LICENSE_DB.batch([
-    env.LICENSE_DB.prepare("DELETE FROM license_events"),
-    env.LICENSE_DB.prepare("DELETE FROM licenses"),
-    env.LICENSE_DB.prepare("DELETE FROM admin_users"),
-  ]);
-  const sessions = await env.ADMIN_SESSIONS.list();
-  await Promise.all(sessions.keys.map((key) => env.ADMIN_SESSIONS.delete(key.name)));
+let store: MemoryBlobStore;
+
+beforeEach(() => {
+  store = new MemoryBlobStore();
 });
 
 describe("公开激活与续签接口", () => {
-  it("拒绝非法 token，且数据库不保存明文 token", async () => {
+  it("健康检查确认 EdgeOne Blob 可用", async () => {
+    const result = await call("/healthz", undefined, true, "GET");
+    expect(result.response.status).toBe(200);
+    expect(result.body).toMatchObject({ ok: true, runtime: "edgeone-node" });
+  });
+
+  it("拒绝非法 token，且 Blob 不保存明文 token", async () => {
     const invalid = await call("/api/v1/activate", {
       token: "bad-token",
       deviceHash: DEVICE_A,
@@ -35,17 +51,14 @@ describe("公开激活与续签接口", () => {
     expect(invalid.body.error.code).toBe("INVALID_TOKEN");
 
     const id = await seedLicense(TOKEN);
-    const row = await env.LICENSE_DB.prepare(
-      "SELECT token_digest, token_last4 FROM licenses WHERE id = ?",
-    )
-      .bind(id)
-      .first<{ token_digest: string; token_last4: string }>();
+    const row = await getLicenseById(serviceEnv(), id);
     expect(row?.token_digest).not.toContain("RJM");
     expect(row?.token_digest).not.toContain("MNPQR");
     expect(row?.token_last4).toBe("NPQR");
+    expect(JSON.stringify(store.snapshot())).not.toContain(TOKEN);
   });
 
-  it("首台设备原子绑定，同机重复激活幂等，第二台设备被拒绝", async () => {
+  it("首台设备绑定，同机重复激活幂等，第二台设备被拒绝", async () => {
     await seedLicense(TOKEN);
     const first = await activate(TOKEN, DEVICE_A);
     expect(first.response.status).toBe(200);
@@ -61,13 +74,11 @@ describe("公开激活与续签接口", () => {
   });
 
   it("双设备并发激活只有一个成功", async () => {
-    await seedLicense(TOKEN);
+    const id = await seedLicense(TOKEN);
     const results = await Promise.all([activate(TOKEN, DEVICE_A), activate(TOKEN, DEVICE_B)]);
     expect(results.map((result) => result.response.status).sort()).toEqual([200, 409]);
-    const row = await env.LICENSE_DB.prepare("SELECT device_hash FROM licenses").first<{
-      device_hash: string;
-    }>();
-    expect([DEVICE_A, DEVICE_B]).toContain(row?.device_hash);
+    const claim = await getClaim(serviceEnv(), id);
+    expect([DEVICE_A, DEVICE_B]).toContain(claim?.device_hash);
   });
 
   it("合法租约可以续签，篡改签名会被拒绝", async () => {
@@ -87,25 +98,27 @@ describe("公开激活与续签接口", () => {
   it("撤销和重置都会让旧设备下次在线失效，重置后原 token 可绑定新机", async () => {
     const id = await seedLicense(TOKEN);
     const activated = await activate(TOKEN, DEVICE_A);
-    await env.LICENSE_DB.prepare(
-      "UPDATE licenses SET status = 'revoked', revoked_at = unixepoch() WHERE id = ?",
-    )
-      .bind(id)
-      .run();
+    const license = await getLicenseById(serviceEnv(), id);
+    expect(license).not.toBeNull();
+    await updateLicense(serviceEnv(), {
+      ...license!,
+      status: "revoked",
+      revoked_at: Math.floor(Date.now() / 1000),
+    });
     const revoked = await renew(activated.body.lease, DEVICE_A);
     expect(revoked.body.error.code).toBe("REVOKED");
 
-    await env.LICENSE_DB.prepare(
-      `UPDATE licenses
-       SET status = 'active', device_hash = NULL, generation = generation + 1, revoked_at = NULL
-       WHERE id = ?`,
-    )
-      .bind(id)
-      .run();
+    await licenseServiceTesting.mutateLicense(
+      serviceEnv(),
+      id,
+      "reset",
+      { username: "admin" },
+      "request-reset",
+    );
     const rebound = await activate(TOKEN, DEVICE_B);
     expect(rebound.response.status).toBe(200);
     const oldDevice = await renew(activated.body.lease, DEVICE_A);
-    expect(oldDevice.body.error.code).toBe("REVOKED");
+    expect(oldDevice.body.error.code).toBe("LICENSE_EXPIRED");
   });
 
   it("限流器拒绝时返回稳定 RATE_LIMITED", async () => {
@@ -135,7 +148,7 @@ describe("管理后台安全边界", () => {
     expect(forged.response.status).toBe(401);
   });
 
-  it("账号密码正确时创建 KV 会话，D1 不保存明文密码", async () => {
+  it("账号密码正确时创建 Blob 会话，且不保存明文密码", async () => {
     expect(PASSWORD_ITERATIONS).toBe(100_000);
     await seedAdmin("admin", ADMIN_PASSWORD);
     const wrong = await call(
@@ -143,7 +156,7 @@ describe("管理后台安全边界", () => {
       { username: "admin", password: "wrong-password-value" },
       true,
       "POST",
-      { origin: "https://licensed.example" },
+      { origin: "https://licensed.xyyamsz.cn" },
     );
     expect(wrong.response.status).toBe(401);
     expect(wrong.body.error.code).toBe("INVALID_CREDENTIALS");
@@ -163,12 +176,7 @@ describe("管理后台安全边界", () => {
       { cookie: cookie?.split(";")[0] ?? "" },
     );
     expect(authenticated.response.status).toBe(200);
-
-    const row = await env.LICENSE_DB.prepare(
-      "SELECT password_salt, password_hash FROM admin_users WHERE username = 'admin'",
-    ).first<{ password_salt: string; password_hash: string }>();
-    expect(row?.password_hash).not.toContain(ADMIN_PASSWORD);
-    expect(row?.password_salt).not.toContain(ADMIN_PASSWORD);
+    expect(JSON.stringify(store.snapshot())).not.toContain(ADMIN_PASSWORD);
   });
 
   it("登录受同源校验和独立限流保护，登出立即删除会话", async () => {
@@ -180,12 +188,22 @@ describe("管理后台安全边界", () => {
     expect(crossSite.response.status).toBe(401);
     expect(crossSite.body.error.code).toBe("AUTH_REQUIRED");
 
+    const malformedOrigin = await call(
+      "/admin/api/login",
+      { username: "admin", password: ADMIN_PASSWORD },
+      true,
+      "POST",
+      { origin: "::invalid-origin" },
+    );
+    expect(malformedOrigin.response.status).toBe(401);
+    expect(malformedOrigin.body.error.code).toBe("AUTH_REQUIRED");
+
     const limited = await call(
       "/admin/api/login",
       { username: "admin", password: ADMIN_PASSWORD },
       true,
       "POST",
-      { origin: "https://licensed.example" },
+      { origin: "https://licensed.xyyamsz.cn" },
       false,
     );
     expect(limited.response.status).toBe(429);
@@ -198,7 +216,7 @@ describe("管理后台安全边界", () => {
       {},
       true,
       "POST",
-      { cookie: sessionCookie, origin: "https://licensed.example" },
+      { cookie: sessionCookie, origin: "https://licensed.xyyamsz.cn" },
     );
     expect(logout.response.status).toBe(200);
     expect(logout.response.headers.get("set-cookie")).toContain("Max-Age=0");
@@ -228,19 +246,11 @@ describe("管理后台安全边界", () => {
     expect(new Set(generated.tokens.map((item) => item.token)).size).toBe(3);
 
     const first = generated.tokens[0];
-    const database = await env.LICENSE_DB.prepare(
-      "SELECT token_digest, token_last4, generation FROM licenses WHERE id = ?",
-    )
-      .bind(first.id)
-      .first<{ token_digest: string; token_last4: string; generation: number }>();
-    expect(database?.token_digest).not.toContain(first.token);
-    expect(database?.token_last4).toBe(first.token.replaceAll("-", "").slice(-4));
+    const stored = await getLicenseById(testEnv, first.id);
+    expect(stored?.token_digest).not.toContain(first.token);
+    expect(stored?.token_last4).toBe(first.token.replaceAll("-", "").slice(-4));
 
-    await env.LICENSE_DB.prepare(
-      "UPDATE licenses SET device_hash = ?, activated_at = unixepoch() WHERE id = ?",
-    )
-      .bind(DEVICE_A, first.id)
-      .run();
+    await activate(first.token, DEVICE_A);
     await licenseServiceTesting.mutateLicense(
       testEnv,
       first.id,
@@ -255,20 +265,13 @@ describe("管理后台安全边界", () => {
       { username: "admin" },
       "request-reset",
     );
-    const reset = await env.LICENSE_DB.prepare(
-      "SELECT status, device_hash, generation FROM licenses WHERE id = ?",
-    )
-      .bind(first.id)
-      .first<{ status: string; device_hash: string | null; generation: number }>();
-    expect(reset).toMatchObject({ status: "active", device_hash: null, generation: 2 });
-    const events = await env.LICENSE_DB.prepare(
-      "SELECT event_type FROM license_events WHERE license_id = ? ORDER BY created_at",
-    )
-      .bind(first.id)
-      .all<{ event_type: string }>();
-    expect(events.results).toHaveLength(3);
-    expect(events.results.map((event) => event.event_type)).toEqual(
-      expect.arrayContaining(["generated", "revoked", "binding_reset"]),
+    const reset = await getLicenseById(testEnv, first.id);
+    const resetClaim = await getClaim(testEnv, first.id);
+    expect(reset).toMatchObject({ status: "active", generation: 2 });
+    expect(resetClaim).toBeNull();
+    const events = await listLicenseEvents(testEnv, first.id);
+    expect(events.map((event) => event.eventType)).toEqual(
+      expect.arrayContaining(["generated", "activated", "revoked", "binding_reset"]),
     );
   });
 
@@ -290,32 +293,33 @@ describe("管理后台安全边界", () => {
 async function seedLicense(token: string) {
   const id = crypto.randomUUID();
   const now = Math.floor(Date.now() / 1000);
-  await env.LICENSE_DB.prepare(
-    `INSERT INTO licenses
-     (id, token_digest, token_last4, note, status, generation, created_at, updated_at)
-     VALUES (?, ?, ?, 'test', 'active', 1, ?, ?)`,
-  )
-    .bind(
-      id,
-      await tokenDigest(token, env.TOKEN_PEPPER),
-      token.replaceAll("-", "").slice(-4),
-      now,
-      now,
-    )
-    .run();
+  await createLicense(serviceEnv(), {
+    id,
+    token_digest: await tokenDigest(token, serviceEnv().TOKEN_PEPPER),
+    token_last4: token.replaceAll("-", "").slice(-4),
+    note: "test",
+    status: "active",
+    generation: 1,
+    created_at: now,
+    revoked_at: null,
+    updated_at: now,
+  });
   return id;
 }
 
 async function seedAdmin(username: string, password: string) {
   const record = await createPasswordRecord(password);
   const now = Math.floor(Date.now() / 1000);
-  await env.LICENSE_DB.prepare(
-    `INSERT INTO admin_users
-     (username, password_salt, password_hash, password_iterations, status, created_at, updated_at)
-     VALUES (?, ?, ?, ?, 'active', ?, ?)`,
-  )
-    .bind(username, record.salt, record.hash, record.iterations, now, now)
-    .run();
+  await putAdminUser(serviceEnv(), {
+    username,
+    password_salt: record.salt,
+    password_hash: record.hash,
+    password_iterations: record.iterations,
+    status: "active",
+    created_at: now,
+    updated_at: now,
+    last_login_at: null,
+  });
 }
 
 function login() {
@@ -324,7 +328,7 @@ function login() {
     { username: "admin", password: ADMIN_PASSWORD },
     true,
     "POST",
-    { origin: "https://licensed.example" },
+    { origin: "https://licensed.xyyamsz.cn" },
   );
 }
 
@@ -347,17 +351,16 @@ function renew(lease: SignedLease, deviceHash: string) {
 }
 
 async function call(
-  path: string,
+  requestPath: string,
   body?: unknown,
   rateLimitSuccess = true,
   method = "POST",
   headers: Record<string, string> = {},
   adminLoginRateLimitSuccess = true,
 ) {
-  const context = createExecutionContext();
-  const testEnv = serviceEnv(rateLimitSuccess, adminLoginRateLimitSuccess);
+  const pending: Promise<unknown>[] = [];
   const response = await worker.fetch(
-    new Request(`https://licensed.example${path}`, {
+    new Request(`https://licensed.xyyamsz.cn${requestPath}`, {
       method,
       headers: {
         ...(body === undefined ? {} : { "content-type": "application/json" }),
@@ -365,13 +368,19 @@ async function call(
       },
       body: body === undefined ? undefined : JSON.stringify(body),
     }),
-    testEnv,
-    context,
+    serviceEnv(rateLimitSuccess, adminLoginRateLimitSuccess),
+    {
+      waitUntil(promise) {
+        pending.push(promise);
+      },
+    },
   );
-  await waitOnExecutionContext(context);
+  await Promise.all(pending);
   return {
     response,
     body: (await response.json()) as {
+      ok: boolean;
+      runtime?: string;
       lease: SignedLease;
       error: { code: string; message: string };
     },
@@ -387,17 +396,17 @@ function decodeLease(lease: SignedLease) {
 
 function serviceEnv(rateLimitSuccess = true, adminLoginRateLimitSuccess = true): Env {
   return {
-    LICENSE_DB: env.LICENSE_DB,
-    ADMIN_SESSIONS: env.ADMIN_SESSIONS,
+    LICENSE_STORE: store,
     LICENSE_RATE_LIMITER: {
       limit: async () => ({ success: rateLimitSuccess }),
     },
     ADMIN_LOGIN_RATE_LIMITER: {
       limit: async () => ({ success: adminLoginRateLimitSuccess }),
     },
-    TOKEN_PEPPER: env.TOKEN_PEPPER,
-    LICENSE_PRIVATE_KEY_PEM: env.LICENSE_PRIVATE_KEY_PEM,
-    LICENSE_PUBLIC_KEY_BASE64: env.LICENSE_PUBLIC_KEY_BASE64,
-    PRODUCT_ID: env.PRODUCT_ID,
+    TOKEN_PEPPER: "test-only-token-pepper-with-at-least-32-bytes",
+    LICENSE_PRIVATE_KEY_PEM: PRIVATE_KEY,
+    LICENSE_PUBLIC_KEY_BASE64: "LjLA32R86oUYUpbT7dUyLLllccUyje6OIgpi/ANKdPg=",
+    PRODUCT_ID: "raw-jpeg-matcher-licensed",
+    CLAIM_SETTLE_MS: 0,
   };
 }
