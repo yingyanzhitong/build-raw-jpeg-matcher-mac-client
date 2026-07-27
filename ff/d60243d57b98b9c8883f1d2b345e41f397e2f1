@@ -1,0 +1,22 @@
+.github/workflows/build-installers.yml
+  s_f1d92f0c20eff5::t_68dbace3621350 7
+.github/workflows/deploy-github-pages.yml
+  s_f1d92f0c20eff5::t_b7eeedc57edbb0 5-10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "ffd60243d57b98b9c8883f1d2b345e41f397e2f1",
+  "prompts": {},
+  "logical_commit_id": "ffd60243d57b98b9c8883f1d2b345e41f397e2f1",
+  "sessions": {
+    "s_f1d92f0c20eff5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f92eb-8cb0-77a3-b4ff-3d87c30c046e",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
