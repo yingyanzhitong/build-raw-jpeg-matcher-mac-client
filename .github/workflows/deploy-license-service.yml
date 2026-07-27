@@ -86,67 +86,67 @@ jobs:
         env:
           DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment_url }}
         run: |
-          verify_origin() {
-            local ORIGIN="$1"
-            local QUERY="${2:-}"
-            local COOKIE_ARGS=()
-            local HEALTH_URL="${ORIGIN%/}/healthz"
+          node <<'NODE'
+          const customOrigin = "https://licensed.xyyamsz.cn";
+          const deviceHash = "0".repeat(64);
 
-            if [[ -n "$QUERY" ]]; then
-              HEALTH_URL="${HEALTH_URL}?${QUERY}"
-              COOKIE_ARGS=(--cookie-jar /tmp/edgeone-preview.cookies)
-            fi
-
-            HEALTH="$(curl --silent --show-error --fail --retry 8 --retry-all-errors \
-              --location --max-time 20 "${COOKIE_ARGS[@]}" "$HEALTH_URL")"
-            test "$(jq -r '.ok' <<<"$HEALTH")" = "true"
-            test "$(jq -r '.runtime' <<<"$HEALTH")" = "edgeone-node"
-
-            if [[ -n "$QUERY" ]]; then
-              COOKIE_ARGS=(--cookie /tmp/edgeone-preview.cookies)
-            fi
-
-            HTTP_CODE="$(curl --silent --show-error \
-              "${COOKIE_ARGS[@]}" \
-              --output /tmp/activation-response.json \
-              --write-out '%{http_code}' --max-time 20 \
-              "${ORIGIN%/}/api/v1/activate" \
-              -H 'Content-Type: application/json' \
-              --data '{"token":"RJM-00000-00000-00000-00000-00000","deviceHash":"0000000000000000000000000000000000000000000000000000000000000000","platform":"macos","version":"1.0.0"}')"
-            test "$HTTP_CODE" = "400"
-            test "$(jq -r '.error.code' /tmp/activation-response.json)" = "INVALID_TOKEN"
+          function assert(condition, message) {
+            if (!condition) throw new Error(message);
           }
 
-          DEPLOYMENT_ORIGIN="${DEPLOYMENT_URL%%\?*}"
-          DEPLOYMENT_QUERY=""
-          if [[ "$DEPLOYMENT_URL" == *"?"* ]]; then
-            DEPLOYMENT_QUERY="${DEPLOYMENT_URL#*\?}"
-          fi
-
-          verify_origin "$DEPLOYMENT_ORIGIN" "$DEPLOYMENT_QUERY"
-          verify_origin "https://licensed.xyyamsz.cn"
-
-          assert_redirect() {
-            local PATH="$1"
-            local EXPECTED_LOCATION="$2"
-            local HEADERS
-            local LOCATION
-            HEADERS="$(curl --silent --show-error --dump-header - --output /dev/null \
-              --max-time 20 "https://licensed.xyyamsz.cn${PATH}")"
-            test "$(awk '/^HTTP\// { status = $2 } END { print status }' <<<"$HEADERS")" = "302"
-            LOCATION="$(awk '/^[Ll]ocation:/ { location = $0; sub(/^[^:]*:[[:space:]]*/, "", location) } END { print location }' <<<"$HEADERS" | tr -d '\r')"
-            test "$LOCATION" = "$EXPECTED_LOCATION"
+          function cookies(response) {
+            const values = response.headers.getSetCookie?.() ?? [];
+            return values.map((value) => value.split(";", 1)[0]).join("; ");
           }
 
-          assert_redirect "/" "/admin/"
-          assert_redirect "/admin/" "/admin/login"
+          async function request(url, options = {}) {
+            const response = await fetch(url, { redirect: "manual", ...options });
+            return { response, body: await response.text(), cookie: cookies(response) };
+          }
 
-          LOGIN_STATUS="$(curl --silent --show-error \
-            --output /tmp/admin-login-response.json \
-            --write-out '%{http_code}' --max-time 20 \
-            "https://licensed.xyyamsz.cn/admin/api/login" \
-            -H 'Content-Type: application/json' \
-            -H 'Origin: https://licensed.xyyamsz.cn' \
-            --data '{"username":"deployment-check","password":"invalid-password-2026"}')"
-          test "$LOGIN_STATUS" = "401"
-          test "$(jq -r '.error.code' /tmp/admin-login-response.json)" = "INVALID_CREDENTIALS"
+          async function verifyOrigin(origin, query = "") {
+            const health = await request(`${origin}/healthz${query}`);
+            assert(health.response.status === 200, `${origin} healthz 状态异常`);
+            const healthBody = JSON.parse(health.body);
+            assert(healthBody.ok === true && healthBody.runtime === "edgeone-node", `${origin} healthz 内容异常`);
+
+            const activation = await request(`${origin}/api/v1/activate`, {
+              method: "POST",
+              headers: {
+                "content-type": "application/json",
+                ...(health.cookie ? { cookie: health.cookie } : {}),
+              },
+              body: JSON.stringify({
+                token: "RJM-00000-00000-00000-00000-00000",
+                deviceHash,
+                platform: "macos",
+                version: "1.0.0",
+              }),
+            });
+            assert(activation.response.status === 400, `${origin} 激活接口状态异常`);
+            assert(JSON.parse(activation.body).error?.code === "INVALID_TOKEN", `${origin} 激活接口错误码异常`);
+          }
+
+          async function assertRedirect(path, expectedLocation) {
+            const result = await request(`${customOrigin}${path}`);
+            assert(result.response.status === 302, `${path} 未返回 302`);
+            assert(result.response.headers.get("location") === expectedLocation, `${path} 跳转地址异常`);
+          }
+
+          const deploymentUrl = new URL(process.env.DEPLOYMENT_URL);
+          await verifyOrigin(deploymentUrl.origin, deploymentUrl.search);
+          await verifyOrigin(customOrigin);
+          await assertRedirect("/", "/admin/");
+          await assertRedirect("/admin/", "/admin/login");
+
+          const login = await request(`${customOrigin}/admin/api/login`, {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+              origin: customOrigin,
+            },
+            body: JSON.stringify({ username: "deployment-check", password: "invalid-password-2026" }),
+          });
+          assert(login.response.status === 401, "管理员登录来源校验异常");
+          assert(JSON.parse(login.body).error?.code === "INVALID_CREDENTIALS", "管理员登录错误码异常");
+          NODE
