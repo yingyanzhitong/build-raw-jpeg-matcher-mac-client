@@ -5,7 +5,7 @@
 ## What Changes
 
 - 在长期 `licensed` 分支中新增首次启动激活门、稳定设备指纹、系统凭据库存储和 Rust 命令级许可证门禁。
-- 新增部署在 `licensed.xyyamsz.cn` 的 EdgeOne Node.js 云函数、Blob 强一致存储、签名租约、续签接口与限流。
+- 新增部署在腾讯云 SCF 广州地域的 Node.js 18 Web 函数，通过公开函数 URL 提供签名租约、续签接口与限流，并继续使用 EdgeOne Blob 强一致存储。
 - 新增使用管理员账号密码登录的管理后台，支持批量生成 token、导出、查询、撤销和人工换机重置。
 - 为激活版新增独立产品身份、`1.0.0` 版本流、updater 签名密钥、`licensed-vX.Y.Z` tag、产物命名和 Gitee 更新仓库。
 - 将无激活版与激活版发布改为 tag 驱动，并验证 tag、版本与目标长期分支一致。
@@ -26,6 +26,6 @@
 ## Impact
 
 - 客户端：React 启动壳层、Tauri Rust 命令、平台设备标识、系统凭据库、updater 配置和依赖。
-- 服务端：新增 TypeScript EdgeOne Node.js 云函数、Blob 强一致数据层、Blob 登录会话和请求限流。
-- 发布：调整 GitHub Actions 与发布资源整理脚本，新建公开 Gitee 发行仓库并增加 EdgeOne 部署工作流。
-- 运维：新增许可证签名密钥、token 摘要 pepper、激活版 updater 密钥及对应 GitHub/EdgeOne 环境变量。
+- 服务端：新增 TypeScript 腾讯云 SCF HTTP 适配器、Blob 强一致数据层、Blob 登录会话和请求限流。
+- 发布：调整 GitHub Actions 与发布资源整理脚本，新建公开 Gitee 发行仓库并增加 SCF 部署包构建和生产健康检查工作流。
+- 运维：新增许可证签名密钥、token 摘要 pepper、激活版 updater 密钥及对应 GitHub、SCF 和 EdgeOne Blob 环境变量。

@@ -63,12 +63,20 @@
 - **THEN** 其 endpoint、Gitee 仓库和清单保持原样
 
 ### Requirement: Licensed service deployment
-EdgeOne 服务 MUST 只从激活版相关分支的服务目录变更部署，并 MUST 在客户端发布前完成测试、部署和健康检查。
+腾讯云 SCF 服务 MUST 只由激活版相关分支的服务目录维护，并 MUST 在客户端发布前完成测试、部署包构建和生产函数 URL 健康检查。SCF ZIP 中的 `scf_bootstrap` 和 `server.mjs` MUST 位于根目录，生产运行时 MUST 报告为 `tencent-scf`。
 
 #### Scenario: Service change is pushed to licensed
 - **WHEN** `licensed` 的服务目录或 migration 发生变化
-- **THEN** GitHub Actions 验证测试后部署到 `licensed.xyyamsz.cn`
+- **THEN** GitHub Actions 执行类型检查和测试，生成可部署的 SCF ZIP，并验证生产函数 URL
+
+#### Scenario: Operator deploys the validated package
+- **WHEN** 维护者在腾讯云控制台更新生产 Web 函数
+- **THEN** 维护者使用工作流生成的 ZIP，保留既有环境变量和公开函数 URL，并在切换客户端前完成健康检查
+
+#### Scenario: Visitor opens the service root
+- **WHEN** 用户访问腾讯云公开函数 URL 的根路径
+- **THEN** 服务跳转到账号密码管理后台入口
 
 #### Scenario: Service change appears on main
 - **WHEN** `main` 不包含激活服务目录
-- **THEN** 无激活版工作流不执行任何 EdgeOne 部署
+- **THEN** 无激活版工作流不执行任何 SCF 构建或生产健康检查

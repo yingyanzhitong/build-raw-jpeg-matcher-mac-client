@@ -10,10 +10,11 @@ use std::{
 
 const PRODUCT_ID: &str = "raw-jpeg-matcher-licensed";
 const DEVICE_HASH_DOMAIN: &str = "raw-jpeg-matcher-licensed:v1";
-const SERVICE_URL: &str = "https://licensed.xyyamsz.cn";
+const SERVICE_URL: &str =
+    "https://1319909213-11o589l07z.ap-guangzhou.tencentscf.com";
 const LICENSE_PUBLIC_KEY_BASE64: &str = "m3taKybxr3VM88UWDhzYFyR5F+AtTH25OHxQNY5TvIE=";
 const LICENSE_SCHEMA_VERSION: u8 = 1;
-const LICENSED_APP_VERSION: &str = "1.0.0";
+const LICENSED_APP_VERSION: &str = "1.0.1";
 const RENEW_INTERVAL_SECONDS: i64 = 24 * 60 * 60;
 const CLOCK_ROLLBACK_TOLERANCE_SECONDS: i64 = 5 * 60;
 const CREDENTIAL_SERVICE: &str = "com.masongzhi.rawjpegmatcher.licensed";

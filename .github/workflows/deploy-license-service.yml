@@ -1,4 +1,4 @@
-name: Deploy License Service
+name: Validate License Service
 
 on:
   push:
@@ -14,12 +14,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: deploy-license-service-production
-  cancel-in-progress: false
+  group: validate-license-service-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
-    name: Test EdgeOne license service
+    name: Test and package Tencent SCF service
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -39,89 +39,54 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Typecheck and test
+      - name: Typecheck, test, and build SCF package
         run: |
           npm run typecheck
           npm test
+          npm run build:scf
+          test -x .scf-dist/scf_bootstrap
+          (
+            cd .scf-dist
+            zip -q raw-jpeg-matcher-license-scf-1.2.0.zip \
+              scf_bootstrap server.mjs
+          )
 
-  deploy:
-    name: Deploy production EdgeOne Node.js Cloud Functions
-    if: github.event_name == 'push' || github.ref == 'refs/heads/licensed'
+      - name: Upload SCF deployment package
+        uses: actions/upload-artifact@v4
+        with:
+          name: raw-jpeg-matcher-license-scf-1.2.0
+          path: services/license-service/.scf-dist/raw-jpeg-matcher-license-scf-1.2.0.zip
+          if-no-files-found: error
+          retention-days: 14
+
+  verify-production:
+    name: Verify production SCF function URL
     needs: test
     runs-on: ubuntu-latest
     environment: licensed-production
-    defaults:
-      run:
-        working-directory: services/license-service
+    env:
+      LICENSE_SERVICE_URL: https://1319909213-11o589l07z.ap-guangzhou.tencentscf.com
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: services/license-service/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Deploy EdgeOne project
-        id: deploy
-        env:
-          EDGEONE_API_TOKEN: ${{ secrets.EDGEONE_API_TOKEN }}
+      - name: Verify health, activation API, and admin entry
         run: |
-          DEPLOYMENT_OUTPUT="$(npm run --silent deploy)"
-          printf '%s\n' "$DEPLOYMENT_OUTPUT"
-          DEPLOYMENT_JSON="$(tail -n 1 <<<"$DEPLOYMENT_OUTPUT")"
-          DEPLOYMENT_URL="$(jq -r \
-            '.deploymentUrl // .deployment_url // .url // .deployment.url // empty' \
-            <<<"$DEPLOYMENT_JSON")"
-          test -n "$DEPLOYMENT_URL"
-          printf 'deployment_url=%s\n' "$DEPLOYMENT_URL" >> "$GITHUB_OUTPUT"
+          HEALTH="$(curl --silent --show-error --fail --retry 8 \
+            --retry-all-errors --max-time 20 \
+            "${LICENSE_SERVICE_URL}/healthz")"
+          test "$(jq -r '.ok' <<<"$HEALTH")" = "true"
+          test "$(jq -r '.version' <<<"$HEALTH")" = "1.2.0"
+          test "$(jq -r '.runtime' <<<"$HEALTH")" = "tencent-scf"
 
-      - name: Verify deployment and custom domain
-        env:
-          DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment_url }}
-        run: |
-          verify_origin() {
-            local ORIGIN="$1"
-            local QUERY="${2:-}"
-            local COOKIE_ARGS=()
-            local HEALTH_URL="${ORIGIN%/}/healthz"
+          HTTP_CODE="$(curl --silent --show-error \
+            --output /tmp/activation-response.json \
+            --write-out '%{http_code}' --max-time 20 \
+            "${LICENSE_SERVICE_URL}/api/v1/activate" \
+            -H 'Content-Type: application/json' \
+            --data '{"token":"RJM-00000-00000-00000-00000-00000","deviceHash":"0000000000000000000000000000000000000000000000000000000000000000","platform":"macos","version":"1.0.1"}')"
+          test "$HTTP_CODE" = "400"
+          test "$(jq -r '.error.code' /tmp/activation-response.json)" = "INVALID_TOKEN"
 
-            if [[ -n "$QUERY" ]]; then
-              HEALTH_URL="${HEALTH_URL}?${QUERY}"
-              COOKIE_ARGS=(--cookie-jar /tmp/edgeone-preview.cookies)
-            fi
-
-            HEALTH="$(curl --silent --show-error --fail --retry 8 --retry-all-errors \
-              --location --max-time 20 "${COOKIE_ARGS[@]}" "$HEALTH_URL")"
-            test "$(jq -r '.ok' <<<"$HEALTH")" = "true"
-            test "$(jq -r '.runtime' <<<"$HEALTH")" = "edgeone-node"
-
-            if [[ -n "$QUERY" ]]; then
-              COOKIE_ARGS=(--cookie /tmp/edgeone-preview.cookies)
-            fi
-
-            HTTP_CODE="$(curl --silent --show-error \
-              "${COOKIE_ARGS[@]}" \
-              --output /tmp/activation-response.json \
-              --write-out '%{http_code}' --max-time 20 \
-              "${ORIGIN%/}/api/v1/activate" \
-              -H 'Content-Type: application/json' \
-              --data '{"token":"RJM-00000-00000-00000-00000-00000","deviceHash":"0000000000000000000000000000000000000000000000000000000000000000","platform":"macos","version":"1.0.0"}')"
-            test "$HTTP_CODE" = "400"
-            test "$(jq -r '.error.code' /tmp/activation-response.json)" = "INVALID_TOKEN"
-          }
-
-          DEPLOYMENT_ORIGIN="${DEPLOYMENT_URL%%\?*}"
-          DEPLOYMENT_QUERY=""
-          if [[ "$DEPLOYMENT_URL" == *"?"* ]]; then
-            DEPLOYMENT_QUERY="${DEPLOYMENT_URL#*\?}"
-          fi
-
-          verify_origin "$DEPLOYMENT_ORIGIN" "$DEPLOYMENT_QUERY"
-          verify_origin "https://licensed.xyyamsz.cn"
+          ROOT_HTML="$(curl --silent --show-error --fail --retry 8 \
+            --retry-all-errors --location --max-time 20 \
+            "${LICENSE_SERVICE_URL}/")"
+          grep -Fq "登录 · 摄影修图师助手授权管理" <<<"$ROOT_HTML"

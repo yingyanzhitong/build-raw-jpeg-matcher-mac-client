@@ -1,13 +1,13 @@
 {
   "name": "raw-jpeg-matcher-license-service",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "type": "module",
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "dev": "edgeone makers dev",
-    "deploy": "node scripts/deploy.mjs",
+    "dev": "npm run build:scf && node .scf-dist/server.mjs",
+    "build:scf": "node scripts/build-scf.mjs",
     "admin:create": "node scripts/create-admin.mjs",
     "data:migrate": "node scripts/migrate-from-cloudflare.mjs"
   },
@@ -16,7 +16,7 @@
   },
   "devDependencies": {
     "@types/node": "^26.1.1",
-    "edgeone": "1.6.17",
+    "esbuild": "0.28.1",
     "typescript": "^5.9.3",
     "vitest": "^4.1.10"
   }

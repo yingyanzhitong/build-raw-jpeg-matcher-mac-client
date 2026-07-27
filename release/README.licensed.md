@@ -20,13 +20,13 @@
 
 GitHub Actions 使用 `TAURI_LICENSED_SIGNING_PRIVATE_KEY` 和
 `TAURI_LICENSED_SIGNING_PRIVATE_KEY_PASSWORD`，不得复用无激活版 updater key。
-Cloudflare Worker 使用独立的 `LICENSE_PRIVATE_KEY_PEM` Secret；token HMAC 使用
-`TOKEN_PEPPER` Secret。
+腾讯云 SCF 使用独立的 `LICENSE_PRIVATE_KEY_PEM` 环境变量；token HMAC 使用
+`TOKEN_PEPPER` 环境变量。两者不得写入仓库或构建产物。
 
 ## 发布
 
-1. 先确认 `licensed` 分支的 Cloudflare 部署工作流成功。
-2. 运行 `npm run check:licensed`、前端/Rust/Worker 全量测试。
+1. 先确认腾讯云 SCF 函数 URL 的健康检查返回 `tencent-scf` 和许可证服务版本。
+2. 运行 `npm run check:licensed`、前端、Rust 和许可证服务全量测试。
 3. 确认 `src-tauri/tauri.licensed.conf.json` 的版本。
 4. 在 `licensed` 提交上创建同版本 `licensed-vX.Y.Z` 标签并推送。
 5. `.github/workflows/build-licensed-installers.yml` 会验证标签、分支可达性、在线服务和激活接口，再构建 macOS 双架构与 Windows x64。

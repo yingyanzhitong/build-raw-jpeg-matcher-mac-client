@@ -9,5 +9,5 @@
     "skipLibCheck": true,
     "types": ["node", "vitest/globals"]
   },
-  "include": ["src", "test", "cloud-functions", "vitest.config.ts"]
+  "include": ["src", "test", "vitest.config.ts"]
 }

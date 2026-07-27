@@ -10,7 +10,9 @@ import type { AdminIdentity, Env } from "./types";
 
 const SESSION_COOKIE = "rjm_admin_session";
 const SESSION_TTL_SECONDS = 12 * 60 * 60;
-const ADMIN_ALLOWED_ORIGINS = new Set(["https://licensed.xyyamsz.cn"]);
+const ADMIN_ALLOWED_ORIGINS = new Set([
+  "https://1319909213-11o589l07z.ap-guangzhou.tencentscf.com",
+]);
 export const PASSWORD_ITERATIONS = 100_000;
 
 export class AdminAuthError extends Error {
