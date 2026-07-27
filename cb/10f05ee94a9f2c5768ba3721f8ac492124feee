@@ -1,0 +1,30 @@
+CHANGELOG.licensed.md
+  s_f1d92f0c20eff5::t_eaa1a5e6c706ec 5-10
+services/license-service/package.json
+  s_f1d92f0c20eff5::t_eaa1a5e6c706ec 3
+.github/workflows/deploy-license-service.yml
+  s_f1d92f0c20eff5::t_eaa1a5e6c706ec 89-94,96-99,101-152
+CHANGELOG.md
+  s_f1d92f0c20eff5::t_eaa1a5e6c706ec 3-6
+services/license-service/package-lock.json
+  s_f1d92f0c20eff5::t_964491e4203efc 3,9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "cb10f05ee94a9f2c5768ba3721f8ac492124feee",
+  "prompts": {},
+  "logical_commit_id": "cb10f05ee94a9f2c5768ba3721f8ac492124feee",
+  "sessions": {
+    "s_f1d92f0c20eff5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f92eb-8cb0-77a3-b4ff-3d87c30c046e",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>",
+      "total_additions": 71,
+      "total_deletions": 61
+    }
+  }
+}
