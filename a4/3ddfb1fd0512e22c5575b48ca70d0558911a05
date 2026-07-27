@@ -1,0 +1,47 @@
+openspec/changes/add-licensed-activation/design.md
+  s_f1d92f0c20eff5::t_c65224e30bc484 72
+.github/workflows/deploy-license-service.yml
+  s_f1d92f0c20eff5::t_9c411122ab2745 128-132,134-136,139-152
+  s_f1d92f0c20eff5::t_0e64354ebd3346 133,137-138
+services/license-service/src/index.ts
+  s_f1d92f0c20eff5::t_c65224e30bc484 82-84,324,359-368
+openspec/changes/add-licensed-activation/specs/license-administration/spec.md
+  s_f1d92f0c20eff5::t_c65224e30bc484 3-13
+openspec/changes/add-licensed-activation/tasks.md
+  s_f1d92f0c20eff5::t_c65224e30bc484 68-72
+services/license-service/cloud-functions/index.ts
+  s_f1d92f0c20eff5::t_c65224e30bc484 1-5
+services/license-service/package.json
+  s_f1d92f0c20eff5::t_c65224e30bc484 3
+services/license-service/src/auth.ts
+  s_f1d92f0c20eff5::t_c65224e30bc484 99-101
+CHANGELOG.md
+  s_f1d92f0c20eff5::t_c65224e30bc484 3-7
+openspec/changes/add-licensed-activation/proposal.md
+  s_f1d92f0c20eff5::t_c65224e30bc484 9
+CHANGELOG.licensed.md
+  s_f1d92f0c20eff5::t_c65224e30bc484 5-12
+services/license-service/test/worker.test.ts
+  s_f1d92f0c20eff5::t_c65224e30bc484 37-46,200-214,403,406
+services/license-service/package-lock.json
+  s_f1d92f0c20eff5::t_7c03bccf83c0ac 3,9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "a43ddfb1fd0512e22c5575b48ca70d0558911a05",
+  "prompts": {},
+  "logical_commit_id": "a43ddfb1fd0512e22c5575b48ca70d0558911a05",
+  "sessions": {
+    "s_f1d92f0c20eff5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f92eb-8cb0-77a3-b4ff-3d87c30c046e",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>",
+      "total_additions": 106,
+      "total_deletions": 10
+    }
+  }
+}
