@@ -260,7 +260,7 @@ export function FileSeparatorWorkspace({
         mode: exportMode,
       });
       appendLogs(response.logs);
-      setExportReport({ directory: exportDirectory, mode: exportMode, summary: response.summary });
+      setExportReport({ directory: response.exportDirectory, mode: exportMode, summary: response.summary });
       onExportFeedback(separatorExportFeedback(response.summary, exportMode));
       if (exportMode === "moveInPlace") {
         setImages([]);
@@ -375,7 +375,7 @@ export function FileSeparatorWorkspace({
                     选择输出目录
                   </Button>
                   <p className="text-xs leading-5 text-muted-foreground">
-                    保留源目录结构并复制文件；原始文件不会移动或改写。
+                    将在所选目录内创建“{getResultDirectoryName(inputRoot)}”，其中包含“图片”和“RAW”目录；原始文件不会移动或改写。
                   </p>
                 </>
               ) : (
@@ -690,5 +690,10 @@ function getExportHint({
   }
   return exportMode === "moveInPlace"
     ? `将移动 ${fileCount} 个文件到当前目录的“图片”和“RAW”目录`
-    : `将复制 ${fileCount} 个文件，原始文件保持不变`;
+    : `将复制 ${fileCount} 个文件到“${getResultDirectoryName(inputRoot)}”，原始文件保持不变`;
+}
+
+function getResultDirectoryName(inputRoot: string) {
+  const inputName = inputRoot.split(/[\\/]/).filter(Boolean).at(-1);
+  return inputName ? `${inputName}_结果` : "混合文件夹_结果";
 }
