@@ -195,6 +195,7 @@ export function WatermarkWorkspace({
   const [fontId, setFontId] = useState(rememberedSettings.fontId);
   const [jpegQuality, setJpegQuality] = useState(rememberedSettings.jpegQuality);
   const [fonts, setFonts] = useState<WatermarkFontInfo[]>([]);
+  const [defaultFontId, setDefaultFontId] = useState("");
   const [fontCatalogError, setFontCatalogError] = useState("");
   const [imageAsset, setImageAsset] = useState<WatermarkAssetInfo | null>(null);
   const [textAsset, setTextAsset] = useState<WatermarkAssetInfo | null>(null);
@@ -209,6 +210,8 @@ export function WatermarkWorkspace({
   const previewRequestsRef = useRef<Map<string, Promise<string>>>(new Map());
   const currentJobIdRef = useRef<string | null>(null);
   const restoredWatermarkRef = useRef(false);
+  const watermarkRestoreGenerationRef = useRef(0);
+  const settingsResetRef = useRef(false);
   const textAssetRequestRef = useRef(0);
 
   const watermarkAsset = sourceKind === "image" ? imageAsset : textAsset;
@@ -278,12 +281,13 @@ export function WatermarkWorkspace({
       return;
     }
     restoredWatermarkRef.current = true;
+    const restoreGeneration = watermarkRestoreGenerationRef.current;
     let disposed = false;
     invoke<WatermarkAssetInfo>("inspect_watermark_asset", {
       path: rememberedSettings.watermarkPath,
     })
       .then((asset) => {
-        if (disposed) {
+        if (disposed || restoreGeneration !== watermarkRestoreGenerationRef.current) {
           return;
         }
         setImageAsset(asset);
@@ -291,7 +295,7 @@ export function WatermarkWorkspace({
         appendLogs([`已恢复水印素材: ${asset.fileName}`], "success");
       })
       .catch((error) => {
-        if (disposed) {
+        if (disposed || restoreGeneration !== watermarkRestoreGenerationRef.current) {
           return;
         }
         setImageAsset(null);
@@ -311,10 +315,11 @@ export function WatermarkWorkspace({
           return;
         }
         setFonts(catalog.fonts);
+        setDefaultFontId(catalog.defaultFontId);
         setFontCatalogError("");
         const resolved = resolveWatermarkFont(
           catalog.fonts,
-          rememberedSettings.fontId,
+          settingsResetRef.current ? "" : rememberedSettings.fontId,
           catalog.defaultFontId,
         );
         setFontId(resolved.fontId);
@@ -720,11 +725,24 @@ export function WatermarkWorkspace({
     if (busy !== null || progress.running) {
       return;
     }
+    const defaults = createDefaultWatermarkSettings();
+    settingsResetRef.current = true;
+    watermarkRestoreGenerationRef.current += 1;
+    textAssetRequestRef.current += 1;
     setInputRoot("");
     setImages([]);
     setSkippedCount(0);
     setSelectedIndex(-1);
     setActiveAspect("landscape");
+    setProfilesBySource(defaults.profilesBySource);
+    setSourceKind(defaults.sourceKind);
+    setWatermarkPath(defaults.watermarkPath);
+    setText(defaults.text);
+    setFontId(resolveWatermarkFont(fonts, defaults.fontId, defaultFontId).fontId);
+    setJpegQuality(defaults.jpegQuality);
+    setImageAsset(null);
+    setTextAsset(null);
+    setTextAssetLoading(false);
     previewPathsRef.current = {};
     previewRequestsRef.current.clear();
     setPreviewPaths({});
@@ -732,7 +750,7 @@ export function WatermarkWorkspace({
     setExportReport(null);
     setClearConfirmOpen(false);
     setLogs([
-      { level: "info", message: "已清空图片水印任务；水印素材、文字和画幅参数已保留" },
+      { level: "info", message: "已清空图片水印任务和左侧表单" },
     ]);
   }
 
@@ -1224,7 +1242,7 @@ function ClearWatermarkDialog({
         <DialogHeader>
           <DialogTitle>清空图片水印任务？</DialogTitle>
           <DialogDescription>
-            将清空照片目录、样片预览、任务进度、导出结果和运行日志。水印素材、文字、字体及三种画幅参数会继续保留。
+            将清空照片目录、样片预览、任务进度、导出结果、运行日志及左侧全部表单设置。
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>

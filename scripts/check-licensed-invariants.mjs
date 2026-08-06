@@ -30,7 +30,7 @@ const publicConfig = JSON.parse(publicConfigSource);
 const servicePackage = JSON.parse(servicePackageSource);
 
 assert.equal(licensedConfig.productName, "摄影修图师助手");
-assert.equal(licensedConfig.version, "1.0.0");
+assert.match(licensedConfig.version, /^\d+\.\d+\.\d+$/);
 assert.equal(licensedConfig.identifier, "com.masongzhi.rawjpegmatcher.licensed");
 assert.deepEqual(licensedConfig.plugins.updater.endpoints, [
   "https://gitee.com/masongzhi1/raw-jpeg-matcher-licensed-release/raw/main/release/latest.json",
@@ -41,6 +41,10 @@ assert.notEqual(
   "激活版与无激活版不得复用 updater 公钥",
 );
 assert.match(licenseSource, /const PRODUCT_ID: &str = "raw-jpeg-matcher-licensed"/);
+assert.match(
+  licenseSource,
+  new RegExp(`const LICENSED_APP_VERSION: &str = "${licensedConfig.version}"`),
+);
 assert.match(licenseSource, /const SERVICE_URL: &str = "https:\/\/licensed\.xyyamsz\.cn"/);
 assert.match(licenseSource, /const LICENSE_PUBLIC_KEY_BASE64: &str = "[A-Za-z0-9+/=]+"/);
 assert.match(libSource, /mod license;/);

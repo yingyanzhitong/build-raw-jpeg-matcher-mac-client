@@ -18,6 +18,7 @@ use crate::{
 
 const IMAGE_DIRECTORY_NAME: &str = "图片";
 const RAW_DIRECTORY_NAME: &str = "RAW";
+const RESULT_DIRECTORY_SUFFIX: &str = "_结果";
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -97,6 +98,7 @@ pub(crate) struct SeparatorExportSummary {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct SeparatorExportResponse {
+    pub export_dir: String,
     pub logs: Vec<String>,
     pub summary: SeparatorExportSummary,
 }
@@ -221,12 +223,17 @@ fn copy_separated_files(
         return Err("输出目录不能位于混合文件夹内，以免下次扫描包含已分离副本".into());
     }
 
-    separate_files(
+    let result_path = create_copy_result_directory(&input_root_path, &export_path)?;
+    let mut response = separate_files(
         &input_root_path,
         files,
-        &export_path,
+        &result_path,
         SeparatorExportMode::Copy,
-    )
+    )?;
+    response
+        .logs
+        .insert(0, format!("复制结果目录: {}", result_path.display()));
+    Ok(response)
 }
 
 fn move_separated_files(
@@ -383,7 +390,38 @@ fn separate_files(
         summary.failed_count
     ));
 
-    Ok(SeparatorExportResponse { logs, summary })
+    Ok(SeparatorExportResponse {
+        export_dir: canonical_path_string(output_root_path),
+        logs,
+        summary,
+    })
+}
+
+fn create_copy_result_directory(
+    input_root_path: &Path,
+    export_path: &Path,
+) -> Result<PathBuf, Box<dyn std::error::Error>> {
+    let input_name = input_root_path
+        .file_name()
+        .filter(|name| !name.is_empty())
+        .ok_or("无法获取混合文件夹名称")?;
+    let mut result_name = input_name.to_os_string();
+    result_name.push(RESULT_DIRECTORY_SUFFIX);
+    let result_path = export_path.join(result_name);
+
+    match fs::symlink_metadata(&result_path) {
+        Ok(metadata) if metadata.file_type().is_symlink() => {
+            return Err(format!("结果目录不能是符号链接: {}", result_path.display()).into());
+        }
+        Ok(metadata) if !metadata.is_dir() => {
+            return Err(format!("结果目录已存在且不是目录: {}", result_path.display()).into());
+        }
+        Ok(_) => {}
+        Err(error) if error.kind() == io::ErrorKind::NotFound => fs::create_dir(&result_path)?,
+        Err(error) => return Err(error.into()),
+    }
+
+    Ok(result_path)
 }
 
 fn record_processed_file(
@@ -622,7 +660,7 @@ mod tests {
     }
 
     #[test]
-    fn export_copies_into_type_directories_without_changing_sources() {
+    fn export_copies_into_named_result_directory_without_changing_sources() {
         let temp = TempDir::new().unwrap();
         let source = temp.path().join("source");
         let output = temp.path().join("output");
@@ -645,14 +683,18 @@ mod tests {
         assert_eq!(response.summary.copied_count, 2);
         assert_eq!(response.summary.copied_image_count, 1);
         assert_eq!(response.summary.copied_raw_count, 1);
+        assert_eq!(
+            response.export_dir,
+            canonical_path_string(&output.join("source_结果"))
+        );
         assert_eq!(fs::read(&image_path).unwrap(), b"image-content");
         assert_eq!(fs::read(&raw_path).unwrap(), b"raw-content");
         assert_eq!(
-            fs::read(output.join("图片/day-one/IMG_0001.JPG")).unwrap(),
+            fs::read(output.join("source_结果/图片/day-one/IMG_0001.JPG")).unwrap(),
             b"image-content"
         );
         assert_eq!(
-            fs::read(output.join("RAW/day-one/IMG_0001.CR3")).unwrap(),
+            fs::read(output.join("source_结果/RAW/day-one/IMG_0001.CR3")).unwrap(),
             b"raw-content"
         );
     }
