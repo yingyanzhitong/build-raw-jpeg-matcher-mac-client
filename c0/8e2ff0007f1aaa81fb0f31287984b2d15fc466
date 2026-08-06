@@ -1,0 +1,50 @@
+.github/workflows/deploy-github-pages.yml
+  s_894d7ba8fc99f7::t_db1f41971a3d50 5-6
+.github/workflows/deploy-license-service.yml
+  s_894d7ba8fc99f7::t_387dfaabbccf22 5-6,26-42
+AGENTS.md
+  s_894d7ba8fc99f7::t_82649ef17d77fa 1-8
+README.md
+  s_894d7ba8fc99f7::t_78201d1b2e9c48 1-7
+package-lock.json
+  s_894d7ba8fc99f7::t_8a707ce3818b67 3,9
+package.json
+  s_894d7ba8fc99f7::t_9d6d6a369c2948 3
+scripts/check-licensed-invariants.mjs
+  s_894d7ba8fc99f7::t_c9b56c6ed58743 33,44-47
+src-tauri/Cargo.lock
+  s_894d7ba8fc99f7::t_fa8a50706950a1 3237
+src-tauri/Cargo.toml
+  s_894d7ba8fc99f7::t_25100ec60a6f37 3
+src-tauri/src/file_separator.rs
+  s_894d7ba8fc99f7::t_b9a55ad01be13d 21,101,226-227,230,232-236,392-422,424,663,686-689,693,697
+src-tauri/src/license.rs
+  s_894d7ba8fc99f7::t_31c72210b8244b 16
+src-tauri/src/watermark.rs
+  s_894d7ba8fc99f7::t_ddd9938b29dee4 611-618,2427-2431
+src-tauri/tauri.licensed.conf.json
+  s_894d7ba8fc99f7::t_a506a7f5ef5900 4
+src/features/file-separator/FileSeparatorWorkspace.tsx
+  s_894d7ba8fc99f7::t_53f990eea72474 263,378,693-698
+src/features/file-separator/types.ts
+  s_894d7ba8fc99f7::t_d2d8782c837fa4 35
+src/features/watermark/WatermarkWorkspace.tsx
+  s_894d7ba8fc99f7::t_050a5dbeb493d8 198,213-214,284,290,298,318,322,728-731,737-745,753,1245
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "c08e2ff0007f1aaa81fb0f31287984b2d15fc466",
+  "prompts": {},
+  "logical_commit_id": "c08e2ff0007f1aaa81fb0f31287984b2d15fc466",
+  "sessions": {
+    "s_894d7ba8fc99f7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fd6e3-4154-7053-82be-fa32246e3bdc",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
