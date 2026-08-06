@@ -2,13 +2,8 @@ name: Deploy License Service
 
 on:
   push:
-    branches:
-      - licensed
-      - codex/edgeone-license-service
-    paths:
-      - "services/license-service/**"
-      - ".github/workflows/deploy-license-service.yml"
-  workflow_dispatch:
+    tags:
+      - "license-service-v*.*.*"
 
 permissions:
   contents: read
@@ -28,6 +23,23 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate service tag and licensed ancestry
+        shell: bash
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          EXPECTED_TAG="license-service-v${VERSION}"
+          if [ "${GITHUB_REF_NAME}" != "${EXPECTED_TAG}" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match service version ${EXPECTED_TAG}"
+            exit 1
+          fi
+          git fetch origin licensed:refs/remotes/origin/licensed
+          if ! git merge-base --is-ancestor "${GITHUB_SHA}" refs/remotes/origin/licensed; then
+            echo "::error::Service release commit is not reachable from licensed"
+            exit 1
+          fi
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -46,7 +58,6 @@ jobs:
 
   deploy:
     name: Deploy production EdgeOne Node.js Cloud Functions
-    if: github.event_name == 'push' || github.ref == 'refs/heads/licensed'
     needs: test
     runs-on: ubuntu-latest
     environment: licensed-production

@@ -608,6 +608,14 @@ fn load_font_store() -> Result<WatermarkFontStore, String> {
     let mut fonts = database
         .faces()
         .filter_map(|face| {
+            let is_usable = database
+                .with_face_data(face.id, |data, index| {
+                    FontVec::try_from_vec_and_index(data.to_vec(), index).is_ok()
+                })
+                .unwrap_or(false);
+            if !is_usable {
+                return None;
+            }
             let id = face.post_script_name.trim();
             if id.is_empty() || !seen.insert(id.to_string()) {
                 return None;
@@ -2416,6 +2424,11 @@ mod tests {
             .fonts
             .iter()
             .any(|font| font.id == store.catalog.default_font_id));
+        assert!(store
+            .catalog
+            .fonts
+            .iter()
+            .all(|font| load_watermark_font(&font.id).is_ok()));
         let request = TextWatermarkRequest {
             text: "Glass".to_string(),
             font_id: store.catalog.default_font_id.clone(),

@@ -32,6 +32,7 @@ export interface SeparatorExportSummary {
 }
 
 export interface SeparatorExportResponse {
+  exportDirectory: string;
   logs: string[];
   summary: SeparatorExportSummary;
 }

@@ -1,10 +1,6 @@
 name: Licensed Invariants
 
 on:
-  push:
-    branches:
-      - licensed
-      - codex/edgeone-license-service
   pull_request:
     branches:
       - licensed
