@@ -1,0 +1,46 @@
+src-tauri/Cargo.lock
+  s_894d7ba8fc99f7::t_8ddbfbdee77596 3237
+src-tauri/src/file_separator.rs
+  s_894d7ba8fc99f7::t_491cfc21277bef 21,101,226-227,230,232-236,392-422,424,663,686-689,693,697
+CHANGELOG.licensed.md
+  s_894d7ba8fc99f7::t_f7e6d61d04fe67 5-11
+CHANGELOG.md
+  s_894d7ba8fc99f7::t_9e8e9eed2284cf 3-8
+package-lock.json
+  s_894d7ba8fc99f7::t_d2f9d4b6ba034c 3,9
+package.json
+  s_894d7ba8fc99f7::t_13d839805e9d9b 3
+scripts/check-licensed-invariants.mjs
+  s_894d7ba8fc99f7::t_b05ddb2d1efe63 33,44-47
+src-tauri/Cargo.toml
+  s_894d7ba8fc99f7::t_f50907ff8c03be 3
+src-tauri/src/license.rs
+  s_894d7ba8fc99f7::t_764b0ced017b90 16
+src-tauri/src/watermark.rs
+  s_894d7ba8fc99f7::t_5d283add0e1851 611-618,2427-2431
+src-tauri/tauri.licensed.conf.json
+  s_894d7ba8fc99f7::t_3314f7c736a97c 4
+src/features/file-separator/FileSeparatorWorkspace.tsx
+  s_894d7ba8fc99f7::t_4bfb3d96b60c4a 263,378,693-698
+src/features/file-separator/types.ts
+  s_894d7ba8fc99f7::t_ba994c98cbaad2 35
+src/features/watermark/WatermarkWorkspace.tsx
+  s_894d7ba8fc99f7::t_00308b3c66e145 198,213-214,284,290,298,318,322,728-731,737-745,753,1245
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "2ca21caebb347903b786ea7d90b6b0ed554e4134",
+  "prompts": {},
+  "logical_commit_id": "2ca21caebb347903b786ea7d90b6b0ed554e4134",
+  "sessions": {
+    "s_894d7ba8fc99f7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fd6e3-4154-7053-82be-fa32246e3bdc",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
