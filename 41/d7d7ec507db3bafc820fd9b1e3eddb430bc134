@@ -1,0 +1,38 @@
+.github/workflows/build-licensed-installers.yml
+  s_3a249a9db7669b::t_6816b8b2638ed8 183,204,214-223,239-254
+CHANGELOG.licensed.md
+  s_3a249a9db7669b::t_8d4330aed11b6c 5-12
+release/README.licensed.md
+  s_3a249a9db7669b::t_c91ea5c356487f 10-11,34
+scripts/check-licensed-invariants.mjs
+  s_3a249a9db7669b::t_143ab94113f4a1 37,53
+scripts/prepare-release-assets.mjs
+  s_3a249a9db7669b::t_0206cd76b49e55 46-53,82-88,178-179,190,221-223,240-242
+scripts/sync-gitee-release.mjs
+  s_3a249a9db7669b::t_6cf27daa9e9fb1 27-31,33,231-232,236-242
+src-tauri/src/lib.rs
+  s_3a249a9db7669b::t_c6b70eeb715faa 65-66
+src-tauri/src/license.rs
+  s_3a249a9db7669b::t_2b185bdaf1bc4b 16
+src-tauri/tauri.licensed.conf.json
+  s_3a249a9db7669b::t_572418e6c223ce 4,27-28
+src/App.tsx
+  s_3a249a9db7669b::t_da5a0dfa388223 1086,1088-1089,1459-1461
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "41d7d7ec507db3bafc820fd9b1e3eddb430bc134",
+  "prompts": {},
+  "logical_commit_id": "41d7d7ec507db3bafc820fd9b1e3eddb430bc134",
+  "sessions": {
+    "s_3a249a9db7669b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fda3a-ec36-7f72-858f-947d702f0c28",
+        "model": "unknown"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
