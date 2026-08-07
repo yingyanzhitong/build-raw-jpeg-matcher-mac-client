@@ -1,0 +1,40 @@
+CHANGELOG.licensed.md
+  s_3a249a9db7669b::t_a6a15a71e8c870 5-11
+CHANGELOG.md
+  s_3a249a9db7669b::t_98a1e9ea072c6b 3-7
+package-lock.json
+  s_3a249a9db7669b::t_e8b89c94445847 3,9
+package.json
+  s_3a249a9db7669b::t_00b3416a6feb00 3
+src-tauri/src/license.rs
+  s_3a249a9db7669b::t_cf4fb319086108 12,17,97,266,770-791
+src-tauri/tauri.licensed.conf.json
+  s_3a249a9db7669b::t_154d5267a5981d 4
+.github/workflows/build-licensed-installers.yml
+  s_3a249a9db7669b::t_c1680a3ed29d39 36
+.github/workflows/prevent-licensed-merge.yml
+  s_3a249a9db7669b::t_7ffbd1c5152d04 43
+docs/LICENSED_BRANCH.md
+  s_3a249a9db7669b::t_8c9e6f7832ffcb 3,5
+release/README.licensed.md
+  s_3a249a9db7669b::t_658623a42518e2 24-27,30-34
+scripts/check-licensed-invariants.mjs
+  s_3a249a9db7669b::t_760c7efa7ec997 87
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "030bda2f2590a273df080b249837557dcbbf4a0f",
+  "prompts": {},
+  "logical_commit_id": "030bda2f2590a273df080b249837557dcbbf4a0f",
+  "sessions": {
+    "s_3a249a9db7669b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fda3a-ec36-7f72-858f-947d702f0c28",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
