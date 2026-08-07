@@ -34,7 +34,7 @@ assert.match(licensedConfig.version, /^\d+\.\d+\.\d+$/);
 assert.equal(licensedConfig.identifier, "com.masongzhi.rawjpegmatcher.licensed");
 assert.deepEqual(licensedConfig.plugins.updater.endpoints, [
   "https://gitee.com/masongzhi1/raw-jpeg-matcher-licensed-release/raw/main/release/latest.json",
-  "https://raw.githubusercontent.com/yingyanzhitong/build-raw-jpeg-matcher-mac-client/licensed/release/latest.json",
+  "https://github.com/yingyanzhitong/build-raw-jpeg-matcher-mac-client/releases/latest/download/latest.json",
 ]);
 assert.notEqual(
   licensedConfig.plugins.updater.pubkey,

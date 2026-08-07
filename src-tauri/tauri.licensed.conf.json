@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "摄影修图师助手",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "identifier": "com.masongzhi.rawjpegmatcher.licensed",
   "app": {
     "windows": [
@@ -25,7 +25,7 @@
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDUwNkQ2NjFFQzE2MTYzMDUKUldRRlkySEJIbVp0VUhrSUdtNG5CTUt5cDF3L25HUkhEWS82SCtkdUdxTjJCaXBBQTlqeXpmTUYK",
       "endpoints": [
         "https://gitee.com/masongzhi1/raw-jpeg-matcher-licensed-release/raw/main/release/latest.json",
-        "https://raw.githubusercontent.com/yingyanzhitong/build-raw-jpeg-matcher-mac-client/licensed/release/latest.json"
+        "https://github.com/yingyanzhitong/build-raw-jpeg-matcher-mac-client/releases/latest/download/latest.json"
       ],
       "windows": {
         "installMode": "passive"
