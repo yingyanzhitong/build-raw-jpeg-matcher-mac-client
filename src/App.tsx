@@ -114,9 +114,6 @@ interface UpdateProgress {
 
 const updateCheckTimeoutMs = 30_000;
 const updateCheckIntervalMs = 60 * 60 * 1000;
-const updateSourceLabel = "Gitee Release";
-const updateManifestUrl =
-  "https://gitee.com/masongzhi1/raw-jpeg-matcher-licensed-release/raw/main/release/latest.json";
 
 function App() {
   const [licenseStatus, setLicenseStatus] = useState<LicenseStatus | null>(null);
@@ -604,14 +601,12 @@ function ActivationGate({
               </div>
             ) : null}
 
-            <div className="mt-6 grid gap-2 sm:grid-cols-2">
+            <div className="mt-6 space-y-2">
               <Button onClick={() => void copyDeviceCode()} type="button" variant="outline">
                 <Copy />
                 {copyLabel}
               </Button>
-              <div className="[&>button]:h-9 [&>button]:w-full [&>button]:max-w-none [&>button]:rounded-[6px] [&>button]:border-border [&>button]:bg-card [&>button]:text-foreground">
-                <UpdateButton alwaysVisible />
-              </div>
+              <UpdateButton className="h-9 w-full max-w-none rounded-[6px] border-border bg-card text-foreground hover:bg-card/80" />
             </div>
 
             <p className="mt-5 flex items-start gap-2 text-[11px] leading-5 text-muted-foreground">
@@ -711,7 +706,7 @@ function WindowTitlebar({
     <header className="mac-titlebar relative grid h-[54px] grid-cols-[1fr_auto_1fr] items-center border-b border-border/70 px-3">
       <div className="absolute inset-0" data-tauri-drag-region />
       {!isTauriRuntime() ? <BrowserWindowControls /> : null}
-      <div className="pointer-events-none relative z-10 col-start-1 flex min-w-0 items-center pl-[84px]">
+      <div className="pointer-events-none relative z-10 col-start-1 flex min-w-0 items-center gap-3 pl-[84px]">
         <div className="min-w-0">
           <h1 className="truncate text-[12px] font-semibold leading-none tracking-[-0.01em] text-foreground/90">
             摄影修图师助手
@@ -719,6 +714,9 @@ function WindowTitlebar({
           <p className="mt-1 truncate text-[10px] leading-none text-muted-foreground">
             本地摄影工作流
           </p>
+        </div>
+        <div className="pointer-events-auto shrink-0" data-tauri-drag-region="false">
+          <UpdateButton />
         </div>
       </div>
       <div className="relative z-20 col-start-2">
@@ -742,7 +740,6 @@ function WindowTitlebar({
             )}
             {licenseStatus.state === "offlineGrace" ? "离线宽限" : "已激活"}
           </span>
-          <UpdateButton />
         </div>
       </div>
     </header>
@@ -1011,7 +1008,7 @@ function LogBottomSheet({
   );
 }
 
-function UpdateButton({ alwaysVisible = false }: { alwaysVisible?: boolean }) {
+function UpdateButton({ className }: { className?: string }) {
   const [status, setStatus] = useState<UpdateStatus>("idle");
   const [pendingUpdate, setPendingUpdate] = useState<Update | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -1142,14 +1139,7 @@ function UpdateButton({ alwaysVisible = false }: { alwaysVisible?: boolean }) {
   const label = getUpdateButtonLabel(status, pendingUpdate, progress);
   const visibleLabel = status === "available" ? "更新" : label;
 
-  if (
-    !alwaysVisible &&
-    !pendingUpdate &&
-    status !== "downloading" &&
-    status !== "installing" &&
-    status !== "installed" &&
-    status !== "error"
-  ) {
+  if (!pendingUpdate) {
     return null;
   }
 
@@ -1161,6 +1151,7 @@ function UpdateButton({ alwaysVisible = false }: { alwaysVisible?: boolean }) {
             aria-label={label}
             className={cn(
               "h-6 max-w-[7rem] overflow-hidden rounded-[6px] border-accent bg-accent px-2.5 text-[11px] font-semibold leading-none text-accent-foreground shadow-none hover:bg-accent/90 disabled:opacity-100",
+              className,
               status === "error" &&
                 "border-destructive bg-destructive text-destructive-foreground hover:bg-destructive/90",
             )}
@@ -1180,7 +1171,6 @@ function UpdateButton({ alwaysVisible = false }: { alwaysVisible?: boolean }) {
       <UpdateDialog
         currentVersion={currentVersion}
         message={message}
-        onCheck={() => void checkForUpdates()}
         onInstall={() => void installPendingUpdate()}
         onOpenChange={setDialogOpen}
         open={dialogOpen}
@@ -1216,7 +1206,6 @@ function UpdateDialog({
   progress,
   message,
   onOpenChange,
-  onCheck,
   onInstall,
 }: {
   open: boolean;
@@ -1226,7 +1215,6 @@ function UpdateDialog({
   progress: UpdateProgress;
   message: string;
   onOpenChange: (open: boolean) => void;
-  onCheck: () => void;
   onInstall: () => void;
 }) {
   const isInstalling = status === "downloading" || status === "installing";
@@ -1253,7 +1241,7 @@ function UpdateDialog({
             </Badge>
           </div>
           <DialogDescription>
-            更新包来自 {updateSourceLabel}，安装前会经过 Tauri 签名校验。
+            安装前会进行更新包签名校验。
           </DialogDescription>
         </DialogHeader>
 
@@ -1325,10 +1313,6 @@ function UpdateDialog({
               {message}
             </div>
           ) : null}
-
-          <div className="rounded-[6px] border border-border bg-background/72 px-3 py-2 text-[11px] leading-5 text-muted-foreground">
-            Manifest: <span className="font-mono">{updateManifestUrl}</span>
-          </div>
         </div>
 
         <DialogFooter>
@@ -1341,10 +1325,10 @@ function UpdateDialog({
           ) : null}
           <Button
             disabled={isInstalling || status === "installed" || status === "checking"}
-            onClick={pendingUpdate ? onInstall : onCheck}
+            onClick={onInstall}
             type="button"
           >
-            {getUpdatePrimaryActionLabel(status, pendingUpdate)}
+            {getUpdatePrimaryActionLabel(status)}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1387,7 +1371,7 @@ function getUpdateButtonLabel(
   return "检查更新";
 }
 
-function getUpdatePrimaryActionLabel(status: UpdateStatus, pendingUpdate: Update | null) {
+function getUpdatePrimaryActionLabel(status: UpdateStatus) {
   if (status === "checking") {
     return "检查中";
   }
@@ -1400,10 +1384,7 @@ function getUpdatePrimaryActionLabel(status: UpdateStatus, pendingUpdate: Update
   if (status === "installed") {
     return "正在重启";
   }
-  if (pendingUpdate) {
-    return "立即更新";
-  }
-  return "重新检查";
+  return "立即更新";
 }
 
 function getUpdateBadgeLabel(status: UpdateStatus) {
@@ -1460,10 +1441,10 @@ function formatUpdateError(error: unknown) {
     return "更新源拒绝访问，请稍后重试或检查网络。";
   }
   if (/404|Not Found/i.test(rawMessage)) {
-    return "未找到更新清单，请确认 Gitee 仓库已发布 release/latest.json。";
+    return "未找到更新所需文件，请稍后重试。";
   }
   if (/signature|pubkey|verify/i.test(rawMessage)) {
-    return "更新签名校验失败，请确认 latest.json 中的 signature 来自本次构建产物。";
+    return "更新包签名校验失败，请稍后重试。";
   }
   if (/network|fetch|timeout|timed out/i.test(rawMessage)) {
     return "连接更新源失败，请稍后重试或检查当前网络。";
