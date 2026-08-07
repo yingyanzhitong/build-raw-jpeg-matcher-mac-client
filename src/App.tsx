@@ -433,6 +433,7 @@ function ActivationGate({
 }) {
   const [token, setToken] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [restoringLegacy, setRestoringLegacy] = useState(false);
   const [copyLabel, setCopyLabel] = useState("复制设备码");
   const [errorMessage, setErrorMessage] = useState(
     status.state === "needsActivation" ? "" : status.message,
@@ -475,6 +476,22 @@ function ActivationGate({
       setCopyLabel("复制失败");
     }
     window.setTimeout(() => setCopyLabel("复制设备码"), 1_800);
+  }
+
+  async function restorePreviousLicense() {
+    if (submitting || restoringLegacy || !isTauriRuntime()) {
+      return;
+    }
+    setRestoringLegacy(true);
+    setErrorMessage("");
+    try {
+      const restored = await invoke<LicenseStatus>("restore_legacy_license");
+      onActivated(restored);
+    } catch (error) {
+      setErrorMessage(licenseErrorMessage(error));
+    } finally {
+      setRestoringLegacy(false);
+    }
   }
 
   const stateTitle =
@@ -575,11 +592,33 @@ function ActivationGate({
                 spellCheck={false}
                 value={token}
               />
-              <Button className="h-10 w-full" disabled={!token.trim() || submitting} type="submit">
+              <Button
+                className="h-10 w-full"
+                disabled={!token.trim() || submitting || restoringLegacy}
+                type="submit"
+              >
                 {submitting ? <Loader2 className="animate-spin" /> : <ShieldCheck />}
                 {submitting ? "正在绑定设备…" : "激活并进入工作区"}
               </Button>
             </form>
+
+            {status.state === "needsActivation" && isTauriRuntime() ? (
+              <div className="mt-4 rounded-[7px] border border-border bg-panel/55 p-3">
+                <p className="text-[11px] leading-5 text-muted-foreground">
+                  已从旧版升级？可恢复此前保存的本机授权。正常启动和检查更新不会读取系统凭据。
+                </p>
+                <Button
+                  className="mt-2 h-9 w-full"
+                  disabled={submitting || restoringLegacy}
+                  onClick={() => void restorePreviousLicense()}
+                  type="button"
+                  variant="outline"
+                >
+                  {restoringLegacy ? <Loader2 className="animate-spin" /> : <ShieldCheck />}
+                  {restoringLegacy ? "正在恢复此前授权…" : "恢复此前授权"}
+                </Button>
+              </div>
+            ) : null}
 
             <div className="mt-6">
               <div className="mb-2 flex items-center justify-between gap-3">

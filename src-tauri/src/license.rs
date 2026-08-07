@@ -4,6 +4,9 @@ use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{
+    fs,
+    io::ErrorKind,
+    path::PathBuf,
     sync::Arc,
     time::{SystemTime, UNIX_EPOCH},
 };
@@ -14,11 +17,13 @@ const DEVICE_HASH_DOMAIN: &str = "raw-jpeg-matcher-licensed:v1";
 const SERVICE_URL: &str = "https://licensed.xyyamsz.cn";
 const LICENSE_PUBLIC_KEY_BASE64: &str = "m3taKybxr3VM88UWDhzYFyR5F+AtTH25OHxQNY5TvIE=";
 const LICENSE_SCHEMA_VERSION: u8 = 1;
-const LICENSED_APP_VERSION: &str = "1.0.9";
+const LICENSED_APP_VERSION: &str = "1.0.10";
 const RENEW_INTERVAL_SECONDS: i64 = 24 * 60 * 60;
 const CLOCK_ROLLBACK_TOLERANCE_SECONDS: i64 = 5 * 60;
-const CREDENTIAL_SERVICE: &str = "com.masongzhi.rawjpegmatcher.licensed";
-const CREDENTIAL_USER: &str = "device-license";
+const APP_DATA_DIRECTORY: &str = "com.masongzhi.rawjpegmatcher.licensed";
+const LICENSE_FILE_NAME: &str = "license.json";
+const LEGACY_CREDENTIAL_SERVICE: &str = "com.masongzhi.rawjpegmatcher.licensed";
+const LEGACY_CREDENTIAL_USER: &str = "device-license";
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -131,17 +136,95 @@ trait CredentialStore: Send + Sync {
     fn delete(&self) -> Result<(), String>;
 }
 
-#[derive(Default)]
-struct NativeCredentialStore;
+struct FileCredentialStore {
+    path: PathBuf,
+}
 
-impl NativeCredentialStore {
+impl FileCredentialStore {
+    fn new(path: PathBuf) -> Self {
+        Self { path }
+    }
+
+    fn temporary_path(&self) -> PathBuf {
+        self.path.with_extension("json.tmp")
+    }
+}
+
+impl CredentialStore for FileCredentialStore {
+    fn load(&self) -> Result<Option<StoredLicense>, String> {
+        let serialized = match fs::read_to_string(&self.path) {
+            Ok(value) => value,
+            Err(error) if error.kind() == ErrorKind::NotFound => return Ok(None),
+            Err(error) => {
+                return Err(format!(
+                    "读取本地许可证失败（{}）: {error}",
+                    self.path.display()
+                ));
+            }
+        };
+        serde_json::from_str(&serialized)
+            .map(Some)
+            .map_err(|error| format!("本地许可证格式无效: {error}"))
+    }
+
+    fn save(&self, license: &StoredLicense) -> Result<(), String> {
+        let serialized =
+            serde_json::to_string(license).map_err(|error| format!("序列化许可证失败: {error}"))?;
+        let directory = self
+            .path
+            .parent()
+            .ok_or_else(|| "本地许可证路径无效。".to_string())?;
+        fs::create_dir_all(directory).map_err(|error| {
+            format!("创建本地许可证目录失败（{}）: {error}", directory.display())
+        })?;
+
+        let temporary = self.temporary_path();
+        fs::write(&temporary, serialized)
+            .map_err(|error| format!("写入本地许可证失败（{}）: {error}", temporary.display()))?;
+
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+
+            fs::set_permissions(&temporary, fs::Permissions::from_mode(0o600)).map_err(
+                |error| format!("设置本地许可证权限失败（{}）: {error}", temporary.display()),
+            )?;
+        }
+
+        #[cfg(windows)]
+        if self.path.exists() {
+            fs::remove_file(&self.path).map_err(|error| {
+                format!("替换本地许可证失败（{}）: {error}", self.path.display())
+            })?;
+        }
+
+        fs::rename(&temporary, &self.path)
+            .map_err(|error| format!("保存本地许可证失败（{}）: {error}", self.path.display()))
+    }
+
+    fn delete(&self) -> Result<(), String> {
+        match fs::remove_file(&self.path) {
+            Ok(()) => Ok(()),
+            Err(error) if error.kind() == ErrorKind::NotFound => Ok(()),
+            Err(error) => Err(format!(
+                "删除本地许可证失败（{}）: {error}",
+                self.path.display()
+            )),
+        }
+    }
+}
+
+#[derive(Default)]
+struct LegacyKeychainStore;
+
+impl LegacyKeychainStore {
     fn entry() -> Result<keyring::Entry, String> {
-        keyring::Entry::new(CREDENTIAL_SERVICE, CREDENTIAL_USER)
+        keyring::Entry::new(LEGACY_CREDENTIAL_SERVICE, LEGACY_CREDENTIAL_USER)
             .map_err(|error| format!("无法访问系统凭据库: {error}"))
     }
 }
 
-impl CredentialStore for NativeCredentialStore {
+impl CredentialStore for LegacyKeychainStore {
     fn load(&self) -> Result<Option<StoredLicense>, String> {
         match Self::entry()?.get_password() {
             Ok(value) => serde_json::from_str(&value)
@@ -188,6 +271,7 @@ pub(crate) struct LicenseManager {
     device_hash: String,
     verifying_key: [u8; 32],
     store: Arc<dyn CredentialStore>,
+    legacy_store: Arc<dyn CredentialStore>,
     clock: Arc<dyn Clock>,
     http: reqwest::Client,
     service_url: String,
@@ -199,7 +283,8 @@ impl LicenseManager {
         Ok(Self {
             device_hash: device_hash(&hardware_id),
             verifying_key: production_verifying_key()?,
-            store: Arc::new(NativeCredentialStore),
+            store: Arc::new(FileCredentialStore::new(local_license_path()?)),
+            legacy_store: Arc::new(LegacyKeychainStore),
             clock: Arc::new(SystemClock),
             http: reqwest::Client::builder()
                 .timeout(std::time::Duration::from_secs(20))
@@ -215,11 +300,13 @@ impl LicenseManager {
         device_hash: String,
         verifying_key: [u8; 32],
         store: Arc<dyn CredentialStore>,
+        legacy_store: Arc<dyn CredentialStore>,
         clock: Arc<dyn Clock>,
     ) -> Self {
         Self {
             device_hash,
             verifying_key,
+            legacy_store,
             store,
             clock,
             http: reqwest::Client::new(),
@@ -284,6 +371,33 @@ impl LicenseManager {
                 last_online_check_unix: now,
                 last_renewal_attempt_unix: now,
             })
+            .map_err(LicenseCommandError::local)?;
+        Ok(self.status())
+    }
+
+    fn restore_legacy_license(&self) -> Result<LicenseStatus, LicenseCommandError> {
+        if self
+            .store
+            .load()
+            .map_err(LicenseCommandError::local)?
+            .is_some()
+        {
+            return Ok(self.status());
+        }
+
+        let stored = self
+            .legacy_store
+            .load()
+            .map_err(LicenseCommandError::local)?
+            .ok_or_else(|| {
+                LicenseCommandError::new(
+                    "LICENSE_REQUIRED",
+                    "未找到此前保存的本机授权，请输入激活 token。",
+                )
+            })?;
+        verify_lease(&stored.lease, &self.device_hash, &self.verifying_key)?;
+        self.store
+            .save(&stored)
             .map_err(LicenseCommandError::local)?;
         Ok(self.status())
     }
@@ -403,8 +517,7 @@ fn renewal_is_due(now: i64, payload: &LeasePayload, stored: &StoredLicense) -> b
     let last_attempt = stored
         .last_renewal_attempt_unix
         .max(stored.last_online_check_unix);
-    now >= payload.renew_after
-        && now.saturating_sub(last_attempt) >= RENEW_INTERVAL_SECONDS
+    now >= payload.renew_after && now.saturating_sub(last_attempt) >= RENEW_INTERVAL_SECONDS
 }
 
 #[tauri::command]
@@ -419,6 +532,17 @@ pub(crate) async fn activate_license(
     app: tauri::AppHandle,
 ) -> Result<LicenseStatus, LicenseCommandError> {
     let status = manager.activate(token).await?;
+    use tauri::Emitter;
+    let _ = app.emit("license-activated", &status);
+    Ok(status)
+}
+
+#[tauri::command]
+pub(crate) fn restore_legacy_license(
+    manager: tauri::State<'_, LicenseManager>,
+    app: tauri::AppHandle,
+) -> Result<LicenseStatus, LicenseCommandError> {
+    let status = manager.restore_legacy_license()?;
     use tauri::Emitter;
     let _ = app.emit("license-activated", &status);
     Ok(status)
@@ -564,6 +688,12 @@ fn platform_name() -> &'static str {
     {
         "unsupported"
     }
+}
+
+fn local_license_path() -> Result<PathBuf, String> {
+    dirs::data_local_dir()
+        .map(|directory| directory.join(APP_DATA_DIRECTORY).join(LICENSE_FILE_NAME))
+        .ok_or_else(|| "无法定位本机应用数据目录。".to_string())
 }
 
 #[cfg(target_os = "macos")]
@@ -726,6 +856,58 @@ mod tests {
         }
     }
 
+    #[test]
+    fn status_does_not_read_legacy_keychain_until_user_requests_restore() {
+        let device = "device-a".to_string();
+        let key = SigningKey::from_bytes(&[13_u8; 32])
+            .verifying_key()
+            .to_bytes();
+        let manager = LicenseManager::with_dependencies(
+            device,
+            key,
+            Arc::new(MemoryStore::default()),
+            Arc::new(FailingStore),
+            Arc::new(FixedClock(1_000)),
+        );
+
+        assert_eq!(manager.status().state, LicenseState::NeedsActivation);
+        assert!(manager
+            .restore_legacy_license()
+            .unwrap_err()
+            .message
+            .contains("credential backend unavailable"));
+    }
+
+    #[test]
+    fn explicit_restore_moves_legacy_license_to_local_store() {
+        let device = "device-a".to_string();
+        let primary_store = Arc::new(MemoryStore::default());
+        let legacy_store = Arc::new(MemoryStore::default());
+        let (lease, key) = signed_lease(payload(&device));
+        legacy_store
+            .save(&StoredLicense {
+                lease,
+                max_seen_unix: 1_500,
+                last_online_check_unix: 1_400,
+                last_renewal_attempt_unix: 1_450,
+            })
+            .unwrap();
+        let manager = LicenseManager::with_dependencies(
+            device,
+            key,
+            primary_store.clone(),
+            legacy_store,
+            Arc::new(FixedClock(1_800)),
+        );
+
+        assert_eq!(manager.status().state, LicenseState::NeedsActivation);
+        assert_eq!(
+            manager.restore_legacy_license().unwrap().state,
+            LicenseState::Active
+        );
+        assert!(primary_store.load().unwrap().is_some());
+    }
+
     fn signed_lease(payload: LeasePayload) -> (SignedLease, [u8; 32]) {
         let key = SigningKey::from_bytes(&[13_u8; 32]);
         let payload_bytes = serde_json::to_vec(&payload).unwrap();
@@ -757,6 +939,38 @@ mod tests {
     fn device_hash_is_normalized_and_product_scoped() {
         assert_eq!(device_hash("{ABCD-1234}"), device_hash("  abcd1234  "));
         assert_eq!(device_hash("ABCD-1234").len(), 64);
+    }
+
+    #[test]
+    fn local_file_store_persists_and_deletes_signed_lease_without_keychain() {
+        let directory = tempfile::tempdir().unwrap();
+        let store = FileCredentialStore::new(directory.path().join("license.json"));
+        let (lease, _) = signed_lease(payload("device-a"));
+        let stored = StoredLicense {
+            lease,
+            max_seen_unix: 1_500,
+            last_online_check_unix: 1_400,
+            last_renewal_attempt_unix: 1_450,
+        };
+
+        assert!(store.load().unwrap().is_none());
+        store.save(&stored).unwrap();
+
+        let restored = store.load().unwrap().unwrap();
+        assert_eq!(restored.lease.payload, stored.lease.payload);
+        assert_eq!(restored.lease.signature, stored.lease.signature);
+        assert_eq!(restored.max_seen_unix, stored.max_seen_unix);
+        assert_eq!(
+            restored.last_online_check_unix,
+            stored.last_online_check_unix
+        );
+        assert_eq!(
+            restored.last_renewal_attempt_unix,
+            stored.last_renewal_attempt_unix
+        );
+
+        store.delete().unwrap();
+        assert!(store.load().unwrap().is_none());
     }
 
     #[test]
@@ -839,6 +1053,7 @@ mod tests {
             device.clone(),
             public_key,
             store.clone(),
+            store.clone(),
             Arc::new(FixedClock(1_800)),
         );
         assert_eq!(active.status().state, LicenseState::Active);
@@ -847,6 +1062,7 @@ mod tests {
             device.clone(),
             public_key,
             store.clone(),
+            store.clone(),
             Arc::new(FixedClock(2_300)),
         );
         assert_eq!(grace.status().state, LicenseState::OfflineGrace);
@@ -854,6 +1070,7 @@ mod tests {
         let expired = LicenseManager::with_dependencies(
             device.clone(),
             public_key,
+            store.clone(),
             store.clone(),
             Arc::new(FixedClock(2_800)),
         );
@@ -870,6 +1087,7 @@ mod tests {
         let rollback = LicenseManager::with_dependencies(
             device,
             public_key,
+            store.clone(),
             store,
             Arc::new(FixedClock(1_000)),
         );
@@ -886,6 +1104,7 @@ mod tests {
             device.clone(),
             key,
             Arc::new(MemoryStore::default()),
+            Arc::new(FailingStore),
             Arc::new(FixedClock(1_000)),
         );
         assert_eq!(missing.status().state, LicenseState::NeedsActivation);
@@ -897,6 +1116,7 @@ mod tests {
         let unavailable = LicenseManager::with_dependencies(
             device,
             key,
+            Arc::new(FailingStore),
             Arc::new(FailingStore),
             Arc::new(FixedClock(1_000)),
         );

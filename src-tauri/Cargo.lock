@@ -3238,6 +3238,7 @@ version = "0.1.48"
 dependencies = [
  "ab_glyph",
  "base64 0.22.1",
+ "dirs",
  "ed25519-dalek",
  "fontdb",
  "image",

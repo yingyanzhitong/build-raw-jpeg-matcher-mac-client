@@ -40,7 +40,10 @@ assert.match(
 assert.match(licenseSource, /const SERVICE_URL: &str = "https:\/\/licensed\.xyyamsz\.cn"/);
 assert.match(licenseSource, /const LICENSE_PUBLIC_KEY_BASE64: &str = "[A-Za-z0-9+/=]+"/);
 assert.match(libSource, /mod license;/);
-assert.match(libSource, /license_status,\s+activate_license,\s+renew_license,/);
+assert.match(
+  libSource,
+  /license_status,\s+activate_license,\s+restore_legacy_license,\s+renew_license,/,
+);
 assert.match(libSource, /tauri_plugin_updater::Builder::new\(\)\.build\(\)/);
 
 const commandFiles = {

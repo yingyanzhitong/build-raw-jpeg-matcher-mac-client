@@ -34,9 +34,14 @@ await uploadReleaseAssets(releaseId, installerAssets);
 console.log(`Synced ${config.tag} assets and updater manifest to Gitee ${config.owner}/${config.repo}`);
 
 async function ensureRepositoryReady() {
-  await giteeJson(
+  const repository = await giteeJson(
     `/repos/${config.owner}/${config.repo}?access_token=${encodeURIComponent(config.token)}`,
   );
+  if (repository.private) {
+    throw new Error(
+      `Gitee release repository ${config.owner}/${config.repo} must be public so installed clients can fetch updates`,
+    );
+  }
   if (await branchExists()) {
     return;
   }
@@ -68,16 +73,11 @@ async function initializeRepositoryWithGit() {
   const workdir = await mkdtemp(path.join(tmpdir(), "gitee-release-"));
   try {
     await runGit(["init", "--initial-branch", config.branch], workdir);
-    await mkdir(path.join(workdir, "release"), { recursive: true });
     await writeFile(
       path.join(workdir, "README.md"),
       "# 照片配对助手发布镜像\n\n此仓库用于托管自动更新清单和安装包 release 资产。\n",
     );
-    await writeFile(
-      path.join(workdir, "release", "latest.json"),
-      await readFile(config.latestJsonPath, "utf8"),
-    );
-    await runGit(["add", "README.md", "release/latest.json"], workdir);
+    await runGit(["add", "README.md"], workdir);
     await runGit(
       [
         "-c",

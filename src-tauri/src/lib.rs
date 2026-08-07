@@ -5,7 +5,9 @@ mod shared;
 mod watermark;
 
 use file_separator::{export_separated_files, scan_separator_source};
-use license::{activate_license, license_status, renew_license, LicenseManager};
+use license::{
+    activate_license, license_status, renew_license, restore_legacy_license, LicenseManager,
+};
 use std::{path::PathBuf, process::Command};
 
 #[cfg(desktop)]
@@ -189,6 +191,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             license_status,
             activate_license,
+            restore_legacy_license,
             renew_license,
             matcher_capabilities,
             collect_match_inputs,
