@@ -1,0 +1,28 @@
+CHANGELOG.licensed.md
+  s_3a249a9db7669b::t_68fd8f8c5ce96c 5-10
+release/README.licensed.md
+  s_3a249a9db7669b::t_403ab150e835c6 10-11,34
+scripts/check-licensed-invariants.mjs
+  s_3a249a9db7669b::t_ae2b96e0d7ac62 37
+src-tauri/src/license.rs
+  s_3a249a9db7669b::t_f39e12182f5e8f 16
+src-tauri/tauri.licensed.conf.json
+  s_3a249a9db7669b::t_3eea58889ecd9c 4,27-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "7aad011053308e606aec0ed67cbe70866631f210",
+  "prompts": {},
+  "logical_commit_id": "7aad011053308e606aec0ed67cbe70866631f210",
+  "sessions": {
+    "s_3a249a9db7669b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fda3a-ec36-7f72-858f-947d702f0c28",
+        "model": "unknown"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
