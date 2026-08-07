@@ -234,24 +234,9 @@ jobs:
               --notes-file CHANGELOG.licensed.md
           fi
 
-          mapfile -d '' upload_files < <(find normalized-release-assets -type f -print0)
+          mapfile -d '' upload_files < <(find normalized-release-assets -type f ! -name latest.json -print0)
+          upload_files+=(github-updater-manifest/latest.json)
           gh release upload "$TAG" "${upload_files[@]}" --clobber
-
-      - name: Sync GitHub updater fallback
-        env:
-          TAG: ${{ needs.validate.outputs.tag }}
-        run: |
-          git fetch origin licensed
-          git checkout -B "updater-manifest-${GITHUB_RUN_ID}" origin/licensed
-          cp github-updater-manifest/latest.json release/latest.json
-          git add release/latest.json
-          if git diff --cached --quiet; then
-            echo "GitHub updater fallback is already up to date."
-            exit 0
-          fi
-          git -c user.name=raw-jpeg-release-bot -c user.email=actions@github.com commit \
-            -m "chore: update licensed updater manifest for ${TAG}"
-          git push origin HEAD:licensed
 
       - name: Sync licensed release to Gitee
         env:
