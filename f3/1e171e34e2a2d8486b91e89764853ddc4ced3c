@@ -1,0 +1,26 @@
+CHANGELOG.licensed.md
+  s_3a249a9db7669b::t_fe31c15acbc850 5-10
+release/README.licensed.md
+  s_3a249a9db7669b::t_d54751a109ada3 10,33
+src-tauri/src/license.rs
+  s_3a249a9db7669b::t_4227eeecfebe5c 16
+src-tauri/tauri.licensed.conf.json
+  s_3a249a9db7669b::t_7d7bb2defcabed 4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "f31e171e34e2a2d8486b91e89764853ddc4ced3c",
+  "prompts": {},
+  "logical_commit_id": "f31e171e34e2a2d8486b91e89764853ddc4ced3c",
+  "sessions": {
+    "s_3a249a9db7669b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fda3a-ec36-7f72-858f-947d702f0c28",
+        "model": "unknown"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
