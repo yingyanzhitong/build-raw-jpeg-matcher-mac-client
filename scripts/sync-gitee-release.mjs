@@ -24,8 +24,13 @@ const config = {
 const apiBase = "https://gitee.com/api/v5";
 await ensureRepositoryReady();
 const releaseId = await ensureRelease();
-await uploadReleaseAssets(releaseId);
+const releaseAssets = await releaseAssetFiles();
+const updaterAssets = releaseAssets.filter(isUpdaterAsset);
+const installerAssets = releaseAssets.filter((file) => !isUpdaterAsset(file));
+
+await uploadReleaseAssets(releaseId, updaterAssets);
 await upsertLatestJson();
+await uploadReleaseAssets(releaseId, installerAssets);
 console.log(`Synced ${config.tag} assets and updater manifest to Gitee ${config.owner}/${config.repo}`);
 
 async function ensureRepositoryReady() {
@@ -223,11 +228,18 @@ async function getReleaseByTag() {
   return response.json();
 }
 
-async function uploadReleaseAssets(releaseId) {
-  const files = (await readdir(config.assetDir))
+async function releaseAssetFiles() {
+  return (await readdir(config.assetDir))
     .filter((fileName) => fileName !== "latest.json")
     .map((fileName) => path.join(config.assetDir, fileName))
     .sort();
+}
+
+function isUpdaterAsset(file) {
+  return /(?:\.app\.tar\.gz|\.app\.tar\.gz\.sig|\.exe|\.exe\.sig)$/i.test(file);
+}
+
+async function uploadReleaseAssets(releaseId, files) {
   const expectedNames = new Set(files.map((file) => path.basename(file)));
   const existingAssets = await listAssets(releaseId);
 

@@ -1083,10 +1083,10 @@ function UpdateButton({ alwaysVisible = false }: { alwaysVisible?: boolean }) {
 
       setStatus("notAvailable");
       setMessage("");
-    } catch {
+    } catch (error) {
       setPendingUpdate(null);
-      setStatus("idle");
-      setMessage("");
+      setStatus("error");
+      setMessage(formatUpdateError(error));
     } finally {
       checkInFlightRef.current = false;
     }
@@ -1456,6 +1456,9 @@ function getUpdateProgressPercent(progress: UpdateProgress) {
 
 function formatUpdateError(error: unknown) {
   const rawMessage = error instanceof Error ? error.message : String(error);
+  if (/403|Forbidden/i.test(rawMessage)) {
+    return "更新源拒绝访问，请稍后重试或检查网络。";
+  }
   if (/404|Not Found/i.test(rawMessage)) {
     return "未找到更新清单，请确认 Gitee 仓库已发布 release/latest.json。";
   }

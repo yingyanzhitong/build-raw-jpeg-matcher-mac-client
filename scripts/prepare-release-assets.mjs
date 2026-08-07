@@ -43,8 +43,14 @@ for (const { platform, assetLabel } of macTargets) {
   const macDmgName = `${appName}_${version}_macOS_${assetLabel}.dmg`;
   const macUpdaterName = `${appName}_${version}_macOS_${assetLabel}-updater.app.tar.gz`;
   const macUpdaterSigName = `${macUpdaterName}.sig`;
-  const macDmgUrl = releaseUrl(options.owner, options.repo, tag, macDmgName);
-  const macUpdaterUrl = releaseUrl(options.owner, options.repo, tag, macUpdaterName);
+  const macDmgUrl = releaseUrl(options.releaseBaseUrl, options.owner, options.repo, tag, macDmgName);
+  const macUpdaterUrl = releaseUrl(
+    options.releaseBaseUrl,
+    options.owner,
+    options.repo,
+    tag,
+    macUpdaterName,
+  );
 
   await copyAsset(macDmg, macDmgName);
   await copyAsset(macUpdater, macUpdaterName);
@@ -73,7 +79,13 @@ const windowsExeName = `${appName}_${version}_Windows_x64-setup.exe`;
 const windowsSigName = `${windowsExeName}.sig`;
 await copyAsset(windowsExe, windowsExeName);
 await copyAsset(windowsSig, windowsSigName);
-const windowsUrl = releaseUrl(options.owner, options.repo, tag, windowsExeName);
+const windowsUrl = releaseUrl(
+  options.releaseBaseUrl,
+  options.owner,
+  options.repo,
+  tag,
+  windowsExeName,
+);
 platforms["windows-x86_64"] = {
   signature: (await readFile(windowsSig, "utf8")).trim(),
   url: windowsUrl,
@@ -163,8 +175,8 @@ async function readChangelogNotes(targetVersion, changelogPath) {
   }
 }
 
-function releaseUrl(owner, repo, releaseTag, fileName) {
-  return `https://gitee.com/${owner}/${repo}/releases/download/${releaseTag}/${encodeURIComponent(fileName)}`;
+function releaseUrl(releaseBaseUrl, owner, repo, releaseTag, fileName) {
+  return `${releaseBaseUrl}/${owner}/${repo}/releases/download/${releaseTag}/${encodeURIComponent(fileName)}`;
 }
 
 function parseArgs(args) {
@@ -175,6 +187,7 @@ function parseArgs(args) {
     repo: "raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client",
     appName: "photo-pairing-assistant",
     changelog: "CHANGELOG.md",
+    releaseBaseUrl: "https://gitee.com",
     version: "",
     tag: "",
   };
@@ -205,6 +218,9 @@ function parseArgs(args) {
       case "--changelog":
         parsed.changelog = value;
         break;
+      case "--release-base-url":
+        parsed.releaseBaseUrl = value.replace(/\/$/, "");
+        break;
       case "--version":
         parsed.version = value;
         break;
@@ -221,6 +237,9 @@ function parseArgs(args) {
   }
   if (parsed.tag && !/^[0-9A-Za-z][0-9A-Za-z._-]*$/.test(parsed.tag)) {
     throw new Error(`Invalid release tag: ${parsed.tag}`);
+  }
+  if (!/^https:\/\/[^/]+(?:\/[^/]+)*$/.test(parsed.releaseBaseUrl)) {
+    throw new Error(`Invalid release base URL: ${parsed.releaseBaseUrl}`);
   }
 
   return parsed;
