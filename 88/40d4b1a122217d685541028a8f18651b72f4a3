@@ -1,0 +1,30 @@
+src-tauri/Cargo.lock
+  s_3a249a9db7669b::t_d5c06deeebc4f5 3241
+scripts/check-licensed-invariants.mjs
+  s_3a249a9db7669b::t_be6803d916ca39 43-46
+scripts/sync-gitee-release.mjs
+  s_3a249a9db7669b::t_38af0db297affd 37,40-44,80
+src-tauri/Cargo.toml
+  s_3a249a9db7669b::t_a8fa56b5c49a29 23
+src-tauri/src/lib.rs
+  s_3a249a9db7669b::t_d5ba987d374ff8 8-10,194
+src/App.tsx
+  s_3a249a9db7669b::t_f85aee3260c934 436,481-496,595-599,604-621
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "8840d4b1a122217d685541028a8f18651b72f4a3",
+  "prompts": {},
+  "logical_commit_id": "8840d4b1a122217d685541028a8f18651b72f4a3",
+  "sessions": {
+    "s_3a249a9db7669b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fda3a-ec36-7f72-858f-947d702f0c28",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
