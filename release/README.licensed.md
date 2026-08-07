@@ -7,8 +7,7 @@
 - 标签：`licensed-vX.Y.Z`
 - 产物前缀：`raw-jpeg-matcher-licensed_`
 - Gitee：`masongzhi1/raw-jpeg-matcher-licensed-release`
-- 主更新清单：`https://github.com/yingyanzhitong/build-raw-jpeg-matcher-mac-client/releases/latest/download/latest.json`
-- 备用更新清单：`https://gitee.com/masongzhi1/raw-jpeg-matcher-licensed-release/raw/main/release/latest.json`
+- 唯一更新清单：`https://gitee.com/masongzhi1/raw-jpeg-matcher-licensed-release/raw/main/release/latest.json`
 
 ## 签名材料
 
@@ -31,6 +30,6 @@ Cloudflare Worker 使用独立的 `LICENSE_PRIVATE_KEY_PEM` Secret；token HMAC 
 3. 确认 `src-tauri/tauri.licensed.conf.json` 的版本。
 4. 在 `licensed` 提交上创建同版本 `licensed-vX.Y.Z` 标签并推送。
 5. `.github/workflows/build-licensed-installers.yml` 会验证标签、分支可达性、在线服务和激活接口，再构建 macOS 双架构与 Windows x64。
-6. 工作流将 GitHub 主更新清单作为 Release 的 `latest.json` 资源发布，再把更新包和 `release/latest.json` 同步到独立 Gitee 仓库；无需向受保护的 `licensed` 分支写入，Gitee 的 DMG 上传也不会阻塞自动更新清单。
+6. 工作流发布 GitHub Release 后，将更新包和唯一的 `release/latest.json` 同步到独立 Gitee 仓库；客户端只读取 Gitee 清单，无需向受保护的 `licensed` 分支写入。
 
 Action 不会自行创建标签。标签、分支或配置版本不匹配时会立即失败。
