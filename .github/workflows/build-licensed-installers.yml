@@ -227,3 +227,45 @@ jobs:
           RELEASE_ASSET_DIR: normalized-release-assets
           LATEST_JSON_PATH: normalized-release-assets/latest.json
         run: node scripts/sync-gitee-release.mjs
+
+  notify:
+    name: Notify WeCom release success
+    runs-on: ubuntu-latest
+    needs:
+      - validate
+      - release
+    if: ${{ needs.release.result == 'success' }}
+    permissions: {}
+
+    steps:
+      - name: Send release success notification
+        env:
+          WECOM_WEBHOOK_KEY: ${{ secrets.WECOM_WEBHOOK_KEY }}
+          RELEASE_TAG: ${{ needs.validate.outputs.tag }}
+          RELEASE_VERSION: ${{ needs.validate.outputs.version }}
+          REPOSITORY: ${{ github.repository }}
+          SERVER_URL: ${{ github.server_url }}
+          RUN_ID: ${{ github.run_id }}
+        shell: bash
+        run: |
+          if [ -z "$WECOM_WEBHOOK_KEY" ]; then
+            echo "::error::当前仓库未配置 WECOM_WEBHOOK_KEY，无法发送企业微信通知"
+            exit 1
+          fi
+
+          RUN_URL="${SERVER_URL}/${REPOSITORY}/actions/runs/${RUN_ID}"
+          CONTENT="$(printf '# 摄影修图师助手激活版发布成功\n> 版本：<font color="info">%s</font>\n> 标签：`%s`\n> 状态：三平台构建、GitHub Release 与 Gitee 同步均已完成\n> [查看发布工作流](%s)' "$RELEASE_VERSION" "$RELEASE_TAG" "$RUN_URL")"
+          PAYLOAD="$(jq -n --arg content "$CONTENT" '{msgtype: "markdown", markdown: {content: $content}}')"
+
+          RESPONSE="$(curl --silent --show-error --fail-with-body \
+            --retry 3 --retry-all-errors --max-time 20 \
+            "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=${WECOM_WEBHOOK_KEY}" \
+            -H 'Content-Type: application/json' \
+            --data "$PAYLOAD")"
+
+          if [ "$(jq -r '.errcode // -1' <<<"$RESPONSE")" != "0" ]; then
+            echo "::error::企业微信机器人拒绝消息：$(jq -c . <<<"$RESPONSE")"
+            exit 1
+          fi
+
+          echo "企业微信发布成功通知已发送：${RELEASE_TAG}"
