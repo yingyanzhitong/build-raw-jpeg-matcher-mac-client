@@ -180,7 +180,7 @@ jobs:
       - validate
       - build
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/licensed-v')
-    timeout-minutes: 90
+    timeout-minutes: 180
 
     steps:
       - name: Checkout
@@ -201,7 +201,7 @@ jobs:
           RELEASE_TAG: ${{ needs.validate.outputs.tag }}
           RELEASE_VERSION: ${{ needs.validate.outputs.version }}
         run: |
-          rm -rf normalized-release-assets
+          rm -rf normalized-release-assets github-updater-manifest
           node scripts/prepare-release-assets.mjs \
             --input release-assets \
             --output normalized-release-assets \
@@ -211,6 +211,16 @@ jobs:
             --version "$RELEASE_VERSION" \
             --tag "$RELEASE_TAG" \
             --changelog CHANGELOG.licensed.md
+          node scripts/prepare-release-assets.mjs \
+            --input release-assets \
+            --output github-updater-manifest \
+            --owner yingyanzhitong \
+            --repo build-raw-jpeg-matcher-mac-client \
+            --app-name raw-jpeg-matcher-licensed \
+            --version "$RELEASE_VERSION" \
+            --tag "$RELEASE_TAG" \
+            --changelog CHANGELOG.licensed.md \
+            --release-base-url https://github.com
 
       - name: Publish licensed GitHub release
         env:
@@ -226,6 +236,22 @@ jobs:
 
           mapfile -d '' upload_files < <(find normalized-release-assets -type f -print0)
           gh release upload "$TAG" "${upload_files[@]}" --clobber
+
+      - name: Sync GitHub updater fallback
+        env:
+          TAG: ${{ needs.validate.outputs.tag }}
+        run: |
+          git fetch origin licensed
+          git checkout -B "updater-manifest-${GITHUB_RUN_ID}" origin/licensed
+          cp github-updater-manifest/latest.json release/latest.json
+          git add release/latest.json
+          if git diff --cached --quiet; then
+            echo "GitHub updater fallback is already up to date."
+            exit 0
+          fi
+          git -c user.name=raw-jpeg-release-bot -c user.email=actions@github.com commit \
+            -m "chore: update licensed updater manifest for ${TAG}"
+          git push origin HEAD:licensed
 
       - name: Sync licensed release to Gitee
         env:

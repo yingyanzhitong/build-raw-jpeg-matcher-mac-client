@@ -34,6 +34,7 @@ assert.match(licensedConfig.version, /^\d+\.\d+\.\d+$/);
 assert.equal(licensedConfig.identifier, "com.masongzhi.rawjpegmatcher.licensed");
 assert.deepEqual(licensedConfig.plugins.updater.endpoints, [
   "https://gitee.com/masongzhi1/raw-jpeg-matcher-licensed-release/raw/main/release/latest.json",
+  "https://raw.githubusercontent.com/yingyanzhitong/build-raw-jpeg-matcher-mac-client/licensed/release/latest.json",
 ]);
 assert.notEqual(
   licensedConfig.plugins.updater.pubkey,
@@ -49,6 +50,7 @@ assert.match(licenseSource, /const SERVICE_URL: &str = "https:\/\/licensed\.xyya
 assert.match(licenseSource, /const LICENSE_PUBLIC_KEY_BASE64: &str = "[A-Za-z0-9+/=]+"/);
 assert.match(libSource, /mod license;/);
 assert.match(libSource, /license_status,\s+activate_license,\s+renew_license,/);
+assert.match(libSource, /tauri_plugin_updater::Builder::new\(\)\.build\(\)/);
 assert.equal(servicePackage.dependencies["@edgeone/pages-blob"], "0.0.14");
 assert.equal(servicePackage.devDependencies.edgeone, "1.6.17");
 assert.match(edgeOneHandlerSource, /getStore\("raw-jpeg-matcher-license"\)/);
