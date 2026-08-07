@@ -1,0 +1,20 @@
+AGENTS.md
+  s_3a249a9db7669b::t_bf3a700feafded 9-18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "40abf1507a27e1af8cf62a4825cb8a3ce2e8c1da",
+  "prompts": {},
+  "logical_commit_id": "40abf1507a27e1af8cf62a4825cb8a3ce2e8c1da",
+  "sessions": {
+    "s_3a249a9db7669b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fda3a-ec36-7f72-858f-947d702f0c28",
+        "model": "unknown"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
