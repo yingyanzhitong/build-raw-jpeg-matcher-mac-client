@@ -36,12 +36,11 @@ jobs:
             const licensedOnly = [
               /^CHANGELOG\.licensed\.md$/,
               /^docs\/LICENSED_BRANCH\.md$/,
-              /^services\/license-service\//,
               /^src\/features\/license\//,
               /^src-tauri\/src\/license\.rs$/,
               /^src-tauri\/tauri\.licensed\.conf\.json$/,
               /^scripts\/check-licensed-invariants\.mjs$/,
-              /^\.github\/workflows\/(?:build-licensed-installers|deploy-license-service|licensed-invariants)\.yml$/,
+              /^\.github\/workflows\/(?:build-licensed-installers|licensed-invariants)\.yml$/,
             ];
             const violations = files
               .map((file) => file.filename)

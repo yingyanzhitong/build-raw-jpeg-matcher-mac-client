@@ -33,19 +33,12 @@ jobs:
           node-version: 24
           cache: npm
 
-      - name: Install and validate licensed source
+      - name: Install and validate licensed client source
         run: |
           npm ci
           npm run check:licensed
           npm run test:state
           npm run build
-
-      - name: Test license service
-        working-directory: services/license-service
-        run: |
-          npm ci
-          npm run typecheck
-          npm test
 
       - name: Validate tag, version, and licensed ancestry
         id: release
@@ -71,22 +64,6 @@ jobs:
 
           echo "tag=${EXPECTED_TAG}" >> "$GITHUB_OUTPUT"
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-
-      - name: Verify deployed license service
-        if: github.event_name == 'push'
-        shell: bash
-        run: |
-          HEALTH="$(curl --silent --show-error --fail --retry 5 --retry-all-errors --max-time 20 \
-            https://licensed.xyyamsz.cn/healthz)"
-          test "$(jq -r '.ok' <<<"$HEALTH")" = "true"
-
-          HTTP_CODE="$(curl --silent --show-error --output /tmp/activation-response.json \
-            --write-out '%{http_code}' --max-time 20 \
-            https://licensed.xyyamsz.cn/api/v1/activate \
-            -H 'Content-Type: application/json' \
-            --data '{"token":"RJM-00000-00000-00000-00000-00000","deviceHash":"0000000000000000000000000000000000000000000000000000000000000000","platform":"macos","version":"1.0.0"}')"
-          test "$HTTP_CODE" = "400"
-          test "$(jq -r '.error.code' /tmp/activation-response.json)" = "INVALID_TOKEN"
 
   build:
     name: Build licensed ${{ matrix.name }}

@@ -50,13 +50,3 @@ jobs:
 
       - name: Test Rust license boundary
         run: cargo test --manifest-path src-tauri/Cargo.toml
-
-      - name: Install license service dependencies
-        working-directory: services/license-service
-        run: npm ci
-
-      - name: Validate license service
-        working-directory: services/license-service
-        run: |
-          npm run typecheck
-          npm test

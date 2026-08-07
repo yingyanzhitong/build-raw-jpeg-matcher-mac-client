@@ -1,8 +1,8 @@
 # `licensed` 长期分支维护约定
 
-`main` 是公开无激活版，`licensed` 是包含许可证客户端、EdgeOne 鉴权服务和独立发行配置的长期分支。
+`main` 是公开无激活版，`licensed` 是包含许可证客户端和独立发行配置的长期分支。
 
-鉴权服务运行在 EdgeOne 海外项目的 Node.js 云函数中，许可证、管理员、会话和审计数据存放于 EdgeOne Blob。Cloudflare Worker、D1 与 KV 在迁移后仅保留回滚窗口，不再承载 `licensed.xyyamsz.cn`。
+授权平台已拆分至 `software-license-platform` 独立维护。本仓库仅保留客户端与其公开接口的集成，不包含平台部署、数据存储或管理后台代码。
 
 ## 合并方向
 

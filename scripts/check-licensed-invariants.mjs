@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -12,22 +11,15 @@ const [
   publicConfigSource,
   licenseSource,
   libSource,
-  edgeOneHandlerSource,
-  storageSource,
-  servicePackageSource,
 ] = await Promise.all([
   read("src-tauri/tauri.licensed.conf.json"),
   read("src-tauri/tauri.conf.json"),
   read("src-tauri/src/license.rs"),
   read("src-tauri/src/lib.rs"),
-  read("services/license-service/cloud-functions/_handler.ts"),
-  read("services/license-service/src/storage.ts"),
-  read("services/license-service/package.json"),
 ]);
 
 const licensedConfig = JSON.parse(licensedConfigSource);
 const publicConfig = JSON.parse(publicConfigSource);
-const servicePackage = JSON.parse(servicePackageSource);
 
 assert.equal(licensedConfig.productName, "摄影修图师助手");
 assert.match(licensedConfig.version, /^\d+\.\d+\.\d+$/);
@@ -50,26 +42,6 @@ assert.match(licenseSource, /const LICENSE_PUBLIC_KEY_BASE64: &str = "[A-Za-z0-9
 assert.match(libSource, /mod license;/);
 assert.match(libSource, /license_status,\s+activate_license,\s+renew_license,/);
 assert.match(libSource, /tauri_plugin_updater::Builder::new\(\)\.build\(\)/);
-assert.equal(servicePackage.dependencies["@edgeone/pages-blob"], "0.0.14");
-assert.equal(servicePackage.devDependencies.edgeone, "1.6.17");
-assert.match(edgeOneHandlerSource, /getStore\("raw-jpeg-matcher-license"\)/);
-assert.match(storageSource, /onlyIfNew:\s*true/);
-assert.match(storageSource, /consistency:\s*"strong"/);
-assert.equal(
-  existsSync(path.join(repositoryRoot, "services/license-service/cloud-functions/_handler.ts")),
-  true,
-  "激活服务必须保留 EdgeOne Node.js 云函数入口",
-);
-assert.equal(
-  existsSync(path.join(repositoryRoot, "services/license-service/edge-functions")),
-  false,
-  "激活服务不得恢复不稳定的 Edge Runtime 入口",
-);
-assert.equal(
-  existsSync(path.join(repositoryRoot, "services/license-service/wrangler.jsonc")),
-  false,
-  "激活服务不得恢复 Cloudflare Wrangler 配置",
-);
 
 const commandFiles = {
   "src-tauri/src/lib.rs": ["open_file_path"],
@@ -112,4 +84,4 @@ for (const [relativePath, commandNames] of Object.entries(commandFiles)) {
   }
 }
 
-console.log("licensed branch invariants: ok");
+console.log("licensed client invariants: ok");

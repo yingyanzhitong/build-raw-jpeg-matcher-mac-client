@@ -9,11 +9,12 @@ use std::{
 };
 
 const PRODUCT_ID: &str = "raw-jpeg-matcher-licensed";
+const SOFTWARE_ID: &str = "sw_raw_jpeg_matcher_legacy";
 const DEVICE_HASH_DOMAIN: &str = "raw-jpeg-matcher-licensed:v1";
 const SERVICE_URL: &str = "https://licensed.xyyamsz.cn";
 const LICENSE_PUBLIC_KEY_BASE64: &str = "m3taKybxr3VM88UWDhzYFyR5F+AtTH25OHxQNY5TvIE=";
 const LICENSE_SCHEMA_VERSION: u8 = 1;
-const LICENSED_APP_VERSION: &str = "1.0.6";
+const LICENSED_APP_VERSION: &str = "1.0.7";
 const RENEW_INTERVAL_SECONDS: i64 = 24 * 60 * 60;
 const CLOCK_ROLLBACK_TOLERANCE_SECONDS: i64 = 5 * 60;
 const CREDENTIAL_SERVICE: &str = "com.masongzhi.rawjpegmatcher.licensed";
@@ -93,6 +94,7 @@ struct StoredLicense {
 #[serde(rename_all = "camelCase")]
 struct ActivateRequest<'a> {
     token: &'a str,
+    software_id: &'static str,
     device_hash: &'a str,
     platform: &'static str,
     version: &'static str,
@@ -261,6 +263,7 @@ impl LicenseManager {
             .post(format!("{}/api/v1/activate", self.service_url))
             .json(&ActivateRequest {
                 token: &token,
+                software_id: SOFTWARE_ID,
                 device_hash: &self.device_hash,
                 platform: platform_name(),
                 version: LICENSED_APP_VERSION,
@@ -764,6 +767,28 @@ mod tests {
         );
         assert!(normalize_token("RJM-01234-56789-ABCDE-FGHIL-MNPQR").is_err());
         assert!(normalize_token("too-short").is_err());
+    }
+
+    #[test]
+    fn activate_request_includes_software_id() {
+        let request = ActivateRequest {
+            token: "RJM-01234-56789-ABCDE-FGHJK-MNPQR",
+            software_id: SOFTWARE_ID,
+            device_hash: "device-hash",
+            platform: "macos",
+            version: "1.0.7",
+        };
+
+        assert_eq!(
+            serde_json::to_value(request).unwrap(),
+            serde_json::json!({
+                "token": "RJM-01234-56789-ABCDE-FGHJK-MNPQR",
+                "softwareId": "sw_raw_jpeg_matcher_legacy",
+                "deviceHash": "device-hash",
+                "platform": "macos",
+                "version": "1.0.7",
+            })
+        );
     }
 
     #[test]
