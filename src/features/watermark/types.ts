@@ -130,6 +130,7 @@ export interface WatermarkExportSummary {
   skippedExistingCount: number;
   failedCount: number;
   cancelledRemainingCount: number;
+  outputDir: string;
 }
 
 export interface WatermarkSettingsSnapshot {

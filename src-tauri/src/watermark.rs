@@ -54,6 +54,8 @@ const MAX_TILE_COUNT: usize = 5_000;
 const MAX_TEXT_WATERMARK_CHARACTERS: usize = 120;
 const TEXT_RENDER_SCALE: f32 = 256.0;
 const TEXT_RENDER_PADDING: u32 = 24;
+const WATERMARK_OUTPUT_DIRECTORY_NAME: &str = "水印图片";
+const WATERMARK_OUTPUT_MARKER_FILE: &str = ".raw-jpeg-matcher-watermark-output";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -306,6 +308,7 @@ pub(crate) struct WatermarkExportSummary {
     skipped_existing_count: u32,
     failed_count: u32,
     cancelled_remaining_count: u32,
+    output_dir: String,
 }
 
 #[derive(Debug)]
@@ -381,6 +384,19 @@ pub(crate) async fn scan_watermark_source(
     })
     .await
     .map_err(|error| format!("图片扫描任务异常结束: {error}"))?
+}
+
+#[tauri::command]
+pub(crate) async fn scan_watermark_files(
+    paths: Vec<String>,
+    license: State<'_, LicenseManager>,
+) -> Result<WatermarkScanResponse, String> {
+    license.require_active()?;
+    tauri::async_runtime::spawn_blocking(move || {
+        scan_selected_watermark_files(&paths).map_err(|error| error.to_string())
+    })
+    .await
+    .map_err(|error| format!("图片读取任务异常结束: {error}"))?
 }
 
 #[tauri::command]
@@ -491,7 +507,10 @@ fn scan_watermark_directory(
     for entry in WalkDir::new(&root)
         .follow_links(false)
         .into_iter()
-        .filter_entry(|entry| !is_macos_metadata_dir(entry.path()))
+        .filter_entry(|entry| {
+            !is_macos_metadata_dir(entry.path())
+                && !is_watermark_output_directory(entry.path(), &root)
+        })
     {
         let entry = match entry {
             Ok(entry) => entry,
@@ -541,6 +560,92 @@ fn scan_watermark_directory(
         skipped_count,
         logs,
     })
+}
+
+fn is_watermark_output_directory(path: &Path, root: &Path) -> bool {
+    path.parent() == Some(root)
+        && path.is_dir()
+        && path.join(WATERMARK_OUTPUT_MARKER_FILE).is_file()
+}
+
+fn scan_selected_watermark_files(
+    requested_paths: &[String],
+) -> Result<WatermarkScanResponse, Box<dyn std::error::Error>> {
+    if requested_paths.is_empty() {
+        return Err("请至少选择一张图片".into());
+    }
+
+    let mut paths = Vec::with_capacity(requested_paths.len());
+    let mut seen = HashSet::new();
+    let mut skipped_count = 0_u32;
+    let mut logs = Vec::new();
+    for requested_path in requested_paths {
+        match canonical_supported_file(Path::new(requested_path), "所选图片") {
+            Ok(path) if seen.insert(path.clone()) => paths.push(path),
+            Ok(_) => {
+                skipped_count += 1;
+                logs.push(format!("跳过重复图片: {requested_path}"));
+            }
+            Err(error) => {
+                skipped_count += 1;
+                logs.push(format!("跳过无法读取的图片 {requested_path}: {error}"));
+            }
+        }
+    }
+    if paths.is_empty() {
+        return Err("没有可处理的 JPG、JPEG 或 PNG 图片".into());
+    }
+
+    let root = common_parent_directory(&paths)?;
+    logs.insert(
+        0,
+        format!("开始读取所选图片，输出目录将创建在: {}", root.display()),
+    );
+    let mut images = Vec::with_capacity(paths.len());
+    for path in paths {
+        match watermark_input_from_path(&root, &path) {
+            Ok(image) => images.push(image),
+            Err(error) => {
+                skipped_count += 1;
+                logs.push(format!("跳过无法读取的图片 {}: {error}", path.display()));
+            }
+        }
+    }
+    if images.is_empty() {
+        return Err("没有可处理的 JPG、JPEG 或 PNG 图片".into());
+    }
+
+    images.sort_by(|left, right| left.relative_path.cmp(&right.relative_path));
+    logs.push(format!(
+        "图片准备完成: 识别 {} 张图片，跳过 {} 个项目",
+        images.len(),
+        skipped_count
+    ));
+    Ok(WatermarkScanResponse {
+        root_dir: root.to_string_lossy().to_string(),
+        images,
+        skipped_count,
+        logs,
+    })
+}
+
+fn common_parent_directory(paths: &[PathBuf]) -> Result<PathBuf, Box<dyn std::error::Error>> {
+    let first = paths
+        .first()
+        .and_then(|path| path.parent())
+        .ok_or("无法确定所选图片的父目录")?;
+    let mut root = first.to_path_buf();
+    for path in paths.iter().skip(1) {
+        while !path.starts_with(&root) {
+            if !root.pop() {
+                return Err("所选图片没有共同父目录".into());
+            }
+        }
+    }
+    if !root.is_dir() {
+        return Err("所选图片的共同父目录不可访问".into());
+    }
+    Ok(root)
 }
 
 fn watermark_input_from_path(
@@ -1268,9 +1373,9 @@ fn prepare_export(request: WatermarkExportRequest) -> Result<PreparedExport, Str
     }
     let input_root = canonical_directory(Path::new(&request.input_root), "图片输入目录")
         .map_err(|error| error.to_string())?;
-    let output_root = canonical_directory(Path::new(&request.export_dir), "水印输出目录")
+    let export_directory = canonical_directory(Path::new(&request.export_dir), "水印输出目录")
         .map_err(|error| error.to_string())?;
-    if output_root.starts_with(&input_root) {
+    if export_directory.starts_with(&input_root) && export_directory != input_root {
         return Err("水印输出目录不能位于图片输入目录内部".to_string());
     }
     let prepared_watermark = prepare_watermark_source(&request.source)
@@ -1313,6 +1418,12 @@ fn prepare_export(request: WatermarkExportRequest) -> Result<PreparedExport, Str
         });
     }
 
+    let output_root = if export_directory == input_root {
+        create_watermark_output_directory(&input_root).map_err(|error| error.to_string())?
+    } else {
+        export_directory
+    };
+
     Ok(PreparedExport {
         job_id: request.job_id,
         output_root,
@@ -1339,6 +1450,7 @@ where
     });
     let mut summary = WatermarkExportSummary {
         total_count,
+        output_dir: prepared.output_root.to_string_lossy().to_string(),
         ..WatermarkExportSummary::default()
     };
 
@@ -2068,6 +2180,38 @@ fn canonical_supported_file(
     Ok(canonical)
 }
 
+fn create_watermark_output_directory(
+    input_root: &Path,
+) -> Result<PathBuf, Box<dyn std::error::Error>> {
+    for sequence in 1..=1_000_u32 {
+        let name = if sequence == 1 {
+            WATERMARK_OUTPUT_DIRECTORY_NAME.to_string()
+        } else {
+            format!("{WATERMARK_OUTPUT_DIRECTORY_NAME} {sequence}")
+        };
+        let output_root = input_root.join(name);
+        match fs::create_dir(&output_root) {
+            Ok(()) => {
+                let marker_path = output_root.join(WATERMARK_OUTPUT_MARKER_FILE);
+                if let Err(error) = OpenOptions::new()
+                    .write(true)
+                    .create_new(true)
+                    .open(&marker_path)
+                {
+                    let _ = fs::remove_dir(&output_root);
+                    return Err(
+                        format!("无法标记水印输出目录 {}: {error}", output_root.display()).into(),
+                    );
+                }
+                return fs::canonicalize(&output_root).map_err(Into::into);
+            }
+            Err(error) if error.kind() == io::ErrorKind::AlreadyExists => continue,
+            Err(error) => return Err(error.into()),
+        }
+    }
+    Err("无法创建新的水印输出目录，请清理同名目录后重试".into())
+}
+
 fn is_supported_image(path: &Path) -> bool {
     extension_lower(path)
         .is_some_and(|extension| SUPPORTED_EXTENSIONS.contains(&extension.as_str()))
@@ -2287,6 +2431,32 @@ mod tests {
         assert_eq!(response.images[0].width, 4);
         assert_eq!(response.images[0].height, 8);
         assert_eq!(response.images[0].aspect, AspectKind::Portrait);
+    }
+
+    #[test]
+    fn selected_files_use_their_common_parent_and_skip_duplicates() {
+        let root = tempdir().unwrap();
+        fs::create_dir(root.path().join("nested")).unwrap();
+        let first = root.path().join("a.png");
+        let second = root.path().join("nested/b.png");
+        write_png(&first, 8, 4, Rgba([10, 20, 30, 255]));
+        write_png(&second, 4, 8, Rgba([30, 20, 10, 255]));
+
+        let response = scan_selected_watermark_files(&[
+            first.to_string_lossy().to_string(),
+            second.to_string_lossy().to_string(),
+            first.to_string_lossy().to_string(),
+        ])
+        .unwrap();
+
+        assert_eq!(
+            response.root_dir,
+            fs::canonicalize(root.path()).unwrap().to_string_lossy()
+        );
+        assert_eq!(response.images.len(), 2);
+        assert_eq!(response.images[0].relative_path, "a.png");
+        assert_eq!(response.images[1].relative_path, "nested/b.png");
+        assert_eq!(response.skipped_count, 1);
     }
 
     #[test]
@@ -2850,6 +3020,36 @@ mod tests {
 
         assert_eq!(summary.skipped_existing_count, 1);
         assert_eq!(fs::read(output.join("photo.png")).unwrap(), b"keep-me");
+    }
+
+    #[test]
+    fn export_to_selected_directory_creates_a_new_marked_output_folder() {
+        let root = tempdir().unwrap();
+        let input = root.path().join("input");
+        fs::create_dir(&input).unwrap();
+        let source = input.join("photo.png");
+        let watermark = root.path().join("logo.png");
+        write_png(&source, 20, 10, Rgba([10, 20, 30, 255]));
+        write_png(&watermark, 2, 1, Rgba([255, 255, 255, 180]));
+        let prepared = prepare_export(export_request(
+            "in-place-output",
+            &input,
+            &input,
+            &watermark,
+            vec![source],
+        ))
+        .unwrap();
+        let output = prepared.output_root.clone();
+
+        let summary = export_prepared(prepared, Arc::new(AtomicBool::new(false)), |_| {}).unwrap();
+        let canonical_input = fs::canonicalize(&input).unwrap();
+
+        assert_eq!(output.parent(), Some(canonical_input.as_path()));
+        assert_eq!(output.file_name().unwrap(), WATERMARK_OUTPUT_DIRECTORY_NAME);
+        assert!(output.join(WATERMARK_OUTPUT_MARKER_FILE).is_file());
+        assert!(output.join("photo.png").is_file());
+        assert_eq!(summary.output_dir, output.to_string_lossy());
+        assert_eq!(scan_watermark_directory(&input).unwrap().images.len(), 1);
     }
 
     #[test]

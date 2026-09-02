@@ -1,11 +1,15 @@
 ## ADDED Requirements
 
-### Requirement: 递归扫描本地图片目录
-系统 SHALL 允许用户选择单个本地目录，并递归识别其中的 JPG、JPEG、PNG 文件；结果 SHALL 按相对路径稳定排序，且 SHALL 跳过符号链接和不支持文件。
+### Requirement: 选择本地图片目录或多张图片
+系统 SHALL 允许用户选择单个本地目录并递归识别其中的 JPG、JPEG、PNG 文件，也 SHALL 允许一次多选 JPG、JPEG、PNG 图片；结果 SHALL 按相对路径稳定排序，且 SHALL 跳过符号链接、不支持文件和重复图片。多选图片时，系统 SHALL 使用这些图片的共同父目录作为预览与导出根目录。
 
 #### Scenario: 扫描混合目录
 - **WHEN** 用户选择包含嵌套支持图片、不支持文件和符号链接的目录
 - **THEN** 系统只返回真实存在的 JPG、JPEG、PNG，并记录跳过数量与日志
+
+#### Scenario: 多选图片
+- **WHEN** 用户在文件选择器中一次选中多张 JPG、JPEG 或 PNG 图片
+- **THEN** 系统只将去重后的有效图片加入任务，并以这些图片的共同父目录作为输出目录位置
 
 ### Requirement: 按显示方向识别画幅
 系统 SHALL 在读取 EXIF 方向后计算图片的显示宽高，并据此将图片归类为 `landscape`、`portrait` 或 `square`。

@@ -6,6 +6,7 @@ import {
   ArrowRight,
   Check,
   CheckCircle2,
+  Files,
   FolderInput,
   FolderOutput,
   Image as ImageIcon,
@@ -111,7 +112,7 @@ export interface WatermarkWorkspaceStatus {
 }
 
 const initialWatermarkLogs: LogEntry[] = [
-  { level: "info", message: "等待选择图片目录和图片或文字水印" },
+  { level: "info", message: "等待选择图片目录或多张图片，并准备图片或文字水印" },
 ];
 
 export const defaultWatermarkWorkspaceStatus: WatermarkWorkspaceStatus = {
@@ -470,6 +471,25 @@ export function WatermarkWorkspace({
     ].slice(-500));
   }
 
+  function applyScanResponse(response: WatermarkScanResponse) {
+    setInputRoot(response.rootDir);
+    setImages(response.images);
+    setSkippedCount(response.skippedCount);
+    setSelectedIndex(response.images.length > 0 ? 0 : -1);
+    setActiveAspect(response.images[0]?.aspect ?? "landscape");
+    setExportReport(null);
+    setProgress(createWatermarkProgress());
+    previewPathsRef.current = {};
+    previewRequestsRef.current.clear();
+    setPreviewPaths({});
+    setLogs(
+      response.logs.map((message) => ({
+        level: inferLogLevel(message),
+        message,
+      })),
+    );
+  }
+
   async function chooseInputDirectory() {
     if (busy !== null || progress.running) {
       return;
@@ -487,24 +507,34 @@ export function WatermarkWorkspace({
       const response = await invoke<WatermarkScanResponse>("scan_watermark_source", {
         root: selected,
       });
-      setInputRoot(response.rootDir);
-      setImages(response.images);
-      setSkippedCount(response.skippedCount);
-      setSelectedIndex(response.images.length > 0 ? 0 : -1);
-      setActiveAspect(response.images[0]?.aspect ?? "landscape");
-      setExportReport(null);
-      setProgress(createWatermarkProgress());
-      previewPathsRef.current = {};
-      previewRequestsRef.current.clear();
-      setPreviewPaths({});
-      setLogs(
-        response.logs.map((message) => ({
-          level: inferLogLevel(message),
-          message,
-        })),
-      );
+      applyScanResponse(response);
     } catch (error) {
       appendLogs([`扫描图片目录失败: ${String(error)}`], "error");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function chooseInputFiles() {
+    if (busy !== null || progress.running) {
+      return;
+    }
+    const selected = await open({
+      directory: false,
+      multiple: true,
+      title: "选择需要添加水印的图片",
+      filters: [{ name: "图片", extensions: ["jpg", "jpeg", "png"] }],
+    });
+    const paths = normalizeDialogSelection(selected);
+    if (paths.length === 0) {
+      return;
+    }
+    setBusy("scan");
+    try {
+      const response = await invoke<WatermarkScanResponse>("scan_watermark_files", { paths });
+      applyScanResponse(response);
+    } catch (error) {
+      appendLogs([`读取所选图片失败: ${String(error)}`], "error");
     } finally {
       setBusy(null);
     }
@@ -620,21 +650,11 @@ export function WatermarkWorkspace({
       appendLogs([actionHint], "warning");
       return;
     }
-    const exportDir = await open({
-      directory: true,
-      multiple: false,
-      title: "选择水印图片输出目录",
-      canCreateDirectories: true,
-    });
-    if (typeof exportDir !== "string") {
-      return;
-    }
-
     const jobId = crypto.randomUUID();
     const request: WatermarkExportRequest = {
       jobId,
       inputRoot,
-      exportDir,
+      exportDir: inputRoot,
       jpegQuality,
       source:
         sourceKind === "image"
@@ -677,10 +697,10 @@ export function WatermarkWorkspace({
         onEvent,
       });
       setProgress((current) => completeWatermarkProgress(current, summary));
-      setExportReport({ directory: exportDir, summary });
+      setExportReport({ directory: summary.outputDir, summary });
       appendLogs(
         [
-          `水印导出完成：成功 ${summary.exportedCount}，同名跳过 ${summary.skippedExistingCount}，失败 ${summary.failedCount}，取消剩余 ${summary.cancelledRemainingCount}`,
+          `水印导出完成：已生成 ${summary.outputDir}，成功 ${summary.exportedCount}，同名跳过 ${summary.skippedExistingCount}，失败 ${summary.failedCount}，取消剩余 ${summary.cancelledRemainingCount}`,
         ],
         summary.failedCount > 0 || summary.cancelledRemainingCount > 0 ? "warning" : "success",
       );
@@ -774,17 +794,28 @@ export function WatermarkWorkspace({
               state={workflowSteps[0]}
               step={1}
               title="照片来源"
-              subtitle={images.length > 0 ? `${images.length} 张可处理图片` : "递归识别 JPG、JPEG、PNG"}
+              subtitle={images.length > 0 ? `${images.length} 张可处理图片` : "选择目录或多张 JPG、JPEG、PNG"}
             >
-              <PathDisplay path={inputRoot} fallback="尚未选择图片目录" />
-              <Button
-                disabled={busy !== null || progress.running}
-                onClick={chooseInputDirectory}
-                type="button"
-              >
-                {busy === "scan" ? <Loader2 className="animate-spin" /> : <FolderInput />}
-                选择图片目录
-              </Button>
+              <PathDisplay path={inputRoot} fallback="尚未选择图片目录或图片" />
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  disabled={busy !== null || progress.running}
+                  onClick={chooseInputDirectory}
+                  type="button"
+                >
+                  {busy === "scan" ? <Loader2 className="animate-spin" /> : <FolderInput />}
+                  选择目录
+                </Button>
+                <Button
+                  disabled={busy !== null || progress.running}
+                  onClick={chooseInputFiles}
+                  type="button"
+                  variant="utility"
+                >
+                  {busy === "scan" ? <Loader2 className="animate-spin" /> : <Files />}
+                  多选图片
+                </Button>
+              </div>
               {inputRoot ? (
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="success">图片 {images.length}</Badge>
@@ -1042,7 +1073,7 @@ export function WatermarkWorkspace({
                 value={jpegQuality}
               />
               <p className="text-xs leading-5 text-muted-foreground">
-                JPEG 按质量 {jpegQuality} 编码，PNG 无损；源文件不会改写，已有同名目标会跳过。
+                JPEG 按质量 {jpegQuality} 编码，PNG 无损；源文件不会改写，导出时会在所选目录内新建文件夹。
               </p>
               </div>
             </WatermarkWorkflowSection>
@@ -1076,7 +1107,7 @@ export function WatermarkWorkspace({
               ) : (
                 <Button disabled={!canExport} onClick={() => void startExport()} type="button">
                   <FolderOutput />
-                  导出水印图片
+                  导出到新目录
                 </Button>
               )}
               <Separator className="hidden h-8 sm:block" orientation="vertical" />
@@ -1622,7 +1653,7 @@ function EmptyWatermarkPreview({
         <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
           {hasImages
             ? "仍可先配置该画幅参数；选择包含此画幅的目录后会显示真实预览。"
-            : "选择图片目录并准备图片或文字水印后，可实时检查三种画幅的玻璃效果。"}
+            : "选择图片目录或多选图片，并准备图片或文字水印后，可实时检查三种画幅的玻璃效果。"}
         </p>
       </div>
       {!hasImages ? (
@@ -1686,7 +1717,7 @@ function getActionHint({
   watermarkAsset: WatermarkAssetInfo | null;
 }) {
   if (busy === "scan") {
-    return "正在扫描图片目录…";
+    return "正在读取图片…";
   }
   if (busy === "asset") {
     return "正在检查水印素材…";
@@ -1697,15 +1728,22 @@ function getActionHint({
       : `正在处理 ${progress.processedCount}/${progress.totalCount} 张图片`;
   }
   if (!inputRoot) {
-    return "先选择需要批量添加水印的图片目录";
+    return "先选择图片目录或多选图片";
   }
   if (images.length === 0) {
-    return "目录中没有可处理的 JPG、JPEG 或 PNG";
+    return "没有可处理的 JPG、JPEG 或 PNG";
   }
   if (!watermarkAsset) {
     return sourceKind === "text"
       ? "输入文字并选择本机字体后即可预览和导出"
       : "选择 PNG、JPG 或 JPEG 图片水印后即可预览和导出";
   }
-  return `已就绪：将为 ${images.length} 张图片添加本地水印`;
+  return `已就绪：将为 ${images.length} 张图片添加本地水印，并在所选目录内新建输出文件夹`;
+}
+
+function normalizeDialogSelection(selection: string | string[] | null): string[] {
+  if (!selection) {
+    return [];
+  }
+  return Array.isArray(selection) ? selection : [selection];
 }

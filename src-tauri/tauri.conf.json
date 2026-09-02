@@ -59,7 +59,7 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IERFQTgxOUQyN0YzOUVEMzAKUldRdzdUbC8waG1vM2dzUzNxa0huTG9iUk1YVm9Ra0hqcVplSldlWGRJa0NCMTFoKzk1dWlIOFMK",
       "endpoints": [
-        "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/raw/main/release/latest.json"
+        "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/releases/download/updater-latest/latest.json"
       ],
       "windows": {
         "installMode": "passive"

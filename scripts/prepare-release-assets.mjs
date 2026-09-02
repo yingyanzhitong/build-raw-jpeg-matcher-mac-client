@@ -10,6 +10,7 @@ const version = options.version || packageVersion;
 const tag = options.tag || `v${version}`;
 const appName = options.appName;
 const outputDir = options.output;
+const latestOutputDir = options.latestOutput;
 const allFiles = walk(options.input);
 const normalizedAssets = [];
 const platforms = {};
@@ -18,6 +19,7 @@ const notes = await readChangelogNotes(version, options.changelog);
 const pubDate = new Date().toISOString();
 
 await mkdir(outputDir, { recursive: true });
+await mkdir(latestOutputDir, { recursive: true });
 
 const macTargets = [
   { platform: "darwin-aarch64", assetLabel: "aarch64" },
@@ -53,6 +55,10 @@ for (const { platform, assetLabel } of macTargets) {
   );
 
   await copyAsset(macDmg, macDmgName);
+  await copyLatestInstaller(
+    macDmg,
+    `${appName}_latest_macOS_${assetLabel === "aarch64" ? "Apple-Silicon" : "Intel"}.dmg`,
+  );
   await copyAsset(macUpdater, macUpdaterName);
   await copyAsset(macUpdaterSig, macUpdaterSigName);
   platforms[platform] = {
@@ -78,6 +84,7 @@ const windowsSig = findUniqueRequired(
 const windowsExeName = `${appName}_${version}_Windows_x64-setup.exe`;
 const windowsSigName = `${windowsExeName}.sig`;
 await copyAsset(windowsExe, windowsExeName);
+await copyLatestInstaller(windowsExe, `${appName}_latest_Windows_x64-setup.exe`);
 await copyAsset(windowsSig, windowsSigName);
 const windowsUrl = releaseUrl(
   options.releaseBaseUrl,
@@ -115,6 +122,10 @@ async function copyAsset(source, fileName) {
   const destination = path.join(outputDir, fileName);
   await cp(source, destination);
   normalizedAssets.push(destination);
+}
+
+async function copyLatestInstaller(source, fileName) {
+  await cp(source, path.join(latestOutputDir, fileName));
 }
 
 function walk(root) {
@@ -183,6 +194,7 @@ function parseArgs(args) {
   const parsed = {
     input: "release-assets",
     output: "normalized-release-assets",
+    latestOutput: "latest-installers",
     owner: "masongzhi1",
     repo: "raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client",
     appName: "photo-pairing-assistant",
@@ -205,6 +217,9 @@ function parseArgs(args) {
         break;
       case "--output":
         parsed.output = value;
+        break;
+      case "--latest-output":
+        parsed.latestOutput = value;
         break;
       case "--owner":
         parsed.owner = value;

@@ -22,8 +22,8 @@ use raw_matcher::{
 };
 use watermark::{
     cancel_watermark_export, export_watermarked_images, inspect_text_watermark,
-    inspect_watermark_asset, list_watermark_fonts, scan_watermark_source, watermark_preview_asset,
-    WatermarkJobState,
+    inspect_watermark_asset, list_watermark_fonts, scan_watermark_files, scan_watermark_source,
+    watermark_preview_asset, WatermarkJobState,
 };
 
 #[tauri::command]
@@ -200,6 +200,7 @@ pub fn run() {
             scan_separator_source,
             export_separated_files,
             scan_watermark_source,
+            scan_watermark_files,
             inspect_watermark_asset,
             list_watermark_fonts,
             inspect_text_watermark,

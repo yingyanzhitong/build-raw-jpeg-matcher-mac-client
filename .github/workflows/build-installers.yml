@@ -167,10 +167,11 @@ jobs:
           RELEASE_TAG: ${{ needs.validate.outputs.tag }}
           RELEASE_VERSION: ${{ needs.validate.outputs.version }}
         run: |
-          rm -rf normalized-release-assets
+          rm -rf normalized-release-assets latest-installers
           node scripts/prepare-release-assets.mjs \
             --input release-assets \
             --output normalized-release-assets \
+            --latest-output latest-installers \
             --owner masongzhi1 \
             --repo raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client \
             --app-name photo-pairing-assistant \
@@ -202,7 +203,14 @@ jobs:
           RELEASE_NAME: ${{ needs.validate.outputs.tag }}
           RELEASE_BODY: Automated installer build for 照片配对助手.
           RELEASE_ASSET_DIR: normalized-release-assets
+          LATEST_INSTALLER_DIR: latest-installers
           LATEST_JSON_PATH: normalized-release-assets/latest.json
+          GITEE_LATEST_INSTALLER_TAG: latest
+          GITEE_LATEST_INSTALLER_NAME: 照片配对助手最新安装包
+          GITEE_LATEST_INSTALLER_BODY: 始终提供当前最新版本的 Windows 与 macOS 安装包。
+          GITEE_LATEST_MANIFEST_TAG: updater-latest
+          GITEE_LATEST_MANIFEST_NAME: 照片配对助手最新更新清单
+          GITEE_LATEST_MANIFEST_BODY: 照片配对助手自动更新清单。
         run: node scripts/sync-gitee-release.mjs
 
   notify:

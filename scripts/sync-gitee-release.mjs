@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
+import { mkdtemp, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -18,20 +18,44 @@ const config = {
   releaseName: process.env.RELEASE_NAME || requiredEnv("RELEASE_TAG"),
   releaseBody: process.env.RELEASE_BODY || "Automated installer build for 照片配对助手.",
   assetDir: process.env.RELEASE_ASSET_DIR || "normalized-release-assets",
+  latestInstallerDir: process.env.LATEST_INSTALLER_DIR || "latest-installers",
   latestJsonPath: process.env.LATEST_JSON_PATH || "normalized-release-assets/latest.json",
+  latestInstallerTag: process.env.GITEE_LATEST_INSTALLER_TAG || "latest",
+  latestInstallerName: process.env.GITEE_LATEST_INSTALLER_NAME || "照片配对助手最新安装包",
+  latestInstallerBody:
+    process.env.GITEE_LATEST_INSTALLER_BODY || "始终提供当前最新版本的 Windows 与 macOS 安装包。",
+  latestManifestTag: process.env.GITEE_LATEST_MANIFEST_TAG || "updater-latest",
+  latestManifestName: process.env.GITEE_LATEST_MANIFEST_NAME || "照片配对助手最新更新清单",
+  latestManifestBody:
+    process.env.GITEE_LATEST_MANIFEST_BODY || "照片配对助手自动更新清单。",
 };
 
 const apiBase = "https://gitee.com/api/v5";
 await ensureRepositoryReady();
-const releaseId = await ensureRelease();
+const releaseId = await ensureRelease({
+  tag: config.tag,
+  name: config.releaseName,
+  body: config.releaseBody,
+});
+const latestInstallerReleaseId = await ensureRelease({
+  tag: config.latestInstallerTag,
+  name: config.latestInstallerName,
+  body: config.latestInstallerBody,
+});
+const latestManifestReleaseId = await ensureRelease({
+  tag: config.latestManifestTag,
+  name: config.latestManifestName,
+  body: config.latestManifestBody,
+});
 const releaseAssets = await releaseAssetFiles();
-const updaterAssets = releaseAssets.filter(isUpdaterAsset);
-const installerAssets = releaseAssets.filter((file) => !isUpdaterAsset(file));
+const latestInstallers = await latestInstallerAssetFiles();
 
-await uploadReleaseAssets(releaseId, updaterAssets);
-await upsertLatestJson();
-await uploadReleaseAssets(releaseId, installerAssets);
-console.log(`Synced ${config.tag} assets and updater manifest to Gitee ${config.owner}/${config.repo}`);
+await uploadReleaseAssets(releaseId, releaseAssets, config.tag);
+await replaceReleaseAssets(latestInstallerReleaseId, latestInstallers, config.latestInstallerTag);
+await replaceReleaseAssets(latestManifestReleaseId, [config.latestJsonPath], config.latestManifestTag);
+console.log(
+  `已同步 Gitee 版本 Release ${config.tag}，并更新 ${config.latestInstallerTag} 安装包与 ${config.latestManifestTag} 更新清单：${config.owner}/${config.repo}`,
+);
 
 async function ensureRepositoryReady() {
   const repository = await giteeJson(
@@ -106,71 +130,8 @@ async function initializeRepositoryWithGit() {
   }
 }
 
-async function updateLatestJsonWithGit() {
-  let workdir = await mkdtemp(path.join(tmpdir(), "gitee-release-"));
-  try {
-    try {
-      await cloneRepository(workdir, config.gitUsername);
-    } catch (error) {
-      await rm(workdir, { recursive: true, force: true });
-      workdir = await mkdtemp(path.join(tmpdir(), "gitee-release-"));
-      await cloneRepository(workdir, "oauth2");
-    }
-
-    await mkdir(path.join(workdir, "release"), { recursive: true });
-    await writeFile(
-      path.join(workdir, "release", "latest.json"),
-      await readFile(config.latestJsonPath, "utf8"),
-    );
-
-    const status = await gitStdout(["status", "--porcelain", "--", "release/latest.json"], workdir);
-    if (!status.trim()) {
-      console.log("Gitee latest.json is already up to date.");
-      return;
-    }
-
-    await runGit(["add", "release/latest.json"], workdir);
-    await runGit(
-      [
-        "-c",
-        "user.name=raw-jpeg-release-bot",
-        "-c",
-        "user.email=actions@github.com",
-        "commit",
-        "-m",
-        `chore: update latest updater manifest for ${config.tag}`,
-      ],
-      workdir,
-    );
-    await runGit(["push", "origin", `HEAD:${config.branch}`], workdir);
-    console.log(`Updated Gitee release/latest.json for ${config.tag}.`);
-  } finally {
-    await rm(workdir, { recursive: true, force: true });
-  }
-}
-
-async function cloneRepository(workdir, username) {
-  await runGit(
-    [
-      "clone",
-      "--depth",
-      "1",
-      "--branch",
-      config.branch,
-      authenticatedRemoteUrl(username),
-      workdir,
-    ],
-    process.cwd(),
-  );
-}
-
 async function runGit(args, cwd) {
   await gitExec(args, cwd);
-}
-
-async function gitStdout(args, cwd) {
-  const result = await gitExec(args, cwd);
-  return result.stdout || "";
 }
 
 async function gitExec(args, cwd) {
@@ -190,22 +151,22 @@ function authenticatedRemoteUrl(username) {
   }/${config.repo}.git`;
 }
 
-async function ensureRelease() {
-  const existing = await getReleaseByTag();
+async function ensureRelease({ tag, name, body }) {
+  const existing = await getReleaseByTag(tag);
   if (existing) {
     return existing.id;
   }
 
-  const body = new URLSearchParams({
+  const requestBody = new URLSearchParams({
     access_token: config.token,
-    tag_name: config.tag,
-    name: config.releaseName,
-    body: config.releaseBody,
+    tag_name: tag,
+    name,
+    body,
     target_commitish: config.branch,
   });
   const created = await giteeJson(`/repos/${config.owner}/${config.repo}/releases`, {
     method: "POST",
-    body,
+    body: requestBody,
   });
   if (!created.id) {
     throw new Error("Gitee release response did not include id");
@@ -213,17 +174,17 @@ async function ensureRelease() {
   return created.id;
 }
 
-async function getReleaseByTag() {
+async function getReleaseByTag(tag) {
   const response = await giteeFetch(
     `${apiBase}/repos/${config.owner}/${config.repo}/releases/tags/${encodeURIComponent(
-      config.tag,
+      tag,
     )}?access_token=${encodeURIComponent(config.token)}`,
   );
   if (response.status === 404) {
     return null;
   }
   if (!response.ok) {
-    throw new Error(`Failed to query Gitee release ${config.tag}: ${await safeText(response)}`);
+    throw new Error(`Failed to query Gitee release ${tag}: ${await safeText(response)}`);
   }
   return response.json();
 }
@@ -235,11 +196,17 @@ async function releaseAssetFiles() {
     .sort();
 }
 
-function isUpdaterAsset(file) {
-  return /(?:\.app\.tar\.gz|\.app\.tar\.gz\.sig|\.exe|\.exe\.sig)$/i.test(file);
+async function latestInstallerAssetFiles() {
+  const files = (await readdir(config.latestInstallerDir))
+    .map((fileName) => path.join(config.latestInstallerDir, fileName))
+    .sort();
+  if (files.length !== 3 || files.some((file) => !/\.(dmg|exe)$/i.test(file))) {
+    throw new Error("最新安装包目录必须包含两份 macOS DMG 和一份 Windows EXE");
+  }
+  return files;
 }
 
-async function uploadReleaseAssets(releaseId, files) {
+async function uploadReleaseAssets(releaseId, files, releaseTag) {
   const expectedNames = new Set(files.map((file) => path.basename(file)));
   const existingAssets = await listAssets(releaseId);
 
@@ -253,11 +220,26 @@ async function uploadReleaseAssets(releaseId, files) {
     for (const asset of existing) {
       await deleteAsset(releaseId, asset.id);
     }
-    await uploadAsset(releaseId, file);
+    await uploadAsset(releaseId, file, releaseTag);
     await assertAssetUploaded(releaseId, fileName);
   }
 
   await assertExpectedAssetsUploaded(releaseId, expectedNames);
+}
+
+async function replaceReleaseAssets(releaseId, files, releaseTag) {
+  for (const asset of await listAssets(releaseId)) {
+    await deleteAsset(releaseId, asset.id);
+  }
+  await uploadReleaseAssets(releaseId, files, releaseTag);
+  const expectedNames = files.map((file) => path.basename(file)).sort();
+  const actualNames = (await listAssets(releaseId)).map((asset) => asset.name).sort();
+  if (
+    actualNames.length !== expectedNames.length ||
+    actualNames.some((name, index) => name !== expectedNames[index])
+  ) {
+    throw new Error(`Gitee ${releaseTag} Release 资产不完整`);
+  }
 }
 
 async function listAssets(releaseId) {
@@ -281,7 +263,7 @@ async function deleteAsset(releaseId, assetId) {
   }
 }
 
-async function uploadAsset(releaseId, filePath) {
+async function uploadAsset(releaseId, filePath, releaseTag) {
   const fileName = path.basename(filePath);
   const url = `${apiBase}/repos/${config.owner}/${config.repo}/releases/${releaseId}/attach_files?access_token=${encodeURIComponent(
     config.token,
@@ -289,7 +271,7 @@ async function uploadAsset(releaseId, filePath) {
   const maxAttempts = 3;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    console.log(`Uploading ${fileName} to Gitee release ${config.tag} (${attempt}/${maxAttempts}).`);
+    console.log(`Uploading ${fileName} to Gitee release ${releaseTag} (${attempt}/${maxAttempts}).`);
     try {
       await runCurl(fileName, [
         "--fail-with-body",
@@ -308,7 +290,7 @@ async function uploadAsset(releaseId, filePath) {
         `file=@${filePath};filename=${fileName};type=application/octet-stream`,
         url,
       ]);
-      console.log(`Uploaded ${fileName} to Gitee release ${config.tag}.`);
+      console.log(`Uploaded ${fileName} to Gitee release ${releaseTag}.`);
       return;
     } catch (error) {
       const uploaded = (await listAssets(releaseId)).filter((asset) => asset.name === fileName);
@@ -349,13 +331,9 @@ async function assertExpectedAssetsUploaded(releaseId, expectedNames) {
   }
 }
 
-async function upsertLatestJson() {
-  await updateLatestJsonWithGit();
-}
-
 async function runCurl(label, args) {
   const heartbeat = setInterval(() => {
-    console.log(`Still uploading ${label} to Gitee release ${config.tag}...`);
+    console.log(`Still uploading ${label} to Gitee release...`);
   }, 30_000);
   try {
     await execFileAsync("curl", args, {
