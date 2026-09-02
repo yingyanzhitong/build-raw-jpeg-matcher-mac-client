@@ -231,9 +231,7 @@ jobs:
           GITEE_LATEST_INSTALLER_TAG: latest
           GITEE_LATEST_INSTALLER_NAME: 摄影修图师助手最新安装包
           GITEE_LATEST_INSTALLER_BODY: 始终提供当前最新版本的 Windows 与 macOS 安装包。
-          GITEE_LATEST_MANIFEST_TAG: updater-latest
-          GITEE_LATEST_MANIFEST_NAME: 摄影修图师助手最新更新清单
-          GITEE_LATEST_MANIFEST_BODY: 摄影修图师助手自动更新清单。
+          GITEE_COMPATIBILITY_MANIFEST_TAG: updater-latest
         run: node scripts/sync-gitee-release.mjs
 
   notify:

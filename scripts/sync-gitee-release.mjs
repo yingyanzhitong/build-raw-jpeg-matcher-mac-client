@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { execFile } from "node:child_process";
-import { mkdtemp, readdir, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -24,10 +24,7 @@ const config = {
   latestInstallerName: process.env.GITEE_LATEST_INSTALLER_NAME || "照片配对助手最新安装包",
   latestInstallerBody:
     process.env.GITEE_LATEST_INSTALLER_BODY || "始终提供当前最新版本的 Windows 与 macOS 安装包。",
-  latestManifestTag: process.env.GITEE_LATEST_MANIFEST_TAG || "updater-latest",
-  latestManifestName: process.env.GITEE_LATEST_MANIFEST_NAME || "照片配对助手最新更新清单",
-  latestManifestBody:
-    process.env.GITEE_LATEST_MANIFEST_BODY || "照片配对助手自动更新清单。",
+  compatibilityManifestTag: process.env.GITEE_COMPATIBILITY_MANIFEST_TAG?.trim() || null,
 };
 
 const apiBase = "https://gitee.com/api/v5";
@@ -42,19 +39,30 @@ const latestInstallerReleaseId = await ensureRelease({
   name: config.latestInstallerName,
   body: config.latestInstallerBody,
 });
-const latestManifestReleaseId = await ensureRelease({
-  tag: config.latestManifestTag,
-  name: config.latestManifestName,
-  body: config.latestManifestBody,
-});
+const compatibilityManifestReleaseId = config.compatibilityManifestTag
+  ? await ensureRelease({
+      tag: config.compatibilityManifestTag,
+      name: "旧版更新兼容清单",
+      body: "仅用于旧版客户端迁移至当前更新规范。",
+    })
+  : null;
 const releaseAssets = await releaseAssetFiles();
 const latestInstallers = await latestInstallerAssetFiles();
 
 await uploadReleaseAssets(releaseId, releaseAssets, config.tag);
 await replaceReleaseAssets(latestInstallerReleaseId, latestInstallers, config.latestInstallerTag);
-await replaceReleaseAssets(latestManifestReleaseId, [config.latestJsonPath], config.latestManifestTag);
+await updateLatestJsonWithGit();
+if (compatibilityManifestReleaseId) {
+  await replaceReleaseAssets(
+    compatibilityManifestReleaseId,
+    [config.latestJsonPath],
+    config.compatibilityManifestTag,
+  );
+}
 console.log(
-  `已同步 Gitee 版本 Release ${config.tag}，并更新 ${config.latestInstallerTag} 安装包与 ${config.latestManifestTag} 更新清单：${config.owner}/${config.repo}`,
+  `已同步 Gitee 版本 Release ${config.tag}，并更新 ${config.latestInstallerTag} 安装包、main/release/latest.json 更新清单${
+    config.compatibilityManifestTag ? `及 ${config.compatibilityManifestTag} 兼容清单` : ""
+  }：${config.owner}/${config.repo}`,
 );
 
 async function ensureRepositoryReady() {
@@ -130,8 +138,71 @@ async function initializeRepositoryWithGit() {
   }
 }
 
+async function updateLatestJsonWithGit() {
+  let workdir = await mkdtemp(path.join(tmpdir(), "gitee-release-"));
+  try {
+    try {
+      await cloneRepository(workdir, config.gitUsername);
+    } catch {
+      await rm(workdir, { recursive: true, force: true });
+      workdir = await mkdtemp(path.join(tmpdir(), "gitee-release-"));
+      await cloneRepository(workdir, "oauth2");
+    }
+
+    await mkdir(path.join(workdir, "release"), { recursive: true });
+    await writeFile(
+      path.join(workdir, "release", "latest.json"),
+      await readFile(config.latestJsonPath, "utf8"),
+    );
+
+    const status = await gitStdout(["status", "--porcelain", "--", "release/latest.json"], workdir);
+    if (!status.trim()) {
+      console.log("Gitee latest.json is already up to date.");
+      return;
+    }
+
+    await runGit(["add", "release/latest.json"], workdir);
+    await runGit(
+      [
+        "-c",
+        "user.name=raw-jpeg-release-bot",
+        "-c",
+        "user.email=actions@github.com",
+        "commit",
+        "-m",
+        `chore: update latest updater manifest for ${config.tag}`,
+      ],
+      workdir,
+    );
+    await runGit(["push", "origin", `HEAD:${config.branch}`], workdir);
+    console.log(`Updated Gitee release/latest.json for ${config.tag}.`);
+  } finally {
+    await rm(workdir, { recursive: true, force: true });
+  }
+}
+
+async function cloneRepository(workdir, username) {
+  await runGit(
+    [
+      "clone",
+      "--depth",
+      "1",
+      "--branch",
+      config.branch,
+      authenticatedRemoteUrl(username),
+      workdir,
+    ],
+    process.cwd(),
+  );
+}
+
 async function runGit(args, cwd) {
   await gitExec(args, cwd);
+}
+
+async function gitStdout(args, cwd) {
+  const result = await gitExec(args, cwd);
+  return result.stdout || "";
 }
 
 async function gitExec(args, cwd) {

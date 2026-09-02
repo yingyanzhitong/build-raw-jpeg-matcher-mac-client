@@ -4,7 +4,7 @@
 `src-tauri/tauri.conf.json`：
 
 ```text
-https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/releases/download/updater-latest/latest.json
+https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/raw/main/release/latest.json
 ```
 
 如果实际 Gitee 仓库不是 `masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client`，发布前请同步修改
@@ -54,7 +54,7 @@ macOS 的 `.app.tar.gz` 是 Tauri updater 专用更新包，给应用内自动�
 3. 生成 `latest.json`，其中 `platforms.*.url` 指向 updater 包，`signature` 来自本次构建生成的 `.sig` 文件内容；顶层 `installers` 指向可手动安装的安装包。
 4. 上传安装包、updater 包、签名文件和 `latest.json` 到 GitHub Release。
 5. 上传安装包、updater 包和签名文件到 Gitee Release。
-6. 全部版本化 Gitee 附件上传成功后，替换固定 `latest` Release 中的 macOS 双架构 DMG 和 Windows EXE，并替换固定 `updater-latest` Release 中唯一的 `latest.json`；清单中的 updater 和安装包下载地址均指向版本化 Gitee Release。
+6. 全部版本化 Gitee 附件上传成功后，替换固定 `latest` Release 中的 macOS 双架构 DMG 和 Windows EXE，并将 `latest.json` 写入 Gitee `main` 分支的 `release/latest.json`；清单中的 updater 和安装包下载地址均指向版本化 Gitee Release。
 
 GitHub 仓库需要配置这些 Actions Secrets：
 
@@ -72,15 +72,14 @@ GITEE_ACCESS_TOKEN
 1. 在 Gitee 创建 release，例如 `v0.1.22`。
 2. 上传对应平台的安装包、updater artifact 和 `.sig` 文件。
 3. 创建固定的 `latest` Release，上传两份 macOS DMG 和一份 Windows EXE，文件名保持固定的 `*_latest_*` 格式。
-4. 创建固定的 `updater-latest` Release，仅上传当前 `latest.json`。
-5. 确认 `installers.*.url` 指向版本化 Release 的手动安装包，`platforms.*.url` 指向版本化 Release 的 updater 附件后，再替换固定 Release 的资产。
+4. 确认 `installers.*.url` 指向版本化 Release 的手动安装包，`platforms.*.url` 指向版本化 Release 的 updater 附件后，将 `latest.json` 写入 `main` 分支的 `release/latest.json`。
 
 `signature` 必须粘贴 `.sig` 文件内容本身，不是 `.sig` 文件 URL。
 
 ## 5. 验证
 
 ```bash
-curl -I "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/releases/download/updater-latest/latest.json"
+curl -I "https://gitee.com/masongzhi1/raw-jperaw-jpeg-matcher-mac-clientg-matcher-mac-client/raw/main/release/latest.json"
 ```
 
 安装旧版本客户端后点击顶部“检查更新”，确认能检测、下载、安装并重启到新版本。

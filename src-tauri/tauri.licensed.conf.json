@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "摄影修图师助手",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "identifier": "com.masongzhi.rawjpegmatcher.licensed",
   "app": {
     "windows": [
@@ -24,7 +24,7 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDUwNkQ2NjFFQzE2MTYzMDUKUldRRlkySEJIbVp0VUhrSUdtNG5CTUt5cDF3L25HUkhEWS82SCtkdUdxTjJCaXBBQTlqeXpmTUYK",
       "endpoints": [
-        "https://gitee.com/masongzhi1/raw-jpeg-matcher-licensed-release/releases/download/updater-latest/latest.json"
+        "https://gitee.com/masongzhi1/raw-jpeg-matcher-licensed-release/raw/main/release/latest.json"
       ],
       "windows": {
         "installMode": "passive"

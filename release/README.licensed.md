@@ -7,7 +7,7 @@
 - 标签：`licensed-vX.Y.Z`
 - 产物前缀：`raw-jpeg-matcher-licensed_`
 - Gitee：`masongzhi1/raw-jpeg-matcher-licensed-release`
-- 唯一更新清单：`https://gitee.com/masongzhi1/raw-jpeg-matcher-licensed-release/releases/download/updater-latest/latest.json`
+- 唯一更新清单：`https://gitee.com/masongzhi1/raw-jpeg-matcher-licensed-release/raw/main/release/latest.json`
 
 ## 签名材料
 
@@ -31,6 +31,6 @@ GitHub Actions 使用 `TAURI_LICENSED_SIGNING_PRIVATE_KEY` 和
 2. 确认 `src-tauri/tauri.licensed.conf.json` 的版本。
 3. 在 `licensed` 提交上创建同版本 `licensed-vX.Y.Z` 标签并推送。
 4. `.github/workflows/build-licensed-installers.yml` 会验证标签和分支可达性，再构建 macOS 双架构与 Windows x64。
-5. 工作流发布 GitHub Release 后，将全部安装包、更新包和签名同步到与版本对应的 Gitee Release；只有版本资产完整后，才替换固定 `latest` Release 的三平台安装包和固定 `updater-latest` Release 的 `latest.json`。客户端只读取固定更新清单，无需向受保护的 `licensed` 分支写入。
+5. 工作流发布 GitHub Release 后，将全部安装包、更新包和签名同步到与版本对应的 Gitee Release；只有版本资产完整后，才替换固定 `latest` Release 的三平台安装包，并将 `latest.json` 写入 Gitee `main` 分支的 `release/latest.json`。客户端始终读取该旧版更新清单；发行工作流还会同步 `updater-latest` 作为 1.0.11 客户端升级至 1.0.12 的兼容桥接。
 
 Action 不会自行创建标签。标签、分支或配置版本不匹配时会立即失败。
