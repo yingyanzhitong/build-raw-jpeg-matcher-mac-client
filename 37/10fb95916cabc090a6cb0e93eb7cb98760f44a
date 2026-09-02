@@ -1,0 +1,60 @@
+.github/workflows/build-installers.yml
+  s_6d512a9f9d946b::t_157e72a1ac7f3b 170,174,206,208-213
+.github/workflows/build-licensed-installers.yml
+  s_6d512a9f9d946b::t_cc9769024d8876 181,185,229,231-236
+CHANGELOG.licensed.md
+  s_6d512a9f9d946b::t_43cce1d6779966 5-15
+CHANGELOG.md
+  s_6d512a9f9d946b::t_bb833182ece5d3 3-7
+openspec/changes/rebuild-pixcake-style-watermark/design.md
+  s_6d512a9f9d946b::t_3e88f5b02231b1 53
+openspec/changes/rebuild-pixcake-style-watermark/specs/watermark-batch-export/spec.md
+  s_6d512a9f9d946b::t_428d358062b3d3 7,10-11,13-15,17-20,66
+openspec/changes/rebuild-pixcake-style-watermark/specs/watermark-source-preview/spec.md
+  s_6d512a9f9d946b::t_68e9d6ad3e41d5 3-4,9-12
+package-lock.json
+  s_6d512a9f9d946b::t_c215d6ccf50047 3,9
+package.json
+  s_6d512a9f9d946b::t_7429cedf15086e 3
+release/README.licensed.md
+  s_6d512a9f9d946b::t_1adad958e53d22 10,34
+release/README.md
+  s_6d512a9f9d946b::t_9d7534867d06c5 7,57,74-76,83
+scripts/check-licensed-invariants.mjs
+  s_6d512a9f9d946b::t_22e412eee51e62 28,61
+scripts/prepare-release-assets.mjs
+  s_6d512a9f9d946b::t_fc500973871e6c 13,22,58-61,87,125-128,197,220-222
+scripts/sync-gitee-release.mjs
+  s_6d512a9f9d946b::t_7610630cd40bb0 4,21,23-30,35-49,51-58,154-155,160,162-164,169,177,180,187,199-206,209,223,230-244,266,274,293,336
+src-tauri/src/lib.rs
+  s_6d512a9f9d946b::t_3030f81b08929c 25-26,203
+src-tauri/src/license.rs
+  s_6d512a9f9d946b::t_ab38218a55d5bf 20
+src-tauri/src/watermark.rs
+  s_6d512a9f9d946b::t_c6e38abc789b50 57-58,311,390-402,510-513,554-620,632-650,1376,1378,1421-1426,1453,2181-2212,2434-2459,3023-3052
+src-tauri/tauri.conf.json
+  s_6d512a9f9d946b::t_719f799573844c 62
+src-tauri/tauri.licensed.conf.json
+  s_6d512a9f9d946b::t_08e76d3f17fcc1 4,27
+src/features/watermark/WatermarkWorkspace.tsx
+  s_6d512a9f9d946b::t_f8779b8eadb60e 9,115,474-492,510,513-537,657,700,703,797,799-818,1076,1110,1656,1720,1731,1734,1740-1746,1748
+src/features/watermark/types.ts
+  s_6d512a9f9d946b::t_2af588c08bbdbb 133
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "3710fb95916cabc090a6cb0e93eb7cb98760f44a",
+  "prompts": {},
+  "logical_commit_id": "3710fb95916cabc090a6cb0e93eb7cb98760f44a",
+  "sessions": {
+    "s_6d512a9f9d946b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0611b-7824-7913-b43d-127c22586392",
+        "model": "unknown"
+      },
+      "human_author": "masongzhi <masongzhi@bigo.sg>"
+    }
+  }
+}
